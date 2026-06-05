@@ -127,6 +127,8 @@ class TestDataLoaderNoQGIS(unittest.TestCase):
         self.assertIn("Gemini", loader.llm_full_dict)
         self.assertIn("glm-4", loader.llm_full_dict["GLM"])
         self.assertIn("deepseek-chat", loader.llm_full_dict["DeepSeek"])
+        self.assertIn("v4-flash", loader.llm_full_dict["DeepSeek"])
+        self.assertIn("v4-pro", loader.llm_full_dict["DeepSeek"])
 
     def test_llm_endpoints(self):
         loader = self._setup_loader()
@@ -161,7 +163,9 @@ class TestLLMProviders(unittest.TestCase):
         self.assertIn("glm-4-flash", LLM_PROVIDERS["GLM"]["models"])
         self.assertIn("deepseek-chat", LLM_PROVIDERS["DeepSeek"]["models"])
         self.assertIn("deepseek-reasoner", LLM_PROVIDERS["DeepSeek"]["models"])
-        self.assertIn("MiMo", LLM_PROVIDERS["XiaomiMiMo"]["models"])
+        self.assertIn("v4-flash", LLM_PROVIDERS["DeepSeek"]["models"])
+        self.assertIn("v4-pro", LLM_PROVIDERS["DeepSeek"]["models"])
+        self.assertIn("mimo2.5", LLM_PROVIDERS["XiaomiMiMo"]["models"])
         self.assertIn("gemini-2.0-flash", LLM_PROVIDERS["Gemini"]["models"])
 
     def test_provider_endpoints(self):

@@ -47,13 +47,13 @@ LLM_PROVIDERS = {
     },
     "DeepSeek": {
         "class": ChatDeepSeek,
-        "models": ["deepseek-chat", "deepseek-reasoner"],
+        "models": ["deepseek-chat", "deepseek-reasoner", "v4-flash", "v4-pro"],
         "endpoint": "https://api.deepseek.com",
         "env_key": "DEEPSEEK_API_KEY",
     },
     "XiaomiMiMo": {
         "class": ChatXiaomiMiMo,
-        "models": ["MiMo", "MiMo-Pro"],
+        "models": ["mimo2.5"],
         "endpoint": "https://api.xiaomi.com/v1/chat/completions",
         "env_key": "XIAOMI_API_KEY",
     },

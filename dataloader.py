@@ -15,8 +15,8 @@ class DataLoader:
         self.cursor = None
         self.llm_full_dict = {
             "GLM": ["glm-4", "glm-4v", "glm-4-plus", "glm-4-air", "glm-4-flash"],
-            "DeepSeek": ["deepseek-chat", "deepseek-reasoner"],
-            "XiaomiMiMo": ["MiMo", "MiMo-Pro"],
+            "DeepSeek": ["deepseek-chat", "deepseek-reasoner", "v4-flash", "v4-pro"],
+            "XiaomiMiMo": ["mimo2.5"],
             "Gemini": ["gemini-2.0-flash", "gemini-2.0-pro", "gemini-1.5-pro"],
             "OpenAI": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"],
             "default": ["default"],
