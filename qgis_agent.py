@@ -25,7 +25,6 @@ required_modules = [
 package_manager = PackageManager(required_modules)
 package_manager.check_dependencies()
 
-from .resources import *
 from .qgis_agent_dockwidget import QGISAgentDockWidget
 from .dataloader import DataLoader
 from .conversation import Conversation
@@ -86,7 +85,7 @@ class QGISAgent:
         return action
 
     def initGui(self):
-        icon_path = ":/plugins/qgis_agent/icon.png"
+        icon_path = os.path.join(self.plugin_dir, "icon.png")
         self.add_action(
             icon_path,
             text=self.tr("打开 QGIS Agent"),
