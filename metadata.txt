@@ -1,0 +1,24 @@
+[general]
+name=QGIS Agent
+qgisMinimumVersion=3.0
+description=QGIS Agent 是一个集成大语言模型的QGIS插件，支持GLM、DeepSeek、Xiaomi MiMo等模型，可辅助生成PyQGIS代码和地理处理工作流。
+version=1.0.0
+author=测绘工程部
+email=
+
+about=QGIS Agent 是一个基于大语言模型（LLM）的QGIS智能助手插件。\n\n主要功能：\n- 支持多种LLM模型（GLM、DeepSeek、Xiaomi MiMo、Gemini等）\n- 智能对话生成PyQGIS代码\n- 自动创建地理处理工作流\n- 对话历史管理与检索\n- 代码调试与错误修正
+
+tracker=
+repository=
+
+hasProcessingProvider=no
+changelog=1.0.0 初始版本，支持GLM、DeepSeek、Xiaomi MiMo
+
+tags=AI, LLM, 大语言模型, PyQGIS, 地理处理
+
+homepage=
+category=Plugins
+icon=icon.png
+experimental=True
+deprecated=False
+server=False

@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/plugins/qgis_agent">
+        <file>icon.png</file>
+        <file>resources/prompt.json</file>
+    </qresource>
+</RCC>
