@@ -1,13 +1,14 @@
 import os
+import html as html_module
 from datetime import datetime
 
 from qgis.PyQt import QtGui, QtWidgets, uic
 from qgis.PyQt.QtCore import pyqtSignal, QEvent, Qt
 from qgis.PyQt.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QLabel, QGroupBox, QPushButton,
-    QSizePolicy, QSpacerItem, QScrollArea, QWidget, QPlainTextEdit
+    QSizePolicy, QSpacerItem, QScrollArea, QWidget, QPlainTextEdit, QToolButton
 )
-from qgis.PyQt.QtGui import QFont, QPalette
+from qgis.PyQt.QtGui import QFont, QPalette, QIcon
 
 from .utils import handle_none_conversation, pack, unpack, format_description, create_markdown, set_font_color
 from .qgis_agent_dockwidget_base_ui import Ui_QGISAgentDockWidget
@@ -19,6 +20,7 @@ class QGISAgentDockWidget(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
     searchPressed = pyqtSignal(str)
     switchClearMode = pyqtSignal(str)
     modelClicked = pyqtSignal(int)
+    stopRequested = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -27,10 +29,21 @@ class QGISAgentDockWidget(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         self.scrollAreaLayout = None
         self.setupUi(self)
 
+        self.messagesLayout.setStretch(3, 1)
+        self.ptMessage.setFixedHeight(40)
+
+        self.pbStop.clicked.connect(self.stopRequested.emit)
+
         self.ptMessage.installEventFilter(self)
         self.ptSearchConversationCard.installEventFilter(self)
 
         self.twTabs.setCurrentWidget(self.tbMessages)
+
+    def set_sending_state(self, is_sending):
+        """切换发送/停止状态"""
+        self.pbSend.setVisible(not is_sending)
+        self.pbStop.setVisible(is_sending)
+        self.cbModelSelector.setDisabled(is_sending)
 
     def closeEvent(self, event):
         self.closingPlugin.emit()
@@ -127,22 +140,23 @@ class QGISAgentDockWidget(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         for interaction in interaction_history:
             msg_dict = pack(interaction, "interaction")
             if msg_dict["typeMessage"] == "input":
+                safe_text = html_module.escape(msg_dict["requestText"])
                 new_msg = f"""
                     <div style="margin:0;padding:0;line-height:1;text-align:right;color:#6baad1;">
                         用户 {msg_dict["requestTime"]}
                     </div>
                     <div style="margin:0;padding:0;line-height:1;text-align:right;color:{font_color};">
-                        {msg_dict["requestText"]}
+                        {safe_text}
                     </div>
                 """
                 current_html += new_msg
 
             if msg_dict["typeMessage"] == "return":
                 new_msg = f"""
-                    <div style="margin:0;padding:0;line-height:1;color:#FD8A8A;">
+                    <div style="margin:0;padding:0;line-height:1;color:#FD8A8A;text-align:left;">
                         QGIS Agent {msg_dict["responseTime"]}
                     </div>
-                    <div style="margin:0;padding:0;line-height:1;color:{font_color};">
+                    <div style="margin:0;padding:0;line-height:1;color:{font_color};text-align:left;">
                         {create_markdown(msg_dict["responseText"])}
                     </div>
                     <div><br></div>
@@ -153,12 +167,77 @@ class QGISAgentDockWidget(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         self.txHistory.setReadOnly(True)
         self.txHistory.verticalScrollBar().setValue(self.txHistory.verticalScrollBar().maximum())
 
+    def showThinking(self, partial_text, response_time=""):
+        """实时显示模型思考/生成中的内容"""
+        font_color = set_font_color(self.txHistory.palette().color(QPalette.Base))
+        # 构建当前完整 HTML（保留历史 + 追加流式内容）
+        current_html = self.txHistory.toHtml() if hasattr(self.txHistory, 'toHtml') else ""
+
+        # 用标记来定位流式内容块
+        marker = '<!-- STREAMING_MARKER -->'
+        thinking_html = f"""
+            <div style="margin:0;padding:0;line-height:1;color:#FD8A8A;text-align:left;">
+                QGIS Agent 思考中... {response_time}
+            </div>
+            <div style="margin:0;padding:0;line-height:1;color:{font_color};text-align:left;">
+                {create_markdown(partial_text)}
+            </div>
+            <span style="color:#FD8A8A;">▌</span>
+            <div><br></div>
+            {marker}
+        """
+
+        # 如果已有流式标记，替换掉旧内容；否则追加
+        if marker in current_html:
+            # 找到标记位置，替换标记之前到上一个消息之后的所有流式内容
+            marker_pos = current_html.find(marker)
+            # 找到流式块开始位置（倒数第二个 <div style="margin:0;padding:0;line-height:1;color:#FD8A8A;">）
+            search_start = current_html.rfind(
+                '<div style="margin:0;padding:0;line-height:1;color:#FD8A8A;">',
+                0, marker_pos
+            )
+            if search_start >= 0:
+                current_html = current_html[:search_start] + thinking_html
+            else:
+                current_html = current_html[:marker_pos] + thinking_html
+        else:
+            # 先移除可能残留的旧标记
+            if marker in current_html:
+                current_html = current_html.replace(marker, "")
+            current_html += thinking_html
+
+        self.txHistory.setHtml(current_html)
+        self.txHistory.setReadOnly(True)
+        self.txHistory.verticalScrollBar().setValue(self.txHistory.verticalScrollBar().maximum())
+
+    def finalizeThinking(self):
+        """清除流式标记，准备显示最终结果"""
+        current_html = self.txHistory.toHtml() if hasattr(self.txHistory, 'toHtml') else ""
+        marker = '<!-- STREAMING_MARKER -->'
+        current_html = current_html.replace(marker, "")
+        self.txHistory.setHtml(current_html)
+
+    def showToolStatus(self, status_text):
+        """在聊天框中显示工具调用状态"""
+        status_html = f"""
+            <div style="margin:4px 0;padding:4px 8px;background-color:#2d2d2d;border-left:3px solid #4A90D9;border-radius:2px;color:#b0b0b0;font-size:12px;font-family:Consolas,monospace;">
+                {html_module.escape(status_text)}
+            </div>
+        """
+        self.txHistory.append(status_html)
+        self.txHistory.verticalScrollBar().setValue(self.txHistory.verticalScrollBar().maximum())
+
     def disableAllButtons(self):
         for btn in self.findChildren(QPushButton):
+            if btn is self.pbStop:
+                continue  # 停止按钮始终可用
             btn.setDisabled(True)
 
     def enableAllButtons(self):
         for btn in self.findChildren(QPushButton):
+            if btn is self.pbStop:
+                btn.setVisible(False)  # 隐藏停止按钮
+                continue
             btn.setDisabled(False)
 
     def disableAllTextEdit(self):

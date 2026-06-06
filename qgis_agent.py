@@ -3,37 +3,40 @@
 import os
 import sys
 import re
+import html as html_module
 
 from qgis.PyQt.QtCore import (
-    QSettings, QTranslator, QCoreApplication, Qt, QTimer, pyqtSignal
+    QSettings, QTranslator, QCoreApplication, Qt, QTimer
 )
-from qgis.PyQt.QtGui import QIcon, QTextCursor, QClipboard, QKeyEvent
+from qgis.PyQt.QtGui import QIcon, QTextCursor, QClipboard, QPalette
 from qgis.PyQt.QtWidgets import (
-    QAction, QDialog, QPushButton, QWidget, QPlainTextEdit,
-    QDockWidget, QApplication, QToolButton, QMenu
+    QAction, QDialog, QPushButton, QPlainTextEdit, QLineEdit,
+    QDockWidget, QApplication, QMessageBox, QLabel, QVBoxLayout, QHBoxLayout,
+    QComboBox, QTableWidgetItem, QFrame
 )
 from qgis.utils import iface
 
 from .package_manager import PackageManager
 
 required_modules = [
-    "langchain_deepseek",
-    "langchain_openai",
     "langchain",
+    "langchain_core",
+    "langchain_openai",
+    "langchain_deepseek",
     "requests",
 ]
 package_manager = PackageManager(required_modules)
-package_manager.check_dependencies()
 
-from .qgis_agent_dockwidget import QGISAgentDockWidget
-from .dataloader import DataLoader
-from .conversation import Conversation
-from .dialog_new_conversation import NewConversationDialog
-from .utils import (
-    generate_unique_id, get_current_timestamp, pack, extract_code,
-    get_qgis_version
-)
-from .config import DB_NAME, PLUGIN_NAME
+
+def _soft_import(name):
+    try:
+        __import__(name)
+        return True
+    except ImportError:
+        return False
+
+
+_HAS_LLM_LIBS = all(_soft_import(m) for m in required_modules)
 
 
 class QGISAgent:
@@ -58,7 +61,7 @@ class QGISAgent:
         self.edit_dialog = None
         self.live_conversation_id = None
         self.live_conversation = None
-        self.dataloader = DataLoader(DB_NAME)
+        self.dataloader = None
         self.console_text = ""
         self.console_tracker = QTimer()
         self.new_editor = None
@@ -96,7 +99,8 @@ class QGISAgent:
     def onClosePlugin(self):
         self.dockwidget.closingPlugin.disconnect(self.onClosePlugin)
         self.plugin_is_active = False
-        self.dataloader.close()
+        if self.dataloader:
+            self.dataloader.close()
 
     def unload(self):
         for action in self.actions:
@@ -105,33 +109,116 @@ class QGISAgent:
         del self.toolbar
 
     def run(self):
+        if not _HAS_LLM_LIBS:
+            msg = QMessageBox()
+            msg.setWindowTitle("缺少依赖")
+            msg.setText("QGIS Agent 需要安装以下 Python 库：")
+            detail = "\n".join(f"• {m}" for m in required_modules)
+            msg.setInformativeText(detail + "\n\n是否尝试自动安装？")
+            msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            msg.setDefaultButton(QMessageBox.Yes)
+            if msg.exec_() == QMessageBox.Yes:
+                missing = package_manager.check_dependencies()
+                if missing:
+                    ok = package_manager.install_missing()
+                    if ok:
+                        QMessageBox.information(None, "安装成功", "依赖安装完成，请重启 QGIS 后重新启用插件。")
+                    else:
+                        QMessageBox.warning(None, "安装失败",
+                            "自动安装失败，请在 OSGeo4W Shell 中手动运行：\n\n"
+                            f"pip install {' '.join(required_modules)}")
+                else:
+                    QMessageBox.information(None, "已就绪", "依赖已安装，请重启 QGIS。")
+            return
+
         if not self.plugin_is_active:
             self.plugin_is_active = True
+            self._init_plugin()
 
-            if self.dockwidget is None:
-                self.dockwidget = QGISAgentDockWidget()
+    def _init_plugin(self):
+        from .dataloader import DataLoader
+        from .conversation import Conversation
+        from .dialog_new_conversation import NewConversationDialog
+        from .qgis_agent_dockwidget import QGISAgentDockWidget
+        from .utils import (
+            generate_unique_id, get_current_timestamp, pack, extract_code, set_font_color
+        )
+        from .config import DB_NAME, PLUGIN_NAME
 
-            self.dockwidget.closingPlugin.connect(self.onClosePlugin)
-            self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
-            self.dockwidget.show()
+        # 在主线程中初始化工具调度桥接器（必须在任何工具调用前完成）
+        from .qgis_tools import _init_main_thread_bridge
+        _init_main_thread_bridge()
 
-            self.dataloader.connect()
+        if self.dockwidget is None:
+            self.dockwidget = QGISAgentDockWidget()
 
-            self.dockwidget.pbSend.clicked.connect(self._on_new_message_send)
-            self.dockwidget.enterPressed.connect(self._on_new_message_send)
-            self.dockwidget.pbNew.clicked.connect(self._on_new_conversation)
-            self.dockwidget.pbSearchConversationCard.clicked.connect(
-                self._on_search_conversation
-            )
-            self.dockwidget.searchPressed.connect(self._on_search_conversation)
-            self.dockwidget.switchClearMode.connect(self._switch_clear_mode)
+        self.dockwidget.closingPlugin.connect(self.onClosePlugin)
+        self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
+        self.dockwidget.show()
 
-            slot_funcs = [
-                self._on_conversation_load,
-                self._on_conversation_delete,
-                self._on_conversation_edit,
-            ]
-            self.dockwidget.displayConversationCard(self.dataloader, slot_funcs)
+        self.dataloader = DataLoader(DB_NAME)
+        self.dataloader.connect()
+
+        # 加载模型列表到下拉框
+        self._load_model_selector()
+
+        self.dockwidget.pbSend.clicked.connect(self._on_new_message_send)
+        self.dockwidget.enterPressed.connect(self._on_new_message_send)
+        self.dockwidget.stopRequested.connect(self._on_stop_requested)
+        self.dockwidget.pbNew.clicked.connect(self._on_new_conversation)
+        self.dockwidget.pbSearchConversationCard.clicked.connect(
+            self._on_search_conversation
+        )
+        self.dockwidget.searchPressed.connect(self._on_search_conversation)
+        self.dockwidget.switchClearMode.connect(self._switch_clear_mode)
+
+        # 标签页切换时刷新模型配置页
+        self.dockwidget.twTabs.currentChanged.connect(self._on_tab_changed)
+
+        # 初始化模型配置标签页
+        self._init_settings_tab()
+
+        slot_funcs = [
+            self._on_conversation_load,
+            self._on_conversation_delete,
+            self._on_conversation_edit,
+        ]
+        self.dockwidget.displayConversationCard(self.dataloader, slot_funcs)
+
+        from .processor import Processor as _ProcessorClass
+        self._Processor = _ProcessorClass
+        self._generate_unique_id = generate_unique_id
+        self._get_current_timestamp = get_current_timestamp
+        self._pack = pack
+        self._extract_code = extract_code
+        self._set_font_color = set_font_color
+        self._Conversation = Conversation
+        self._NewEditDialog = NewConversationDialog
+
+    def _load_model_selector(self):
+        """加载可用模型到下拉框"""
+        self.dockwidget.cbModelSelector.clear()
+        self._model_selector_map = {}  # display -> llm_id
+        llm_ids = self.dataloader.fetch_llm_list()
+        for llm_id in llm_ids:
+            name, endpoint, _ = self.dataloader.fetch_llm_info(llm_id)
+            display = f"{name}"
+            self._model_selector_map[display] = llm_id
+            self.dockwidget.cbModelSelector.addItem(display)
+
+        # 如果有当前对话，选中其模型
+        if self.live_conversation and self.live_conversation.llmID:
+            llm_id = self.live_conversation.llmID
+            name, _, _ = self.dataloader.fetch_llm_info(llm_id)
+            idx = self.dockwidget.cbModelSelector.findText(name)
+            if idx >= 0:
+                self.dockwidget.cbModelSelector.setCurrentIndex(idx)
+
+    def _get_selected_llm_id(self):
+        """获取当前下拉框选中的 llm_id"""
+        display = self.dockwidget.cbModelSelector.currentText()
+        return self._model_selector_map.get(display, "")
+
 
     def _on_new_message_send(self):
         message = self.dockwidget.ptMessage.toPlainText()
@@ -140,34 +227,72 @@ class QGISAgent:
 
         if self.live_conversation is None:
             self._on_new_conversation()
+            if self.live_conversation is None:
+                return
 
         self.dockwidget.ptMessage.clear()
 
-        if self.dockwidget.rbtVisualModel.isChecked():
-            response_type = "Visual mode"
-        elif self.dockwidget.rbtCode.isChecked():
-            response_type = "Code"
-        else:
-            response_type = "Toolbox"
+        # 如果用户切换了模型选择器中的模型，更新对话的 llmID
+        selected_llm = self._get_selected_llm_id()
+        if selected_llm and selected_llm != self.live_conversation.llmID:
+            self.live_conversation.meta_info["llmID"] = selected_llm
+            # 重新创建 processor 以使用新模型
+            self.live_conversation.provider, self.live_conversation.model_name = \
+                self.dataloader.get_llm_info(selected_llm)
+            self.live_conversation.processor = self._Processor(selected_llm, self.live_conversation.ID, self.dataloader)
+            self.live_conversation.processor.thinking.connect(self.live_conversation.llm_thinking.emit)
+            self.live_conversation.processor.tool_status.connect(self.live_conversation.llm_tool_status.emit)
+            self.dataloader.update_conversation_info(self.live_conversation.meta_info)
+
+        response_type = "Agent"
 
         if self.live_conversation is not None:
+            # 先显示用户消息
+            font_color = self._set_font_color(self.dockwidget.txHistory.palette().color(QPalette.Base))
+            safe_message = html_module.escape(message)
+            user_html = f"""
+                <div style="margin:0;padding:0;line-height:1;text-align:right;color:#6baad1;">
+                    用户 {self._get_current_timestamp()}
+                </div>
+                <div style="margin:0;padding:0;line-height:1;text-align:right;color:{font_color};">
+                    {safe_message}
+                </div>
+            """
+            self.dockwidget.txHistory.append(user_html)
+
             self.live_conversation.llm_response.connect(self._on_response_received)
+            self.live_conversation.llm_thinking.connect(self._on_thinking)
+            self.live_conversation.llm_tool_status.connect(self._on_tool_status)
             self.live_conversation.llm_interrupted.connect(self._on_response_error)
             self.live_conversation.update_user_prompt(message, response_type)
+
+            # 切换为发送状态：隐藏发送按钮，显示停止按钮
+            self.dockwidget.set_sending_state(True)
             self.dockwidget.disableAllButtons()
             self.dockwidget.disableAllTextEdit()
 
     def _on_response_received(self, response, workflow, model_path):
         if self.live_conversation is not None:
+            self.dockwidget.set_sending_state(False)
             self.dockwidget.enableAllButtons()
             self.dockwidget.enableAllTextEdit()
             self.live_conversation.llm_response.disconnect(self._on_response_received)
+            self.live_conversation.llm_thinking.disconnect(self._on_thinking)
+            try:
+                self.live_conversation.llm_tool_status.disconnect(self._on_tool_status)
+            except Exception:
+                pass
             self.live_conversation.llm_interrupted.disconnect(self._on_response_error)
 
-            if workflow == "withCode":
-                code = extract_code(response)
-                if code:
-                    self._run_in_console(code)
+            # 清除流式标记
+            self.dockwidget.finalizeThinking()
+
+            # 确保数据库连接有效（工作线程可能会重置 connection）
+            if self.dataloader.connection is None:
+                try:
+                    self.dataloader.connect()
+                except Exception:
+                    pass
 
             self.dockwidget.updateConversation(self.live_conversation)
             self.dockwidget.updateGeneralInfo(self.live_conversation)
@@ -182,29 +307,64 @@ class QGISAgent:
             )
             self.dataloader.update_conversation_info(self.live_conversation.meta_info)
 
+    def _on_thinking(self, partial_text):
+        """实时显示模型思考内容"""
+        self.dockwidget.showThinking(partial_text)
+
+    def _on_tool_status(self, status_text):
+        """显示工具调用状态"""
+        self.dockwidget.showToolStatus(status_text)
+
     def _on_response_error(self, error_message):
+        self.dockwidget.set_sending_state(False)
         self.dockwidget.enableAllButtons()
         self.dockwidget.enableAllTextEdit()
         self.live_conversation.llm_response.disconnect(self._on_response_received)
+        self.live_conversation.llm_thinking.disconnect(self._on_thinking)
+        try:
+            self.live_conversation.llm_tool_status.disconnect(self._on_tool_status)
+        except Exception:
+            pass
         self.live_conversation.llm_interrupted.disconnect(self._on_response_error)
-        self.dockwidget.txHistory.append(f"<p style='color:red'>错误: {error_message}</p>")
+        self.dockwidget.finalizeThinking()
+        self.dockwidget.txHistory.append(f"<p style='color:red'>错误: {html_module.escape(error_message)}</p>")
+
+    def _on_stop_requested(self):
+        """用户点击停止按钮"""
+        if self.live_conversation:
+            self.live_conversation.stop()
+        self.dockwidget.set_sending_state(False)
+        self.dockwidget.enableAllButtons()
+        self.dockwidget.enableAllTextEdit()
+        self.dockwidget.finalizeThinking()
+        self.dockwidget.txHistory.append("<p style='color:#888;'>⏹ 已停止生成</p>")
 
     def _on_new_conversation(self):
+        from .dialog_new_conversation import NewConversationDialog as NewEditDialog
+
         if self.edit_dialog is None or not self.edit_dialog.isVisible():
-            self.edit_dialog = NewConversationDialog(
-                self.dataloader.llm_full_dict,
-                self.dataloader.fetch_all_config(),
-            )
+            if self.dataloader is None:
+                return
+
+            # 新建对话：使用当前选中的模型
+            llm_id = self._get_selected_llm_id()
+            if not llm_id:
+                # 没有模型可用，提示用户先配置
+                QMessageBox.warning(None, "无可用模型", "请先在「模型配置」标签页中添加 LLM 模型。")
+                self.dockwidget.twTabs.setCurrentWidget(self.dockwidget.tbSettings)
+                return
+
+            self.edit_dialog = NewEditDialog(self.dataloader, llm_id=llm_id)
             self.edit_dialog.show()
             if self.edit_dialog.exec_() == QDialog.Accepted:
-                title, description, llm_id, endpoint, api_key = (
+                title, description, api_key = (
                     self.edit_dialog.get_metadata()
                 )
-                created = get_current_timestamp()
+                created = self._get_current_timestamp()
                 modified = created
-                self.live_conversation_id = generate_unique_id()
+                self.live_conversation_id = self._generate_unique_id()
 
-                meta_info = pack(
+                meta_info = self._pack(
                     (
                         self.live_conversation_id, llm_id, title, description,
                         created, modified, 0, 0, "local"
@@ -212,9 +372,10 @@ class QGISAgent:
                     "conversation",
                 )
                 self.dataloader.create_conversation(meta_info)
-                self.dataloader.update_api_key(api_key, llm_id)
+                if api_key:
+                    self.dataloader.update_api_key(api_key, llm_id)
 
-                self.live_conversation = Conversation(
+                self.live_conversation = self._Conversation(
                     self.live_conversation_id, self.dataloader
                 )
 
@@ -231,9 +392,19 @@ class QGISAgent:
 
     def _on_conversation_load(self, conversation_id):
         self.live_conversation_id = conversation_id
-        self.live_conversation = Conversation(conversation_id, self.dataloader)
-        self.live_conversation.lastEdit = get_current_timestamp()
+        # 确保数据库连接有效（工作线程可能会重置 connection）
+        if self.dataloader.connection is None:
+            self.dataloader.connect()
+        self.live_conversation = self._Conversation(conversation_id, self.dataloader)
+        self.live_conversation.lastEdit = self._get_current_timestamp()
         self.dataloader.update_conversation_info(self.live_conversation.meta_info)
+
+        # 同步模型选择器
+        if self.live_conversation.llmID:
+            name, _, _ = self.dataloader.fetch_llm_info(self.live_conversation.llmID)
+            idx = self.dockwidget.cbModelSelector.findText(name)
+            if idx >= 0:
+                self.dockwidget.cbModelSelector.setCurrentIndex(idx)
 
         slot_funcs = [
             self._on_conversation_load,
@@ -260,27 +431,36 @@ class QGISAgent:
             self.dockwidget.removeConversationCard(conversation_id)
 
     def _on_conversation_edit(self, conversation_id: str):
+        from .dialog_new_conversation import NewConversationDialog as NewEditDialog
+
         if self.edit_dialog is None or not self.edit_dialog.isVisible():
-            edit_conversation = Conversation(conversation_id, self.dataloader)
-            self.edit_dialog = NewConversationDialog(
-                self.dataloader.llm_full_dict,
-                self.dataloader.fetch_all_config(),
-                edit_conversation.title,
-                edit_conversation.description,
-                edit_conversation.llmID,
+            meta_info = self.dataloader.select_conversation_info(conversation_id)
+            title = meta_info.get("title", "")
+            description = meta_info.get("description", "")
+            llm_id = meta_info.get("llmID", "")
+
+            self.edit_dialog = NewEditDialog(
+                self.dataloader,
+                title,
+                description,
+                llm_id,
             )
             self.edit_dialog.show()
 
             if self.edit_dialog.exec_() == QDialog.Accepted:
-                (edit_conversation.title,
-                 edit_conversation.description,
-                 llm_id, _, api_key) = self.edit_dialog.get_metadata()
-                edit_conversation.lastEdit = get_current_timestamp()
-                self.dataloader.update_conversation_info(edit_conversation.meta_info)
-                self.dataloader.update_api_key(api_key, llm_id)
+                new_title, new_description, api_key = self.edit_dialog.get_metadata()
+
+                # 更新 meta_info 中的字段
+                meta_info["title"] = new_title
+                meta_info["description"] = new_description
+                meta_info["modified"] = self._get_current_timestamp()
+
+                self.dataloader.update_conversation_info(meta_info)
+                if api_key:
+                    self.dataloader.update_api_key(api_key, meta_info["llmID"])
 
                 if conversation_id == self.live_conversation_id:
-                    self.live_conversation = edit_conversation
+                    self.live_conversation = self._Conversation(conversation_id, self.dataloader)
                     self.dockwidget.updateGeneralInfo(self.live_conversation)
 
                 slot_funcs = [
@@ -289,7 +469,7 @@ class QGISAgent:
                     self._on_conversation_edit,
                 ]
                 self.dockwidget.updateConversationCard(
-                    edit_conversation.meta_info, slot_funcs
+                    meta_info, slot_funcs
                 )
 
     def _on_search_conversation(self):
@@ -338,6 +518,139 @@ class QGISAgent:
         self.dockwidget.searchPressed.connect(self._on_search_conversation)
         self.dockwidget.pbSearchConversationCard.setText("搜索")
 
+    def _on_tab_changed(self, index):
+        """标签页切换时刷新模型配置页"""
+        # 模型配置标签页是 index 2
+        if index == 2:
+            self._refresh_settings_tab()
+
+    def _init_settings_tab(self):
+        """初始化模型配置标签页"""
+        self._settings_row_data = {}  # row_idx -> {"llm_id": str, "name": str}
+
+        self.dockwidget.btnAddModel.clicked.connect(self._add_model_row)
+
+    def _refresh_settings_tab(self):
+        """刷新模型配置表格"""
+        table = self.dockwidget.settingsTable
+        # 断开之前的按钮信号，避免重复连接
+        table.setRowCount(0)
+        self._settings_row_data = {}
+
+        rows = self.dataloader.fetch_all_config()
+        for i, row in enumerate(rows):
+            llm_id, name, endpoint, api_key = row
+            self._set_settings_row(i, name, endpoint, api_key, llm_id)
+
+    def _set_settings_row(self, row_idx, name, endpoint, api_key, llm_id=None):
+        """设置配置表格的一行数据"""
+        import uuid
+
+        table = self.dockwidget.settingsTable
+        if row_idx >= table.rowCount():
+            table.insertRow(row_idx)
+
+        if llm_id is None:
+            llm_id = f"Custom::{uuid.uuid4().hex[:8]}"
+
+        self._settings_row_data[row_idx] = {"llm_id": llm_id, "name": name}
+
+        # 第0列：可编辑的模型名称
+        name_item = QTableWidgetItem(name)
+        table.setItem(row_idx, 0, name_item)
+
+        # 第1列：API 端点（可编辑）
+        endpoint_item = QTableWidgetItem(endpoint)
+        table.setItem(row_idx, 1, endpoint_item)
+
+        # 第2列：API Key（密码模式，使用 QLineEdit 设置为密码模式）
+        key_widget = QLineEdit()
+        key_widget.setEchoMode(QLineEdit.Password)
+        key_widget.setText(api_key)
+        key_widget.setPlaceholderText("输入 API Key")
+        key_widget.setStyleSheet("QLineEdit { border: none; padding: 2px; }")
+        # 点击查看/隐藏切换
+        key_widget.setClearButtonEnabled(False)
+        table.setCellWidget(row_idx, 2, key_widget)
+
+        # 第3列：删除按钮
+        del_btn = QPushButton("删除")
+        del_btn.setStyleSheet(
+            "QPushButton { background-color: #FA7070; color: white; border-radius: 3px; padding: 2px 8px; font-size: 11px; }"
+            " QPushButton:hover { background-color: #E05050; }"
+        )
+        del_btn.clicked.connect(lambda _, r=row_idx: self._delete_model_row(r))
+        table.setCellWidget(row_idx, 3, del_btn)
+
+    def _add_model_row(self):
+        """添加新模型行 — 弹出参考信息对话框"""
+        # 弹出参考信息对话框
+        ref_dlg = AddModelReferenceDialog(self.dockwidget)
+        if ref_dlg.exec_() == QDialog.Accepted:
+            name, endpoint, api_key = ref_dlg.get_values()
+        else:
+            return  # 用户取消
+
+        table = self.dockwidget.settingsTable
+        row_idx = table.rowCount()
+        self._set_settings_row(row_idx, name, endpoint, api_key)
+
+        # 自动保存
+        self._save_settings_tab()
+
+    def _delete_model_row(self, row_idx):
+        """删除模型行并自动保存"""
+        if row_idx in self._settings_row_data:
+            llm_id = self._settings_row_data[row_idx]["llm_id"]
+            if llm_id:
+                self.dataloader.delete_llm_config(llm_id)
+
+        table = self.dockwidget.settingsTable
+        table.removeRow(row_idx)
+
+        # 重建 row_data 映射
+        new_data = {}
+        for i in range(table.rowCount()):
+            if i < row_idx and i in self._settings_row_data:
+                new_data[i] = self._settings_row_data[i]
+            elif i >= row_idx:
+                old_idx = i + 1
+                if old_idx in self._settings_row_data:
+                    new_data[i] = self._settings_row_data[old_idx]
+        self._settings_row_data = new_data
+
+        # 自动保存
+        self._save_settings_tab()
+
+    def _save_settings_tab(self):
+        """保存配置页所有模型到数据库"""
+        table = self.dockwidget.settingsTable
+        for i in range(table.rowCount()):
+            name_item = table.item(i, 0)
+            endpoint_item = table.item(i, 1)
+            key_widget = table.cellWidget(i, 2)
+
+            if not name_item or not endpoint_item:
+                continue
+
+            name = name_item.text().strip()
+            endpoint = endpoint_item.text().strip()
+            api_key = key_widget.text().strip() if key_widget else ""
+
+            if not name or not endpoint:
+                continue
+
+            if i in self._settings_row_data:
+                llm_id = self._settings_row_data[i]["llm_id"]
+            else:
+                import uuid
+                llm_id = f"Custom::{uuid.uuid4().hex[:8]}"
+
+            self.dataloader.insert_llm_config(llm_id, name, endpoint, api_key)
+
+        self.dataloader.reload_llm_config()
+        self._load_model_selector()
+
     def _run_in_console(self, code: str):
         console_widget = iface.mainWindow().findChild(QDockWidget, "PythonConsole")
         if not console_widget or not console_widget.isVisible():
@@ -351,3 +664,152 @@ class QGISAgent:
         )
         QApplication.clipboard().setText(code)
         python_console.pasteEditor()
+
+
+# ---- 添加模型参考信息对话框 ----
+
+_MODEL_REFERENCE_DATA = [
+    {
+        "name": "DeepSeek",
+        "models": "deepseek-chat, deepseek-reasoner",
+        "endpoint": "https://api.deepseek.com/v1",
+        "note": "需申请 API Key: platform.deepseek.com",
+    },
+    {
+        "name": "OpenAI",
+        "models": "gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-3.5-turbo",
+        "endpoint": "https://api.openai.com/v1",
+        "note": "需申请 API Key: platform.openai.com",
+    },
+    {
+        "name": "智谱 GLM",
+        "models": "glm-4, glm-4v, glm-4-plus, glm-4-air, glm-4-flash",
+        "endpoint": "https://open.bigmodel.cn/api/paas/v4/",
+        "note": "需申请 API Key: open.bigmodel.cn",
+    },
+    {
+        "name": "Gemini",
+        "models": "gemini-2.0-flash, gemini-2.0-pro, gemini-1.5-pro",
+        "endpoint": "https://generativelanguage.googleapis.com/v1beta/openai/",
+        "note": "需申请 API Key: aistudio.google.com",
+    },
+    {
+        "name": "小米 MiMo",
+        "models": "mimo-v2.5, mimo-v2.5-pro, mimo-v2-flash",
+        "endpoint": "https://api.xiaomimimo.com/v1/chat/completions",
+        "note": "小米 AI 开放平台",
+    },
+    {
+        "name": "自定义 (OpenAI 兼容)",
+        "models": "任意模型名（如 qwen-plus, claude-3-opus 等）",
+        "endpoint": "https://your-api-endpoint.com/v1",
+        "note": "任何兼容 OpenAI 接口的服务均可使用",
+    },
+]
+
+
+class AddModelReferenceDialog(QDialog):
+    """添加模型参考信息对话框 — 参考 WorkBuddy 风格"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("添加模型 — 参考信息")
+        self.setMinimumSize(520, 440)
+        self._setup_ui()
+
+    def _setup_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setSpacing(10)
+
+        # 标题
+        title_lbl = QLabel("选择参考模板（可修改任何字段）")
+        title_lbl.setStyleSheet("font-size: 13px; font-weight: bold;")
+        layout.addWidget(title_lbl)
+
+        # 参考信息下拉选择
+        ref_layout = QHBoxLayout()
+        ref_layout.addWidget(QLabel("参考:"))
+        self.cbReference = QComboBox()
+        ref_names = [r["name"] for r in _MODEL_REFERENCE_DATA]
+        self.cbReference.addItems(ref_names)
+        self.cbReference.currentIndexChanged.connect(self._on_reference_changed)
+        ref_layout.addWidget(self.cbReference, 1)
+        layout.addLayout(ref_layout)
+
+        # 参考信息展示
+        self.lblRefInfo = QLabel()
+        self.lblRefInfo.setWordWrap(True)
+        self.lblRefInfo.setStyleSheet(
+            "background: #f5f5f5; border-radius: 4px; padding: 8px; font-size: 11px; color: #555;"
+        )
+        layout.addWidget(self.lblRefInfo)
+
+        # 分隔线
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
+        line.setStyleSheet("color: #ddd;")
+        layout.addWidget(line)
+
+        # 模型名称
+        layout.addWidget(QLabel("模型名称:"))
+        self.ptName = QLineEdit()
+        self.ptName.setPlaceholderText("例如: gpt-4o")
+        layout.addWidget(self.ptName)
+
+        # API 端点
+        layout.addWidget(QLabel("API 端点:"))
+        self.ptEndpoint = QLineEdit()
+        self.ptEndpoint.setPlaceholderText("例如: https://api.openai.com/v1")
+        layout.addWidget(self.ptEndpoint)
+
+        # API Key（密码模式）
+        layout.addWidget(QLabel("API Key:"))
+        self.ptApiKey = QLineEdit()
+        self.ptApiKey.setEchoMode(QLineEdit.Password)
+        self.ptApiKey.setPlaceholderText("输入 API Key")
+        layout.addWidget(self.ptApiKey)
+
+        layout.addStretch()
+
+        # 按钮
+        btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
+        self.btnOk = QPushButton("添加")
+        self.btnOk.setStyleSheet(
+            "QPushButton { background-color: #4A90D9; color: white; border-radius: 4px; padding: 6px 24px; }"
+            " QPushButton:hover { background-color: #357ABD; }"
+        )
+        self.btnOk.clicked.connect(self.accept)
+        self.btnCancel = QPushButton("取消")
+        self.btnCancel.clicked.connect(self.reject)
+        btn_layout.addWidget(self.btnOk)
+        btn_layout.addWidget(self.btnCancel)
+        layout.addLayout(btn_layout)
+
+        # 初始化第一个参考信息
+        self._on_reference_changed(0)
+
+    def _on_reference_changed(self, index):
+        """切换参考模板时更新展示信息和预填字段"""
+        if 0 <= index < len(_MODEL_REFERENCE_DATA):
+            ref = _MODEL_REFERENCE_DATA[index]
+            self.lblRefInfo.setText(
+                f"<b>可用模型:</b> {ref['models']}<br>"
+                f"<b>API 端点:</b> {ref['endpoint']}<br>"
+                f"<b>说明:</b> {ref['note']}"
+            )
+            # 预填端点（用户可修改）
+            self.ptEndpoint.setText(ref["endpoint"])
+            # 不清除已输入的名称和 key，但如果是第一个端点模板则填入建议
+            if not self.ptName.text():
+                # 取第一个模型名作为建议
+                first_model = ref["models"].split(",")[0].strip()
+                self.ptName.setPlaceholderText(f"例如: {first_model}")
+
+    def get_values(self):
+        """返回 (name, endpoint, api_key)"""
+        return (
+            self.ptName.text().strip(),
+            self.ptEndpoint.text().strip(),
+            self.ptApiKey.text().strip(),
+        )

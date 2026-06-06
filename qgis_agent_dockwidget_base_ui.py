@@ -25,10 +25,12 @@ class Ui_QGISAgentDockWidget(object):
         self.messagesLayout.setContentsMargins(0, 0, 0, 0)
         self.messagesLayout.setSpacing(4)
 
-        # 标题和描述
+        # 标题行（只有标题，移除了配置按钮）
+        self.titleLayout = QtWidgets.QHBoxLayout()
         self.lbTitle = QtWidgets.QLabel("新建对话")
         self.lbTitle.setStyleSheet("font-size: 14px; font-weight: bold;")
         self.lbTitle.setWordWrap(True)
+        self.titleLayout.addWidget(self.lbTitle, 1)
 
         self.lbDescription = QtWidgets.QLabel("选择或新建对话开始使用QGIS Agent")
         self.lbDescription.setWordWrap(True)
@@ -65,23 +67,35 @@ class Ui_QGISAgentDockWidget(object):
         self.messageLayout.addWidget(self.ptMessage)
         self.messageLayout.addWidget(self.pbSend)
 
-        # 响应模式
-        self.responseModeLayout = QtWidgets.QHBoxLayout()
-        self.rbtCode = QtWidgets.QRadioButton("生成代码")
-        self.rbtCode.setChecked(True)
-        self.rbtVisualModel = QtWidgets.QRadioButton("图形模型")
-        self.rbtToolbox = QtWidgets.QRadioButton("工具箱脚本")
-        self.responseModeLayout.addWidget(self.rbtCode)
-        self.responseModeLayout.addWidget(self.rbtVisualModel)
-        self.responseModeLayout.addWidget(self.rbtToolbox)
-        self.responseModeLayout.addStretch()
+        # 底部栏：模型选择 + 停止按钮
+        self.bottomBarLayout = QtWidgets.QHBoxLayout()
+        self.bottomBarLayout.setContentsMargins(0, 2, 0, 0)
+        self.bottomBarLayout.setSpacing(6)
 
-        self.messagesLayout.addWidget(self.lbTitle)
+        self.lblModel = QtWidgets.QLabel("模型:")
+        self.lblModel.setStyleSheet("font-size: 12px; color: #888;")
+        self.cbModelSelector = QtWidgets.QComboBox()
+        self.cbModelSelector.setMinimumWidth(120)
+        self.cbModelSelector.setStyleSheet("QComboBox { font-size: 12px; padding: 2px 4px; }")
+
+        self.pbStop = QtWidgets.QPushButton("⏹ 停止")
+        self.pbStop.setFixedSize(70, 26)
+        self.pbStop.setVisible(False)
+        self.pbStop.setStyleSheet("""
+            QPushButton { background-color: #FA7070; color: white; border-radius: 4px; font-size: 12px; }
+            QPushButton:hover { background-color: #E05050; }
+        """)
+
+        self.bottomBarLayout.addWidget(self.lblModel)
+        self.bottomBarLayout.addWidget(self.cbModelSelector, 1)
+        self.bottomBarLayout.addWidget(self.pbStop)
+
+        self.messagesLayout.addLayout(self.titleLayout)
         self.messagesLayout.addWidget(self.lbDescription)
         self.messagesLayout.addWidget(self.lbMetadata)
         self.messagesLayout.addWidget(self.txHistory)
-        self.messagesLayout.addLayout(self.responseModeLayout)
         self.messagesLayout.addWidget(self.messageFrame)
+        self.messagesLayout.addLayout(self.bottomBarLayout)
 
         # --- 对话列表标签页 ---
         self.tbConversations = QtWidgets.QWidget()
@@ -116,8 +130,48 @@ class Ui_QGISAgentDockWidget(object):
         self.conversationsLayout.addWidget(self.pbNew)
         self.conversationsLayout.addWidget(self.saConversationCard)
 
+        # --- 大模型配置标签页 ---
+        self.tbSettings = QtWidgets.QWidget()
+        self.tbSettings.setObjectName("tbSettings")
+        self.settingsLayout = QtWidgets.QVBoxLayout(self.tbSettings)
+        self.settingsLayout.setContentsMargins(4, 4, 4, 4)
+        self.settingsLayout.setSpacing(6)
+
+        # 配置页标题
+        self.lblSettingsTitle = QtWidgets.QLabel("大模型配置")
+        self.lblSettingsTitle.setStyleSheet("font-size: 14px; font-weight: bold;")
+
+        self.lblSettingsHint = QtWidgets.QLabel("管理 API 端点及密钥。添加模型时可参考内置信息，支持任意 OpenAI 兼容接口。")
+        self.lblSettingsHint.setWordWrap(True)
+        self.lblSettingsHint.setStyleSheet("color: #666; font-size: 11px;")
+
+        # 模型配置表格
+        self.settingsTable = QtWidgets.QTableWidget()
+        self.settingsTable.setColumnCount(4)
+        self.settingsTable.setHorizontalHeaderLabels(["模型名称", "API 端点", "API Key", ""])
+        self.settingsTable.horizontalHeader().setStretchLastSection(False)
+        self.settingsTable.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        self.settingsTable.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        self.settingsTable.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
+        self.settingsTable.setColumnWidth(3, 60)
+        self.settingsTable.verticalHeader().setVisible(False)
+        self.settingsTable.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+
+        # 添加模型按钮
+        self.btnAddModel = QtWidgets.QPushButton("+ 添加模型")
+        self.btnAddModel.setStyleSheet("""
+            QPushButton { background-color: #5CB85C; color: white; border-radius: 4px; padding: 6px 16px; }
+            QPushButton:hover { background-color: #4CAE4C; }
+        """)
+
+        self.settingsLayout.addWidget(self.lblSettingsTitle)
+        self.settingsLayout.addWidget(self.lblSettingsHint)
+        self.settingsLayout.addWidget(self.settingsTable)
+        self.settingsLayout.addWidget(self.btnAddModel)
+
         self.twTabs.addTab(self.tbMessages, "对话")
         self.twTabs.addTab(self.tbConversations, "对话列表")
+        self.twTabs.addTab(self.tbSettings, "模型配置")
 
         self.mainLayout.addWidget(self.twTabs)
 

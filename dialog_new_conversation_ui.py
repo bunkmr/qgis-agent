@@ -5,10 +5,14 @@ class Ui_NewConversationDialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
         Dialog.setWindowTitle("新建对话 - QGIS Agent")
-        Dialog.setFixedSize(400, 420)
+        Dialog.setFixedSize(400, 260)
 
         self.verticalLayout = QtWidgets.QVBoxLayout(Dialog)
         self.verticalLayout.setSpacing(8)
+
+        # 模型提示（只读，从底部选择器继承）
+        self.lblModelInfo = QtWidgets.QLabel("当前模型: (从底部选择器选择)")
+        self.lblModelInfo.setStyleSheet("color: #888; font-size: 12px;")
 
         # 名称
         self.lblName = QtWidgets.QLabel("对话名称")
@@ -20,21 +24,6 @@ class Ui_NewConversationDialog(object):
         self.ptDescription = QtWidgets.QPlainTextEdit()
         self.ptDescription.setPlaceholderText("输入对话描述（可选）")
         self.ptDescription.setFixedHeight(60)
-
-        # LLM选择
-        self.lblLLM = QtWidgets.QLabel("选择模型")
-        self.cbLLM = QtWidgets.QComboBox()
-
-        # API端点
-        self.lblEndpoint = QtWidgets.QLabel("API 端点")
-        self.leAPIEndpoint = QtWidgets.QLineEdit()
-        self.leAPIEndpoint.setReadOnly(True)
-
-        # API Key
-        self.lblAPIKey = QtWidgets.QLabel("API Key")
-        self.leAPIKey = QtWidgets.QLineEdit()
-        self.leAPIKey.setEchoMode(QtWidgets.QLineEdit.Password)
-        self.leAPIKey.setPlaceholderText("输入API Key")
 
         # 按钮
         self.buttonLayout = QtWidgets.QHBoxLayout()
@@ -48,16 +37,12 @@ class Ui_NewConversationDialog(object):
         self.buttonLayout.addWidget(self.pbOkay)
         self.buttonLayout.addWidget(self.pbCancel)
 
+        self.verticalLayout.addWidget(self.lblModelInfo)
         self.verticalLayout.addWidget(self.lblName)
         self.verticalLayout.addWidget(self.ptName)
         self.verticalLayout.addWidget(self.lblDescription)
         self.verticalLayout.addWidget(self.ptDescription)
-        self.verticalLayout.addWidget(self.lblLLM)
-        self.verticalLayout.addWidget(self.cbLLM)
-        self.verticalLayout.addWidget(self.lblEndpoint)
-        self.verticalLayout.addWidget(self.leAPIEndpoint)
-        self.verticalLayout.addWidget(self.lblAPIKey)
-        self.verticalLayout.addWidget(self.leAPIKey)
+        self.verticalLayout.addStretch()
         self.verticalLayout.addLayout(self.buttonLayout)
 
         QtCore.QMetaObject.connectSlotsByName(Dialog)

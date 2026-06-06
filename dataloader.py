@@ -13,30 +13,11 @@ class DataLoader:
         self.database_name = database_name
         self.connection = None
         self.cursor = None
-        self.llm_full_dict = {
-            "GLM": ["glm-4", "glm-4v", "glm-4-plus", "glm-4-air", "glm-4-flash"],
-            "DeepSeek": ["deepseek-chat", "deepseek-reasoner", "v4-flash", "v4-pro"],
-            "XiaomiMiMo": ["mimo2.5"],
-            "Gemini": ["gemini-2.0-flash", "gemini-2.0-pro", "gemini-1.5-pro"],
-            "OpenAI": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"],
-            "default": ["default"],
-        }
-        self.llm_endpoint_dict = {
-            "GLM": "https://open.bigmodel.cn/api/paas/v4/",
-            "DeepSeek": "https://api.deepseek.com",
-            "XiaomiMiMo": "https://api.xiaomi.com/v1/chat/completions",
-            "Gemini": "https://generativelanguage.googleapis.com/v1beta/openai/",
-            "OpenAI": "https://api.openai.com/v1",
-            "default": "default",
-        }
-        self.api_key_dict = {
-            "GLM": os.getenv("GLM_API_KEY", ""),
-            "DeepSeek": os.getenv("DEEPSEEK_API_KEY", ""),
-            "XiaomiMiMo": os.getenv("XIAOMI_API_KEY", ""),
-            "Gemini": os.getenv("GEMINI_API_KEY", ""),
-            "OpenAI": os.getenv("OPENAI_API_KEY", ""),
-            "default": "default",
-        }
+
+        # 动态字典，从数据库加载，不再硬编码
+        self.llm_full_dict = {}
+        self.llm_endpoint_dict = {}
+        self.api_key_dict = {}
 
         folder_path = os.path.expanduser("~/Documents/QGIS_Agent")
         if not os.path.exists(folder_path):
@@ -60,7 +41,7 @@ class DataLoader:
         return self.cursor.fetchone() is not None
 
     def connect(self):
-        self.connection = sqlite3.connect(self.database_path)
+        self.connection = sqlite3.connect(self.database_path, check_same_thread=False)
         self.cursor = self.connection.cursor()
         self._create_llm_table()
         self._create_conversation_table()
@@ -72,20 +53,10 @@ class DataLoader:
         columns = ["ID TEXT NOT NULL PRIMARY KEY", "name TEXT NOT NULL", "endpoint TEXT", "apiKey TEXT"]
         creation_sql = f"CREATE TABLE IF NOT EXISTS {self.llm_table_name} ({', '.join(columns)})"
         self.cursor.execute(creation_sql)
-
-        rows_to_insert = []
-        for provider, models in self.llm_full_dict.items():
-            for model in models:
-                llm_id = f"{provider}::{model}"
-                endpoint = self.llm_endpoint_dict[provider]
-                api_key = self.api_key_dict[provider]
-                rows_to_insert.append([llm_id, model, endpoint, api_key])
-
-        self.cursor.executemany(f"""
-            INSERT OR IGNORE INTO {self.llm_table_name} (ID, name, endpoint, apiKey)
-            VALUES (?, ?, ?, ?)
-        """, rows_to_insert)
         self.connection.commit()
+
+        # 从数据库加载配置到内存字典
+        self._load_llm_configs_from_db()
 
     def _create_prompt_table(self):
         if not self._check_existence(self.prompt_table_name):
@@ -102,22 +73,30 @@ class DataLoader:
             if os.path.exists(prompt_path):
                 with open(prompt_path, 'r', encoding='utf-8') as f:
                     prompt_dict = json.load(f)
+
+                # 从数据库获取所有 LLM 配置
+                all_llm_rows = self.fetch_all_config()
                 rows_to_insert = []
                 for prompt_type in prompt_dict:
                     for provider in prompt_dict[prompt_type]:
-                        for model_name in self.llm_full_dict.get(provider, []):
-                            prompt_id = f"{provider}::{model_name}::0::{prompt_type}"
-                            llm_id = f"{provider}::{model_name}"
+                        for llm_id, name, endpoint, api_key in all_llm_rows:
+                            # 匹配 provider（LLM ID 的 :: 之前部分）
+                            llm_provider = llm_id.split("::", 1)[0] if "::" in llm_id else "Custom"
+                            if llm_provider != provider:
+                                continue
+                            prompt_id = f"{llm_id}::0::{prompt_type}"
                             version = 0
                             template = ""
                             for key, value in prompt_dict[prompt_type][provider].items():
                                 template += key + ":\n\n" + value + "\n\n"
                             rows_to_insert.append([prompt_id, llm_id, version, template, prompt_type])
-                self.cursor.executemany(f"""
-                    INSERT INTO {self.prompt_table_name} (ID, llmID, version, template, promptType)
-                    VALUES (?, ?, ?, ?, ?)
-                """, rows_to_insert)
-                self.connection.commit()
+
+                if rows_to_insert:
+                    self.cursor.executemany(f"""
+                        INSERT INTO {self.prompt_table_name} (ID, llmID, version, template, promptType)
+                        VALUES (?, ?, ?, ?, ?)
+                    """, rows_to_insert)
+                    self.connection.commit()
 
     def _create_conversation_table(self):
         if not self._check_existence(self.conversation_table_name):
@@ -138,8 +117,7 @@ class DataLoader:
                 "requestText TEXT NOT NULL", "contextText TEXT NOT NULL", "requestTime TEXT NOT NULL",
                 "typeMessage TEXT NOT NULL", "responseText TEXT", "responseTime TEXT",
                 "workflow TEXT", "executionLog TEXT",
-                f"FOREIGN KEY (conversationID) REFERENCES {self.conversation_table_name}(ID)",
-                f"FOREIGN KEY (promptID) REFERENCES {self.prompt_table_name}(ID)"
+                f"FOREIGN KEY (conversationID) REFERENCES {self.conversation_table_name}(ID)"
             ]
             sql = f"CREATE TABLE IF NOT EXISTS {self.interaction_table_name} ({', '.join(columns)})"
             self.cursor.execute(sql)
@@ -152,11 +130,41 @@ class DataLoader:
             sql = f"CREATE TABLE IF NOT EXISTS {self.credential_table_name} ({', '.join(columns)})"
             self.cursor.execute(sql)
 
+    def _load_llm_configs_from_db(self):
+        """从数据库加载所有 LLM 配置到内存字典"""
+        rows = self.fetch_all_config()
+        self.llm_full_dict = {}
+        self.llm_endpoint_dict = {}
+        self.api_key_dict = {}
+        for row in rows:
+            llm_id, name, endpoint, api_key = row
+            provider = llm_id.split("::", 1)[0] if "::" in llm_id else "Custom"
+            self.llm_full_dict.setdefault(provider, []).append(name)
+            self.llm_endpoint_dict[provider] = endpoint
+            self.api_key_dict[provider] = api_key
+
+    def reload_llm_config(self):
+        """重新从数据库加载 LLM 配置（保存设置后调用）"""
+        self._load_llm_configs_from_db()
+
+    def fetch_llm_list(self):
+        rows = self.fetch_all_config()
+        return [row[0] for row in rows]
+
+    def fetch_llm_info(self, llm_id):
+        sql = f"SELECT name, endpoint, apiKey FROM {self.llm_table_name} WHERE ID = ?"
+        self.cursor.execute(sql, (llm_id,))
+        row = self.cursor.fetchone()
+        if row:
+            return row[0], row[1], row[2]
+        return "default", "", ""
+
     def get_llm_info(self, llm_id):
-        provider, model_name = llm_id.split("::", 1)
-        if provider in self.llm_full_dict and model_name in self.llm_full_dict[provider]:
-            return provider, model_name
-        return "default", "default"
+        if "::" in llm_id:
+            provider, model_name = llm_id.split("::", 1)
+        else:
+            provider, model_name = "Custom", llm_id
+        return provider, model_name
 
     def insert_conversation_info(self, conversation_info_dict):
         colnames = ", ".join(self.conversation_table_colname)
@@ -268,6 +276,21 @@ class DataLoader:
                 processed.append(list(row) + [int(packed["ID"][len(packed["conversationID"]):])])
         sorted_rows = sorted(processed, key=lambda x: x[-1])
         return sorted_rows[-1][:-1]
+
+    def update_llm_config(self, llm_id, name, endpoint, api_key):
+        sql = f"UPDATE {self.llm_table_name} SET name=?, endpoint=?, apiKey=? WHERE ID=?"
+        self.cursor.execute(sql, (name, endpoint, api_key, llm_id))
+        self.connection.commit()
+
+    def insert_llm_config(self, llm_id, name, endpoint, api_key):
+        sql = f"INSERT OR REPLACE INTO {self.llm_table_name} (ID, name, endpoint, apiKey) VALUES (?, ?, ?, ?)"
+        self.cursor.execute(sql, (llm_id, name, endpoint, api_key))
+        self.connection.commit()
+
+    def delete_llm_config(self, llm_id):
+        sql = f"DELETE FROM {self.llm_table_name} WHERE ID=?"
+        self.cursor.execute(sql, (llm_id,))
+        self.connection.commit()
 
     def close(self):
         if self.connection:

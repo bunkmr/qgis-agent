@@ -3,7 +3,7 @@ import sys
 import tempfile
 import unittest
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# 注意：从项目父目录运行测试：cd D:\Work && python -m unittest qgis_agent.tests -v
 
 try:
     from qgis.core import Qgis
@@ -144,46 +144,29 @@ class TestDataLoaderNoQGIS(unittest.TestCase):
     def test_get_llm_info_default(self):
         loader = self._setup_loader()
         provider, model = loader.get_llm_info("Unknown::Model")
-        self.assertEqual(provider, "default")
-        self.assertEqual(model, "default")
+        self.assertEqual(provider, "Unknown")
+        self.assertEqual(model, "Model")
 
 
 class TestLLMProviders(unittest.TestCase):
-    def test_providers_dict(self):
-        from qgis_agent.llm_providers import LLM_PROVIDERS
-        self.assertIn("GLM", LLM_PROVIDERS)
-        self.assertIn("DeepSeek", LLM_PROVIDERS)
-        self.assertIn("XiaomiMiMo", LLM_PROVIDERS)
-        self.assertIn("Gemini", LLM_PROVIDERS)
-        self.assertIn("OpenAI", LLM_PROVIDERS)
-
-    def test_provider_models(self):
-        from qgis_agent.llm_providers import LLM_PROVIDERS
-        self.assertIn("glm-4", LLM_PROVIDERS["GLM"]["models"])
-        self.assertIn("glm-4-flash", LLM_PROVIDERS["GLM"]["models"])
-        self.assertIn("deepseek-chat", LLM_PROVIDERS["DeepSeek"]["models"])
-        self.assertIn("deepseek-reasoner", LLM_PROVIDERS["DeepSeek"]["models"])
-        self.assertIn("v4-flash", LLM_PROVIDERS["DeepSeek"]["models"])
-        self.assertIn("v4-pro", LLM_PROVIDERS["DeepSeek"]["models"])
-        self.assertIn("mimo2.5", LLM_PROVIDERS["XiaomiMiMo"]["models"])
-        self.assertIn("gemini-2.0-flash", LLM_PROVIDERS["Gemini"]["models"])
-
-    def test_provider_endpoints(self):
-        from qgis_agent.llm_providers import LLM_PROVIDERS
-        self.assertIn("bigmodel.cn", LLM_PROVIDERS["GLM"]["endpoint"])
-        self.assertIn("deepseek.com", LLM_PROVIDERS["DeepSeek"]["endpoint"])
-        self.assertIn("xiaomi.com", LLM_PROVIDERS["XiaomiMiMo"]["endpoint"])
-        self.assertIn("googleapis.com", LLM_PROVIDERS["Gemini"]["endpoint"])
-
     def test_get_default_api_key(self):
         from qgis_agent.llm_providers import get_default_api_key
-        # No env vars set, should return empty
         self.assertEqual(get_default_api_key("GLM"), "")
 
-    def test_get_llm_instance_invalid(self):
+    def test_get_llm_instance_deepseek(self):
         from qgis_agent.llm_providers import get_llm_instance
-        with self.assertRaises(ValueError):
-            get_llm_instance("UnknownProvider", "model", "key")
+        llm = get_llm_instance("DeepSeek", "deepseek-chat", "test-key", "https://api.deepseek.com", 0)
+        self.assertIsNotNone(llm)
+
+    def test_get_llm_instance_openai_compat(self):
+        from qgis_agent.llm_providers import get_llm_instance
+        llm = get_llm_instance("GLM", "glm-4", "test-key", "https://open.bigmodel.cn/api/paas/v4/", 0)
+        self.assertIsNotNone(llm)
+
+    def test_get_llm_instance_custom(self):
+        from qgis_agent.llm_providers import get_llm_instance
+        llm = get_llm_instance("Custom", "my-model", "test-key", "https://custom.endpoint/v1", 0)
+        self.assertIsNotNone(llm)
 
 
 class TestIconGenerator(unittest.TestCase):

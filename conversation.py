@@ -7,6 +7,8 @@ from .processor import Processor
 class Conversation(QObject):
     llm_response = pyqtSignal(str, str, str)
     llm_reflection = pyqtSignal(str, str, str)
+    llm_thinking = pyqtSignal(str)  # 流式思考内容
+    llm_tool_status = pyqtSignal(str)  # 工具调用状态
     llm_interrupted = pyqtSignal(str)
 
     def __init__(self, conversation_id: str, dataloader):
@@ -15,8 +17,10 @@ class Conversation(QObject):
         self.meta_info = meta_info
         self.dataloader = dataloader
         self.llm_finished = True
-        self.provider, self.model_name = dataloader.get_llm_info(self.llm_id)
-        self.processor = Processor(self.llm_id, self.conversation_id, dataloader)
+        self.provider, self.model_name = dataloader.get_llm_info(self.llmID)
+        self.processor = Processor(self.llmID, self.ID, dataloader)
+        self.processor.thinking.connect(self.llm_thinking.emit)
+        self.processor.tool_status.connect(self.llm_tool_status.emit)
         self.modified = get_current_timestamp()
         self.code_list = []
 
@@ -72,9 +76,15 @@ class Conversation(QObject):
     def lastEdit(self, value):
         self.meta_info["modified"] = value
 
+    def stop(self):
+        """中断当前正在进行的 LLM 调用"""
+        if self.processor:
+            self.processor.cancel()
+        self.llm_finished = True
+
     def update_user_prompt(self, message, response_type):
         if self.llm_finished:
-            self.messageCount += 1
+            self.messageCount += 1  # 在发送时 +1，不再在回调中重复 +1
             return self._update_llm_response(message, response_type)
 
     def _update_llm_response(self, message, response_type):
@@ -85,8 +95,12 @@ class Conversation(QObject):
 
     def _on_response_ready(self, message, response_type, response, workflow):
         self.processor.response_ready.disconnect(self._on_response_ready)
+        # 始终断开 error_signal，防止连接泄漏
+        try:
+            self.processor.error_signal.disconnect(self._on_response_interrupted)
+        except TypeError:
+            pass
         self.llm_finished = True
-        self.messageCount += 1
         self.modified = get_current_timestamp()
         self.llm_response.emit(response, workflow, None)
 
@@ -118,13 +132,13 @@ class Conversation(QObject):
 
     def update_reflection(self, log_message: str, executed_code: str, response_type: str = "code"):
         if self.llm_finished:
-            self.messageCount += 1
+            self.messageCount += 1  # 在发送时 +1，不再在回调中重复 +1
             self.llm_finished = False
             self.processor.reflection_ready.connect(self._on_reflection_ready)
             self.processor.async_reflect(log_message, executed_code, response_type)
 
     def _on_reflection_ready(self, log_message, response_type, response, workflow):
+        self.processor.reflection_ready.disconnect(self._on_reflection_ready)
         self.llm_finished = True
-        self.messageCount += 1
         self.modified = get_current_timestamp()
         self.llm_reflection.emit(response, workflow, None)

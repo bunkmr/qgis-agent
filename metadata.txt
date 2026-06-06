@@ -1,22 +1,22 @@
 [general]
 name=QGIS Agent
 qgisMinimumVersion=3.0
-description=QGIS Agent 是一个集成大语言模型的QGIS插件，支持GLM、DeepSeek、Xiaomi MiMo等模型，可辅助生成PyQGIS代码和地理处理工作流。
+description=将大语言模型 (LLM) 嵌入 QGIS 的智能助手插件。用自然语言操控 QGIS，支持 DeepSeek、OpenAI、GLM、Gemini、MiMo 等模型，内置 11 个 QGIS 工具，支持图层管理、空间分析、地图渲染等。
 version=1.0.0
-author=测绘工程部
+author=QGIS Agent Contributors
 email=
 
-about=QGIS Agent 是一个基于大语言模型（LLM）的QGIS智能助手插件。\n\n主要功能：\n- 支持多种LLM模型（GLM、DeepSeek、Xiaomi MiMo、Gemini等）\n- 智能对话生成PyQGIS代码\n- 自动创建地理处理工作流\n- 对话历史管理与检索\n- 代码调试与错误修正
+about=QGIS Agent 是一个基于大语言模型（LLM）的 QGIS 智能助手插件。\n\n主要功能：\n- 自然语言操控 QGIS，无需编写代码\n- 支持多种 LLM（DeepSeek、OpenAI、GLM、Gemini、MiMo 等）\n- 11 个内置 QGIS 工具：图层管理、空间分析、地图渲染\n- 对话持久化（SQLite）与长期记忆\n- 线程安全架构，不阻塞 UI
 
-tracker=
-repository=
+tracker=https://github.com/your-username/qgis-agent/issues
+repository=https://github.com/your-username/qgis-agent
 
 hasProcessingProvider=no
-changelog=1.0.0 初始版本，支持GLM、DeepSeek、Xiaomi MiMo
+changelog=1.0.0 初始版本
 
-tags=AI, LLM, 大语言模型, PyQGIS, 地理处理
+tags=AI, LLM, Agent, PyQGIS, 地理处理, 智能助手, DeepSeek, OpenAI
 
-homepage=
+homepage=https://github.com/your-username/qgis-agent
 category=Plugins
 icon=icon.png
 experimental=True

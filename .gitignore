@@ -30,5 +30,13 @@ Thumbs.db
 .env
 *.db
 
-# Build
+# Runtime artifacts
+MEMORY.md
 extlibs/
+
+# Build output
+*.zip
+
+# Dev tools
+.codebuddy/
+.codebuddy/
