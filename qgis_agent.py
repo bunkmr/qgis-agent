@@ -145,6 +145,10 @@ class QGISAgent:
         )
         from .config import DB_NAME, PLUGIN_NAME
 
+        # 先创建 dockwidget（后续信号连接依赖它）
+        if self.dockwidget is None:
+            self.dockwidget = QGISAgentDockWidget()
+
         # 在主线程中初始化工具调度桥接器（必须在任何工具调用前完成）
         from .qgis_tools import _init_main_thread_bridge, set_code_confirm_callback, set_skip_all_confirms
         _init_main_thread_bridge()
@@ -164,9 +168,6 @@ class QGISAgent:
 
         # ── 初始化 RAG 索引（首次自动构建） ──
         self._init_rag_index()
-
-        if self.dockwidget is None:
-            self.dockwidget = QGISAgentDockWidget()
 
         self.dockwidget.closingPlugin.connect(self.onClosePlugin)
         self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
