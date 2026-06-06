@@ -1,1 +1,44 @@
-ZnJvbSBQeVF0NSBpbXBvcnQgUXRDb3JlLCBRdEd1aSwgUXRXaWRnZXRzCgoKY2xhc3MgVWlfU2V0dGluZ3NEaWFsb2cob2JqZWN0KToKICAgIGRlZiBzZXR1cFVpKHNlbGYsIERpYWxvZyk6CiAgICAgICAgRGlhbG9nLnNldE9iamVjdE5hbWUoIkRpYWxvZyIpCiAgICAgICAgRGlhbG9nLnNldFdpbmRvd1RpdGxlKCLlpKfmqKHlnovphY3nva4gLSBRR0lTIEFnZW50IikKICAgICAgICBEaWFsb2cucmVzaXplKDgwMCwgNTAwKQoKICAgICAgICBzZWxmLnZlcnRpY2FsTGF5b3V0ID0gUXRXaWRnZXRzLlFWQm94TGF5b3V0KERpYWxvZykKICAgICAgICBzZWxmLnZlcnRpY2FsTGF5b3V0LnNldFNwYWNpbmcoOCkKCiAgICAgICAgc2VsZi5sYmxIaW50ID0gUXRXaWRnZXRzLlFMYWJlbCgi5Zyo5q2k566h55CG5omA5pyJ5aSn5qih5Z6L6YWN572u44CC5Y+v57yW6L6R5qih5Z6L5ZCN56ew44CBQVBJ5Zyw5Z2A5ZKMS2V577yM5L+u5pS55ZCO54K55Ye75L+d5a2Y44CCIikKICAgICAgICBzZWxmLmxibEhpbnQuc2V0V29yZFdyYXAoVHJ1ZSkKICAgICAgICBzZWxmLmxibEhpbnQuc2V0U3R5bGVTaGVldCgiY29sb3I6ICM2NjY7IikKCiAgICAgICAgc2VsZi50YWJsZSA9IFF0V2lkZ2V0cy5RVGFibGVXaWRnZXQoKQogICAgICAgIHNlbGYudGFibGUuc2V0Q29sdW1uQ291bnQoNCkKICAgICAgICBzZWxmLnRhYmxlLnNldEhvcml6b250YWxIZWFkZXJMYWJlbHMoWyLmqKHlnovlkI3np7AiLCAiQVBJIOerr+eCuSIsICJBUEkgS2V5IiwgIiJdKQogICAgICAgIHNlbGYudGFibGUuaG9yaXpvbnRhbEhlYWRlcigpLnNldFN0cmV0Y2hMYXN0U2VjdGlvbihGYWxzZSkKICAgICAgICBzZWxmLnRhYmxlLmhvcml6b250YWxIZWFkZXIoKS5zZXRTZWN0aW9uUmVzaXplTW9kZSgwLCBRdFdpZGdldHMuUUhlYWRlclZpZXcuU3RyZXRjaCkKICAgICAgICBzZWxmLnRhYmxlLmhvcml6b250YWxIZWFkZXIoKS5zZXRTZWN0aW9uUmVzaXplTW9kZSgxLCBRdFdpZGdldHMuUUhlYWRlclZpZXcuU3RyZXRjaCkKICAgICAgICBzZWxmLnRhYmxlLmhvcml6b250YWxIZWFkZXIoKS5zZXRTZWN0aW9uUmVzaXplTW9kZSgyLCBRdFdpZGdldHMuUUhlYWRlclZpZXcuU3RyZXRjaCkKICAgICAgICBzZWxmLnRhYmxlLnNldENvbHVtbldpZHRoKDMsIDYwKQogICAgICAgIHNlbGYudGFibGUudmVydGljYWxIZWFkZXIoKS5zZXRWaXNpYmxlKEZhbHNlKQogICAgICAgIHNlbGYudGFibGUuc2V0U2VsZWN0aW9uQmVoYXZpb3IoUXRXaWRnZXRzLlFBYnN0cmFjdEl0ZW1WaWV3LlNlbGVjdFJvd3MpCgogICAgICAgIHNlbGYuYnRuQWRkID0gUXRXaWRnZXRzLlFQdXNoQnV0dG9uKCIrIOa3u+WKoOaooeWeiyIpCiAgICAgICAgc2VsZi5idG5BZGQuc2V0U3R5bGVTaGVldCgiUVB1c2hCdXR0b24geyBiYWNrZ3JvdW5kLWNvbG9yOiAjNUNCODVDOyBjb2xvcjogd2hpdGU7IGJvcmRlci1yYWRpdXM6IDRweDsgcGFkZGluZzogNnB4IDE2cHg7IH0gUVB1c2hCdXR0b246aG92ZXIgeyBiYWNrZ3JvdW5kLWNvbG9yOiAjNENBRTRDOyB9IikKCiAgICAgICAgc2VsZi5idXR0b25MYXlvdXQgPSBRdFdpZGdldHMuUUhCb3hMYXlvdXQoKQogICAgICAgIHNlbGYuYnV0dG9uTGF5b3V0LmFkZFdpZGdldChzZWxmLmJ0bkFkZCkKICAgICAgICBzZWxmLmJ1dHRvbkxheW91dC5hZGRTdHJldGNoKCkKICAgICAgICBzZWxmLnBiU2F2ZSA9IFF0V2lkZ2V0cy5RUHVzaEJ1dHRvbigi5L+d5a2YIikKICAgICAgICBzZWxmLnBiU2F2ZS5zZXRTdHlsZVNoZWV0KCJRUHVzaEJ1dHRvbiB7IGJhY2tncm91bmQtY29sb3I6ICM0QTkwRDk7IGNvbG9yOiB3aGl0ZTsgYm9yZGVyLXJhZGl1czogNHB4OyBwYWRkaW5nOiA2cHggMjRweDsgfSBRUHVzaEJ1dHRvbjpob3ZlciB7IGJhY2tncm91bmQtY29sb3I6ICMzNTdBQkQ7IH0iKQogICAgICAgIHNlbGYucGJDYW5jZWwgPSBRdFdpZGdldHMuUVB1c2hCdXR0b24oIuWPlua2iCIpCiAgICAgICAgc2VsZi5idXR0b25MYXlvdXQuYWRkV2lkZ2V0KHNlbGYucGJTYXZlKQogICAgICAgIHNlbGYuYnV0dG9uTGF5b3V0LmFkZFdpZGdldChzZWxmLnBiQ2FuY2VsKQoKICAgICAgICBzZWxmLnZlcnRpY2FsTGF5b3V0LmFkZFdpZGdldChzZWxmLmxibEhpbnQpCiAgICAgICAgc2VsZi52ZXJ0aWNhbExheW91dC5hZGRXaWRnZXQoc2VsZi50YWJsZSkKICAgICAgICBzZWxmLnZlcnRpY2FsTGF5b3V0LmFkZExheW91dChzZWxmLmJ1dHRvbkxheW91dCkKCiAgICAgICAgUXRDb3JlLlFNZXRhT2JqZWN0LmNvbm5lY3RTbG90c0J5TmFtZShEaWFsb2cpCg==
+from PyQt5 import QtCore, QtGui, QtWidgets
+
+
+class Ui_SettingsDialog(object):
+    def setupUi(self, Dialog):
+        Dialog.setObjectName("Dialog")
+        Dialog.setWindowTitle("大模型配置 - QGIS Agent")
+        Dialog.resize(800, 500)
+
+        self.verticalLayout = QtWidgets.QVBoxLayout(Dialog)
+        self.verticalLayout.setSpacing(8)
+
+        self.lblHint = QtWidgets.QLabel("在此管理所有大模型配置。可编辑模型名称、API地址和Key，修改后点击保存。")
+        self.lblHint.setWordWrap(True)
+        self.lblHint.setStyleSheet("color: #666;")
+
+        self.table = QtWidgets.QTableWidget()
+        self.table.setColumnCount(4)
+        self.table.setHorizontalHeaderLabels(["模型名称", "API 端点", "API Key", ""])
+        self.table.horizontalHeader().setStretchLastSection(False)
+        self.table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
+        self.table.setColumnWidth(3, 60)
+        self.table.verticalHeader().setVisible(False)
+        self.table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+
+        self.btnAdd = QtWidgets.QPushButton("+ 添加模型")
+        self.btnAdd.setStyleSheet("QPushButton { background-color: #5CB85C; color: white; border-radius: 4px; padding: 6px 16px; } QPushButton:hover { background-color: #4CAE4C; }")
+
+        self.buttonLayout = QtWidgets.QHBoxLayout()
+        self.buttonLayout.addWidget(self.btnAdd)
+        self.buttonLayout.addStretch()
+        self.pbSave = QtWidgets.QPushButton("保存")
+        self.pbSave.setStyleSheet("QPushButton { background-color: #4A90D9; color: white; border-radius: 4px; padding: 6px 24px; } QPushButton:hover { background-color: #357ABD; }")
+        self.pbCancel = QtWidgets.QPushButton("取消")
+        self.buttonLayout.addWidget(self.pbSave)
+        self.buttonLayout.addWidget(self.pbCancel)
+
+        self.verticalLayout.addWidget(self.lblHint)
+        self.verticalLayout.addWidget(self.table)
+        self.verticalLayout.addLayout(self.buttonLayout)
+
+        QtCore.QMetaObject.connectSlotsByName(Dialog)

@@ -1,1 +1,24 @@
-IyBDb25maWd1cmF0aW9uIGZpbGUgZm9yIHRoZSBTcGhpbnggZG9jdW1lbnRhdGlvbiBidWlsZGVyLg0KaW1wb3J0IG9zDQppbXBvcnQgc3lzDQoNCnByb2plY3QgPSAnUUdJUyBBZ2VudCcNCmNvcHlyaWdodCA9ICcyMDI2LCBRR0lTIEFnZW50IENvbnRyaWJ1dG9ycycNCmF1dGhvciA9ICdRR0lTIEFnZW50IENvbnRyaWJ1dG9ycycNCnJlbGVhc2UgPSAnMS4wLjAnDQoNCmV4dGVuc2lvbnMgPSBbDQogICAgJ3NwaGlueC5leHQuYXV0b2RvYycsDQogICAgJ3NwaGlueC5leHQubmFwb2xlb24nLA0KICAgICdzcGhpbnguZXh0LnZpZXdjb2RlJywNCiAgICAnc3BoaW54LmV4dC5pbnRlcnNwaGlueCcsDQpdDQoNCnRlbXBsYXRlc19wYXRoID0gWydfdGVtcGxhdGVzJ10NCmV4Y2x1ZGVfcGF0dGVybnMgPSBbXQ0KDQpsYW5ndWFnZSA9ICd6aF9DTicNCg0KaHRtbF90aGVtZSA9ICdzcGhpbnhfcnRkX3RoZW1lJw0KaHRtbF9zdGF0aWNfcGF0aCA9IFsnX3N0YXRpYyddDQpodG1sX3RpdGxlID0gJ1FHSVMgQWdlbnQg5paH5qGjJw0K
+# Configuration file for the Sphinx documentation builder.
+import os
+import sys
+
+project = 'QGIS Agent'
+copyright = '2026, QGIS Agent Contributors'
+author = 'QGIS Agent Contributors'
+release = '1.0.0'
+
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.viewcode',
+    'sphinx.ext.intersphinx',
+]
+
+templates_path = ['_templates']
+exclude_patterns = []
+
+language = 'zh_CN'
+
+html_theme = 'sphinx_rtd_theme'
+html_static_path = ['_static']
+html_title = 'QGIS Agent 文档'

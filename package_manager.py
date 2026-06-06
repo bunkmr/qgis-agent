@@ -1,1 +1,68 @@
-aW1wb3J0IHN1YnByb2Nlc3MKaW1wb3J0IHN5cwppbXBvcnQgb3MKCgpjbGFzcyBQYWNrYWdlTWFuYWdlcjoKICAgIGRlZiBfX2luaXRfXyhzZWxmLCByZXF1aXJlZF9tb2R1bGVzKToKICAgICAgICBzZWxmLnJlcXVpcmVkX21vZHVsZXMgPSByZXF1aXJlZF9tb2R1bGVzCiAgICAgICAgc2VsZi5taXNzaW5nID0gW10KCiAgICBkZWYgY2hlY2tfZGVwZW5kZW5jaWVzKHNlbGYpOgogICAgICAgIHNlbGYubWlzc2luZyA9IFtdCiAgICAgICAgZm9yIG1vZHVsZSBpbiBzZWxmLnJlcXVpcmVkX21vZHVsZXM6CiAgICAgICAgICAgIHRyeToKICAgICAgICAgICAgICAgIF9faW1wb3J0X18obW9kdWxlKQogICAgICAgICAgICBleGNlcHQgSW1wb3J0RXJyb3I6CiAgICAgICAgICAgICAgICBzZWxmLm1pc3NpbmcuYXBwZW5kKG1vZHVsZSkKICAgICAgICByZXR1cm4gc2VsZi5taXNzaW5nCgogICAgZGVmIGluc3RhbGxfbWlzc2luZyhzZWxmKToKICAgICAgICBpZiBub3Qgc2VsZi5taXNzaW5nOgogICAgICAgICAgICByZXR1cm4gVHJ1ZQogICAgICAgIHRyeToKICAgICAgICAgICAgcHl0aG9uX2V4ZSA9IHNlbGYuX2ZpbmRfcHl0aG9uKCkKICAgICAgICAgICAgaWYgbm90IHB5dGhvbl9leGU6CiAgICAgICAgICAgICAgICByZXR1cm4gRmFsc2UKICAgICAgICAgICAgZm9yIG1vZHVsZSBpbiBzZWxmLm1pc3Npbmc6CiAgICAgICAgICAgICAgICBzdWJwcm9jZXNzLmNoZWNrX2NhbGwoCiAgICAgICAgICAgICAgICAgICAgW3B5dGhvbl9leGUsICItbSIsICJwaXAiLCAiaW5zdGFsbCIsIG1vZHVsZSwgIi0tdXNlciIsICItLXF1aWV0Il0sCiAgICAgICAgICAgICAgICAgICAgc3Rkb3V0PXN1YnByb2Nlc3MuREVWTlVMTCwKICAgICAgICAgICAgICAgICAgICBzdGRlcnI9c3VicHJvY2Vzcy5ERVZOVUxMLAogICAgICAgICAgICAgICAgKQogICAgICAgICAgICBzZWxmLm1pc3NpbmcgPSBbXQogICAgICAgICAgICByZXR1cm4gVHJ1ZQogICAgICAgIGV4Y2VwdCBFeGNlcHRpb246CiAgICAgICAgICAgIHJldHVybiBGYWxzZQoKICAgIGRlZiBfZmluZF9weXRob24oc2VsZik6CiAgICAgICAgY2FuZGlkYXRlcyA9IFsKICAgICAgICAgICAgb3MucGF0aC5qb2luKG9zLnBhdGguZGlybmFtZShzeXMuZXhlY3V0YWJsZSksICJweXRob24uZXhlIiksCiAgICAgICAgICAgIHN5cy5leGVjdXRhYmxlLAogICAgICAgICAgICByIkM6XE9TR2VvNFdcYmluXHB5dGhvbi5leGUiLAogICAgICAgICAgICByIkM6XFByb2dyYW0gRmlsZXNcUUdJUyAzLjM0LjRcYmluXHB5dGhvbi5leGUiLAogICAgICAgICAgICByIkM6XFByb2dyYW0gRmlsZXNcUUdJUyAzLjM0XGJpblxweXRob24uZXhlIiwKICAgICAgICAgICAgciJDOlxQcm9ncmFtIEZpbGVzXFFHSVMgMy4zMlxiaW5ccHl0aG9uLmV4ZSIsCiAgICAgICAgICAgIHIiQzpcUHJvZ3JhbSBGaWxlc1xRR0lTIDMuMzBcYmluXHB5dGhvbi5leGUiLAogICAgICAgICAgICByIkM6XFByb2dyYW0gRmlsZXNcUUdJUyAzLjI4XGJpblxweXRob24uZXhlIiwKICAgICAgICAgICAgInB5dGhvbiIsCiAgICAgICAgICAgICJweXRob24zIiwKICAgICAgICBdCiAgICAgICAgc2VlbiA9IHNldCgpCiAgICAgICAgZm9yIGV4ZSBpbiBjYW5kaWRhdGVzOgogICAgICAgICAgICBpZiBleGUgaW4gc2VlbjoKICAgICAgICAgICAgICAgIGNvbnRpbnVlCiAgICAgICAgICAgIHNlZW4uYWRkKGV4ZSkKICAgICAgICAgICAgaWYgbm90IG9zLnBhdGguaXNmaWxlKGV4ZSkgYW5kIGV4ZSBub3QgaW4gKCJweXRob24iLCAicHl0aG9uMyIpOgogICAgICAgICAgICAgICAgY29udGludWUKICAgICAgICAgICAgdHJ5OgogICAgICAgICAgICAgICAgc3VicHJvY2Vzcy5jaGVja19jYWxsKAogICAgICAgICAgICAgICAgICAgIFtleGUsICItYyIsICJpbXBvcnQgcGlwOyBwcmludCgnb2snKSJdLAogICAgICAgICAgICAgICAgICAgIHN0ZG91dD1zdWJwcm9jZXNzLkRFVk5VTEwsCiAgICAgICAgICAgICAgICAgICAgc3RkZXJyPXN1YnByb2Nlc3MuREVWTlVMTCwKICAgICAgICAgICAgICAgICAgICB0aW1lb3V0PTEwLAogICAgICAgICAgICAgICAgKQogICAgICAgICAgICAgICAgcmV0dXJuIGV4ZQogICAgICAgICAgICBleGNlcHQgRXhjZXB0aW9uOgogICAgICAgICAgICAgICAgY29udGludWUKICAgICAgICByZXR1cm4gTm9uZQo=
+import subprocess
+import sys
+import os
+
+
+class PackageManager:
+    def __init__(self, required_modules):
+        self.required_modules = required_modules
+        self.missing = []
+
+    def check_dependencies(self):
+        self.missing = []
+        for module in self.required_modules:
+            try:
+                __import__(module)
+            except ImportError:
+                self.missing.append(module)
+        return self.missing
+
+    def install_missing(self):
+        if not self.missing:
+            return True
+        try:
+            python_exe = self._find_python()
+            if not python_exe:
+                return False
+            for module in self.missing:
+                subprocess.check_call(
+                    [python_exe, "-m", "pip", "install", module, "--user", "--quiet"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+            self.missing = []
+            return True
+        except Exception:
+            return False
+
+    def _find_python(self):
+        candidates = [
+            os.path.join(os.path.dirname(sys.executable), "python.exe"),
+            sys.executable,
+            r"C:\OSGeo4W\bin\python.exe",
+            r"C:\Program Files\QGIS 3.34.4\bin\python.exe",
+            r"C:\Program Files\QGIS 3.34\bin\python.exe",
+            r"C:\Program Files\QGIS 3.32\bin\python.exe",
+            r"C:\Program Files\QGIS 3.30\bin\python.exe",
+            r"C:\Program Files\QGIS 3.28\bin\python.exe",
+            "python",
+            "python3",
+        ]
+        seen = set()
+        for exe in candidates:
+            if exe in seen:
+                continue
+            seen.add(exe)
+            if not os.path.isfile(exe) and exe not in ("python", "python3"):
+                continue
+            try:
+                subprocess.check_call(
+                    [exe, "-c", "import pip; print('ok')"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=10,
+                )
+                return exe
+            except Exception:
+                continue
+        return None

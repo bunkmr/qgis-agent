@@ -1,1 +1,371 @@
-IyAtKi0gY29kaW5nOiB1dGYtOCAtKi0NCiIiIg0KU1FMaXRlIEZUUzUg5paH5qGj5a2Y5YKoIOKAlCDpm7bpop3lpJbkvp3otZbnmoTmnKzlnLDlhajmlofmo4DntKLjgIINCg0K6KGo57uT5p6EOg0KLSBweXFnaXNfYXBpX2RvY3M6ICAgICBBUEkg5paH5qGj57uT5p6E5YyW5a2Y5YKoDQotIHB5cWdpc19hcGlfZnRzOiAgICAgIEZUUzUg5YWo5paH57Si5byV77yI5YWz6IGUIHB5cWdpc19hcGlfZG9jc++8iQ0KLSBjb29rYm9va19lbnRyaWVzOiAgICAg5oiQ5Yqf5qGI5L6L5b2S5qGj77yIQ29va2Jvb2vvvIkNCi0gY29va2Jvb2tfZnRzOiAgICAgICAgIENvb2tib29rIEZUUzUg5YWo5paH57Si5byVDQoiIiINCg0KaW1wb3J0IG9zDQppbXBvcnQgc3FsaXRlMw0KaW1wb3J0IGpzb24NCmltcG9ydCB0aHJlYWRpbmcNCmZyb20gdHlwaW5nIGltcG9ydCBPcHRpb25hbA0KDQoNCmNsYXNzIERvY1N0b3JlOg0KICAgICIiIuacrOWcsCBTUUxpdGUgRlRTNSDmlofmoaPlrZjlgqjnrqHnkIblmajjgIINCg0KICAgIOe6v+eoi+WuieWFqO+8muavj+S4quW3peS9nOe6v+eoi+mcgOmAmui/hyBnZXRfY29ubmVjdGlvbigpIOiOt+WPlueLrOeri+i/nuaOpeOAgg0KICAgICIiIg0KDQogICAgZGVmIF9faW5pdF9fKHNlbGYsIGRiX3BhdGg6IHN0ciA9IE5vbmUpOg0KICAgICAgICBpZiBkYl9wYXRoIGlzIE5vbmU6DQogICAgICAgICAgICAjIOm7mOiupOWtmOWCqOWcqOaPkuS7tiBkYXRhIOebruW9leS4iw0KICAgICAgICAgICAgcGx1Z2luX2RpciA9IG9zLnBhdGguZGlybmFtZShvcy5wYXRoLmRpcm5hbWUoX19maWxlX18pKQ0KICAgICAgICAgICAgZGJfcGF0aCA9IG9zLnBhdGguam9pbihwbHVnaW5fZGlyLCAiZGF0YSIsICJweXFnaXNfYXBpLmRiIikNCiAgICAgICAgc2VsZi5kYl9wYXRoID0gZGJfcGF0aA0KICAgICAgICBzZWxmLl9sb2NhbCA9IHRocmVhZGluZy5sb2NhbCgpDQogICAgICAgIHNlbGYuX2Vuc3VyZV90YWJsZXMoKQ0KDQogICAgIyDilIDilIAg57q/56iL5a6J5YWo6L+e5o6lIOKUgOKUgA0KDQogICAgZGVmIGdldF9jb25uZWN0aW9uKHNlbGYpIC0+IHNxbGl0ZTMuQ29ubmVjdGlvbjoNCiAgICAgICAgIiIi6I635Y+W5b2T5YmN57q/56iL55qEIFNRTGl0ZSDov57mjqXvvIjoh6rliqjliJvlu7rvvIkiIiINCiAgICAgICAgaWYgbm90IGhhc2F0dHIoc2VsZi5fbG9jYWwsICJjb25uIikgb3Igc2VsZi5fbG9jYWwuY29ubiBpcyBOb25lOg0KICAgICAgICAgICAgc2VsZi5fbG9jYWwuY29ubiA9IHNxbGl0ZTMuY29ubmVjdChzZWxmLmRiX3BhdGgpDQogICAgICAgICAgICBzZWxmLl9sb2NhbC5jb25uLnJvd19mYWN0b3J5ID0gc3FsaXRlMy5Sb3cNCiAgICAgICAgICAgIHNlbGYuX2xvY2FsLmNvbm4uZXhlY3V0ZSgiUFJBR01BIGpvdXJuYWxfbW9kZT1XQUwiKQ0KICAgICAgICAgICAgc2VsZi5fbG9jYWwuY29ubi5leGVjdXRlKCJQUkFHTUEgZm9yZWlnbl9rZXlzPU9OIikNCiAgICAgICAgcmV0dXJuIHNlbGYuX2xvY2FsLmNvbm4NCg0KICAgIGRlZiBjbG9zZShzZWxmKToNCiAgICAgICAgIiIi5YWz6Zet5b2T5YmN57q/56iL55qE6L+e5o6lIiIiDQogICAgICAgIGlmIGhhc2F0dHIoc2VsZi5fbG9jYWwsICJjb25uIikgYW5kIHNlbGYuX2xvY2FsLmNvbm46DQogICAgICAgICAgICBzZWxmLl9sb2NhbC5jb25uLmNsb3NlKCkNCiAgICAgICAgICAgIHNlbGYuX2xvY2FsLmNvbm4gPSBOb25lDQoNCiAgICAjIOKUgOKUgCDooajliJ3lp4vljJYg4pSA4pSADQoNCiAgICBkZWYgX2Vuc3VyZV90YWJsZXMoc2VsZik6DQogICAgICAgICIiIuehruS/neaJgOacieW/heimgeeahOihqOW3suWIm+W7uiIiIg0KICAgICAgICBvcy5tYWtlZGlycyhvcy5wYXRoLmRpcm5hbWUoc2VsZi5kYl9wYXRoKSwgZXhpc3Rfb2s9VHJ1ZSkNCiAgICAgICAgY29ubiA9IHNlbGYuZ2V0X2Nvbm5lY3Rpb24oKQ0KDQogICAgICAgICMgQVBJIOaWh+aho+S4u+ihqA0KICAgICAgICBjb25uLmV4ZWN1dGUoIiIiDQogICAgICAgICAgICBDUkVBVEUgVEFCTEUgSUYgTk9UIEVYSVNUUyBweXFnaXNfYXBpX2RvY3MgKA0KICAgICAgICAgICAgICAgIGlkIElOVEVHRVIgUFJJTUFSWSBLRVkgQVVUT0lOQ1JFTUVOVCwNCiAgICAgICAgICAgICAgICBjbGFzc19uYW1lIFRFWFQgTk9UIE5VTEwsDQogICAgICAgICAgICAgICAgbWV0aG9kX25hbWUgVEVYVCwNCiAgICAgICAgICAgICAgICBmdWxsX3NpZ25hdHVyZSBURVhUIE5PVCBOVUxMLA0KICAgICAgICAgICAgICAgIGRlc2NyaXB0aW9uIFRFWFQgREVGQVVMVCAnJywNCiAgICAgICAgICAgICAgICBwYXJhbWV0ZXJzIFRFWFQgREVGQVVMVCAnW10nLA0KICAgICAgICAgICAgICAgIHJldHVybl90eXBlIFRFWFQgREVGQVVMVCAnJywNCiAgICAgICAgICAgICAgICBleGFtcGxlX2NvZGUgVEVYVCBERUZBVUxUICcnLA0KICAgICAgICAgICAgICAgIHNvdXJjZSBURVhUIERFRkFVTFQgJ3J1bnRpbWUnLA0KICAgICAgICAgICAgICAgIHZlcnNpb25fYWRkZWQgVEVYVCBERUZBVUxUICcnLA0KICAgICAgICAgICAgICAgIGRlcHJlY2F0ZWQgSU5URUdFUiBERUZBVUxUIDAsDQogICAgICAgICAgICAgICAgY3JlYXRlZF9hdCBURVhUIERFRkFVTFQgKGRhdGV0aW1lKCdub3cnKSksDQogICAgICAgICAgICAgICAgVU5JUVVFKGNsYXNzX25hbWUsIG1ldGhvZF9uYW1lKQ0KICAgICAgICAgICAgKQ0KICAgICAgICAiIiIpDQoNCiAgICAgICAgIyBGVFM1IOWFqOaWh+e0ouW8le+8iOeLrOeri+ihqO+8jOWGheWuueWQjOatpe+8iQ0KICAgICAgICBjb25uLmV4ZWN1dGUoIiIiDQogICAgICAgICAgICBDUkVBVEUgVklSVFVBTCBUQUJMRSBJRiBOT1QgRVhJU1RTIHB5cWdpc19hcGlfZnRzIFVTSU5HIGZ0czUoDQogICAgICAgICAgICAgICAgY2xhc3NfbmFtZSwgbWV0aG9kX25hbWUsIGZ1bGxfc2lnbmF0dXJlLCBkZXNjcmlwdGlvbiwgZXhhbXBsZV9jb2RlLA0KICAgICAgICAgICAgICAgIGNvbnRlbnQ9J3B5cWdpc19hcGlfZG9jcycsDQogICAgICAgICAgICAgICAgY29udGVudF9yb3dpZD0naWQnLA0KICAgICAgICAgICAgICAgIHRva2VuaXplPSd1bmljb2RlNjEgcmVtb3ZlX2RpYWNyaXRpY3MgMScNCiAgICAgICAgICAgICkNCiAgICAgICAgIiIiKQ0KDQogICAgICAgICMgQ29va2Jvb2sg5qGI5L6L6KGoDQogICAgICAgIGNvbm4uZXhlY3V0ZSgiIiINCiAgICAgICAgICAgIENSRUFURSBUQUJMRSBJRiBOT1QgRVhJU1RTIGNvb2tib29rX2VudHJpZXMgKA0KICAgICAgICAgICAgICAgIGlkIElOVEVHRVIgUFJJTUFSWSBLRVkgQVVUT0lOQ1JFTUVOVCwNCiAgICAgICAgICAgICAgICB0YXNrX3N1bW1hcnkgVEVYVCBOT1QgTlVMTCwNCiAgICAgICAgICAgICAgICB1c2VyX2lucHV0IFRFWFQgTk9UIE5VTEwsDQogICAgICAgICAgICAgICAgdG9vbHNfdXNlZCBURVhUIERFRkFVTFQgJ1tdJywNCiAgICAgICAgICAgICAgICBjb2RlX3NuaXBwZXQgVEVYVCBERUZBVUxUICcnLA0KICAgICAgICAgICAgICAgIHN1Y2Nlc3NfcmF0aW5nIElOVEVHRVIgREVGQVVMVCA1LA0KICAgICAgICAgICAgICAgIGNvbXBsZXhpdHlfcmF0aW5nIElOVEVHRVIgREVGQVVMVCAzLA0KICAgICAgICAgICAgICAgIHF1YWxpdHlfc2NvcmUgUkVBTCBERUZBVUxUIDE1LjAsDQogICAgICAgICAgICAgICAgY3JlYXRlZF9hdCBURVhUIERFRkFVTFQgKGRhdGV0aW1lKCdub3cnKSksDQogICAgICAgICAgICAgICAgdXNlX2NvdW50IElOVEVHRVIgREVGQVVMVCAxLA0KICAgICAgICAgICAgICAgIGxhc3RfdXNlZCBURVhUIERFRkFVTFQgKGRhdGV0aW1lKCdub3cnKSkNCiAgICAgICAgICAgICkNCiAgICAgICAgIiIiKQ0KDQogICAgICAgICMgQ29va2Jvb2sgRlRTNQ0KICAgICAgICBjb25uLmV4ZWN1dGUoIiIiDQogICAgICAgICAgICBDUkVBVEUgVklSVFVBTCBUQUJMRSBJRiBOT1QgRVhJU1RTIGNvb2tib29rX2Z0cyBVU0lORyBmdHM1KA0KICAgICAgICAgICAgICAgIHRhc2tfc3VtbWFyeSwgdXNlcl9pbnB1dCwgY29kZV9zbmlwcGV0LA0KICAgICAgICAgICAgICAgIGNvbnRlbnQ9J2Nvb2tib29rX2VudHJpZXMnLA0KICAgICAgICAgICAgICAgIGNvbnRlbnRfcm93aWQ9J2lkJywNCiAgICAgICAgICAgICAgICB0b2tlbml6ZT0ndW5pY29kZTYxIHJlbW92ZV9kaWFjcml0aWNzIDEnDQogICAgICAgICAgICApDQogICAgICAgICIiIikNCg0KICAgICAgICBjb25uLmNvbW1pdCgpDQoNCiAgICAjIOKUgOKUgCBBUEkg5paH5qGjIENSVUQg4pSA4pSADQoNCiAgICBkZWYgaW5zZXJ0X2FwaV9kb2Moc2VsZiwgZG9jOiBkaWN0KSAtPiBpbnQ6DQogICAgICAgICIiIuaPkuWFpeaIluabtOaWsOS4gOadoSBBUEkg5paH5qGj6K6w5b2V44CC6L+U5ZueIHJvd2lk44CCIiIiDQogICAgICAgIGNvbm4gPSBzZWxmLmdldF9jb25uZWN0aW9uKCkNCiAgICAgICAgcGFyYW1zID0gKA0KICAgICAgICAgICAgZG9jLmdldCgiY2xhc3NfbmFtZSIsICIiKSwNCiAgICAgICAgICAgIGRvYy5nZXQoIm1ldGhvZF9uYW1lIiwgIiIpLA0KICAgICAgICAgICAgZG9jLmdldCgiZnVsbF9zaWduYXR1cmUiLCAiIiksDQogICAgICAgICAgICBkb2MuZ2V0KCJkZXNjcmlwdGlvbiIsICIiKSwNCiAgICAgICAgICAgIGpzb24uZHVtcHMoZG9jLmdldCgicGFyYW1ldGVycyIsIFtdKSwgZW5zdXJlX2FzY2lpPUZhbHNlKSwNCiAgICAgICAgICAgIGRvYy5nZXQoInJldHVybl90eXBlIiwgIiIpLA0KICAgICAgICAgICAgZG9jLmdldCgiZXhhbXBsZV9jb2RlIiwgIiIpLA0KICAgICAgICAgICAgZG9jLmdldCgic291cmNlIiwgInJ1bnRpbWUiKSwNCiAgICAgICAgICAgIGRvYy5nZXQoInZlcnNpb25fYWRkZWQiLCAiIiksDQogICAgICAgICAgICBkb2MuZ2V0KCJkZXByZWNhdGVkIiwgMCksDQogICAgICAgICkNCiAgICAgICAgY29ubi5leGVjdXRlKCIiIg0KICAgICAgICAgICAgSU5TRVJUIElOVE8gcHlxZ2lzX2FwaV9kb2NzDQogICAgICAgICAgICAgICAgKGNsYXNzX25hbWUsIG1ldGhvZF9uYW1lLCBmdWxsX3NpZ25hdHVyZSwgZGVzY3JpcHRpb24sDQogICAgICAgICAgICAgICAgIHBhcmFtZXRlcnMsIHJldHVybl90eXBlLCBleGFtcGxlX2NvZGUsIHNvdXJjZSwgdmVyc2lvbl9hZGRlZCwgZGVwcmVjYXRlZCkNCiAgICAgICAgICAgIFZBTFVFUyAoPywgPywgPywgPywgPywgPywgPywgPywgPywgPykNCiAgICAgICAgICAgIE9OIENPTkZMSUNUKGNsYXNzX25hbWUsIG1ldGhvZF9uYW1lKSBETyBVUERBVEUgU0VUDQogICAgICAgICAgICAgICAgZnVsbF9zaWduYXR1cmU9ZXhjbHVkZWQuZnVsbF9zaWduYXR1cmUsDQogICAgICAgICAgICAgICAgZGVzY3JpcHRpb249ZXhjbHVkZWQuZGVzY3JpcHRpb24sDQogICAgICAgICAgICAgICAgcGFyYW1ldGVycz1leGNsdWRlZC5wYXJhbWV0ZXJzLA0KICAgICAgICAgICAgICAgIHJldHVybl90eXBlPWV4Y2x1ZGVkLnJldHVybl90eXBlLA0KICAgICAgICAgICAgICAgIGV4YW1wbGVfY29kZT1leGNsdWRlZC5leGFtcGxlX2NvZGUsDQogICAgICAgICAgICAgICAgZGVwcmVjYXRlZD1leGNsdWRlZC5kZXByZWNhdGVkDQogICAgICAgICIiIiwgcGFyYW1zKQ0KICAgICAgICBjb25uLmNvbW1pdCgpDQogICAgICAgIHJldHVybiBjb25uLmV4ZWN1dGUoIlNFTEVDVCBsYXN0X2luc2VydF9yb3dpZCgpIikuZmV0Y2hvbmUoKVswXQ0KDQogICAgZGVmIGluc2VydF9iYXRjaChzZWxmLCBkb2NzOiBsaXN0KToNCiAgICAgICAgIiIi5om56YeP5o+S5YWlIEFQSSDmlofmoaMiIiINCiAgICAgICAgY29ubiA9IHNlbGYuZ2V0X2Nvbm5lY3Rpb24oKQ0KICAgICAgICBmb3IgZG9jIGluIGRvY3M6DQogICAgICAgICAgICB0cnk6DQogICAgICAgICAgICAgICAgc2VsZi5pbnNlcnRfYXBpX2RvYyhkb2MpDQogICAgICAgICAgICBleGNlcHQgRXhjZXB0aW9uOg0KICAgICAgICAgICAgICAgIHBhc3MNCiAgICAgICAgY29ubi5jb21taXQoKQ0KICAgICAgICAjIOmHjeW7uiBGVFM1IOe0ouW8lQ0KICAgICAgICBjb25uLmV4ZWN1dGUoIklOU0VSVCBJTlRPIHB5cWdpc19hcGlfZnRzKHB5cWdpc19hcGlfZnRzKSBWQUxVRVMoJ3JlYnVpbGQnKSIpDQogICAgICAgIGNvbm4uY29tbWl0KCkNCg0KICAgIGRlZiBnZXRfYXBpX2NvdW50KHNlbGYpIC0+IGludDoNCiAgICAgICAgIiIi6I635Y+WIEFQSSDmlofmoaPmgLvmlbAiIiINCiAgICAgICAgY29ubiA9IHNlbGYuZ2V0X2Nvbm5lY3Rpb24oKQ0KICAgICAgICByZXR1cm4gY29ubi5leGVjdXRlKCJTRUxFQ1QgQ09VTlQoKikgRlJPTSBweXFnaXNfYXBpX2RvY3MiKS5mZXRjaG9uZSgpWzBdDQoNCiAgICAjIOKUgOKUgCBGVFM1IOajgOe0oiDilIDilIANCg0KICAgIGRlZiBzZWFyY2hfZnRzKHNlbGYsIHF1ZXJ5OiBzdHIsIHRvcF9rOiBpbnQgPSA1KSAtPiBsaXN0Og0KICAgICAgICAiIiJGVFM1IOWFqOaWh+aQnOe0oiBBUEkg5paH5qGj44CCDQoNCiAgICAgICAgQXJnczoNCiAgICAgICAgICAgIHF1ZXJ5OiDmkJzntKLlhbPplK7or43vvIjmlK/mjIHlpJror43vvIzoh6rliqggT1Ig6L+e5o6l77yJDQogICAgICAgICAgICB0b3Bfazog6L+U5Zue57uT5p6c5pWw6YePDQoNCiAgICAgICAgUmV0dXJuczoNCiAgICAgICAgICAgIFt7ImNsYXNzX25hbWUiOiAuLi4sICJtZXRob2RfbmFtZSI6IC4uLiwgImZ1bGxfc2lnbmF0dXJlIjogLi4uLCAiZGVzY3JpcHRpb24iOiAuLi4sIC4uLn0sIC4uLl0NCiAgICAgICAgIiIiDQogICAgICAgIGNvbm4gPSBzZWxmLmdldF9jb25uZWN0aW9uKCkNCiAgICAgICAgIyDlsIbnqbrmoLzliIbpmpTnmoTlhbPplK7or43ovazkuLogRlRTNSBPUiDmn6Xor6INCiAgICAgICAga2V5d29yZHMgPSBbay5zdHJpcCgpIGZvciBrIGluIHF1ZXJ5LnNwbGl0KCkgaWYgay5zdHJpcCgpXQ0KICAgICAgICBpZiBub3Qga2V5d29yZHM6DQogICAgICAgICAgICByZXR1cm4gW10NCiAgICAgICAgZnRzX3F1ZXJ5ID0gIiBPUiAiLmpvaW4oa2V5d29yZHMpDQoNCiAgICAgICAgdHJ5Og0KICAgICAgICAgICAgcm93cyA9IGNvbm4uZXhlY3V0ZSgiIiINCiAgICAgICAgICAgICAgICBTRUxFQ1QgZC5pZCwgZC5jbGFzc19uYW1lLCBkLm1ldGhvZF9uYW1lLCBkLmZ1bGxfc2lnbmF0dXJlLA0KICAgICAgICAgICAgICAgICAgICAgICBkLmRlc2NyaXB0aW9uLCBkLnBhcmFtZXRlcnMsIGQucmV0dXJuX3R5cGUsIGQuZXhhbXBsZV9jb2RlLA0KICAgICAgICAgICAgICAgICAgICAgICBkLnNvdXJjZSwgZC52ZXJzaW9uX2FkZGVkLCBkLmRlcHJlY2F0ZWQNCiAgICAgICAgICAgICAgICBGUk9NIHB5cWdpc19hcGlfZnRzIGYNCiAgICAgICAgICAgICAgICBKT0lOIHB5cWdpc19hcGlfZG9jcyBkIE9OIGYucm93aWQgPSBkLmlkDQogICAgICAgICAgICAgICAgV0hFUkUgcHlxZ2lzX2FwaV9mdHMgTUFUQ0ggPw0KICAgICAgICAgICAgICAgIE9SREVSIEJZIHJhbmsNCiAgICAgICAgICAgICAgICBMSU1JVCA/DQogICAgICAgICAgICAiIiIsIChmdHNfcXVlcnksIHRvcF9rKSkuZmV0Y2hhbGwoKQ0KDQogICAgICAgICAgICByZXR1cm4gW2RpY3Qocm93KSBmb3Igcm93IGluIHJvd3NdDQogICAgICAgIGV4Y2VwdCBzcWxpdGUzLk9wZXJhdGlvbmFsRXJyb3I6DQogICAgICAgICAgICAjIEZUUzUg5p+l6K+i6K+t5rOV6ZSZ6K+v5pe25Zue6YCA5YiwIExJS0Ug5pCc57SiDQogICAgICAgICAgICByZXR1cm4gc2VsZi5fZmFsbGJhY2tfbGlrZV9zZWFyY2gocXVlcnksIHRvcF9rKQ0KDQogICAgZGVmIF9mYWxsYmFja19saWtlX3NlYXJjaChzZWxmLCBxdWVyeTogc3RyLCB0b3BfazogaW50ID0gNSkgLT4gbGlzdDoNCiAgICAgICAgIiIiRlRTNSDlpLHotKXml7bnmoQgTElLRSDlm57pgIDmkJzntKIiIiINCiAgICAgICAgY29ubiA9IHNlbGYuZ2V0X2Nvbm5lY3Rpb24oKQ0KICAgICAgICBrZXl3b3JkcyA9IFtrLnN0cmlwKCkgZm9yIGsgaW4gcXVlcnkuc3BsaXQoKSBpZiBrLnN0cmlwKCldDQogICAgICAgIGlmIG5vdCBrZXl3b3JkczoNCiAgICAgICAgICAgIHJldHVybiBbXQ0KDQogICAgICAgIGNvbmRpdGlvbnMgPSAiIE9SICIuam9pbihbDQogICAgICAgICAgICAiZnVsbF9zaWduYXR1cmUgTElLRSA/IE9SIGRlc2NyaXB0aW9uIExJS0UgPyBPUiBjbGFzc19uYW1lIExJS0UgPyINCiAgICAgICAgXSAqIGxlbihrZXl3b3JkcykpDQogICAgICAgIHBhcmFtcyA9IFtdDQogICAgICAgIGZvciBrdyBpbiBrZXl3b3JkczoNCiAgICAgICAgICAgIHBhcmFtcy5leHRlbmQoW2YiJXtrd30lIiwgZiIle2t3fSUiLCBmIiV7a3d9JSJdKQ0KDQogICAgICAgIHJvd3MgPSBjb25uLmV4ZWN1dGUoZiIiIg0KICAgICAgICAgICAgU0VMRUNUICogRlJPTSBweXFnaXNfYXBpX2RvY3MNCiAgICAgICAgICAgIFdIRVJFIHtjb25kaXRpb25zfQ0KICAgICAgICAgICAgTElNSVQgPw0KICAgICAgICAiIiIsIHBhcmFtcyArIFt0b3Bfa10pLmZldGNoYWxsKCkNCg0KICAgICAgICByZXR1cm4gW2RpY3Qocm93KSBmb3Igcm93IGluIHJvd3NdDQoNCiAgICBkZWYgc2VhcmNoX2J5X2NsYXNzKHNlbGYsIGNsYXNzX25hbWU6IHN0ciwgdG9wX2s6IGludCA9IDIwKSAtPiBsaXN0Og0KICAgICAgICAiIiLmjInnsbvlkI3mkJzntKLmiYDmnInmlrnms5UiIiINCiAgICAgICAgY29ubiA9IHNlbGYuZ2V0X2Nvbm5lY3Rpb24oKQ0KICAgICAgICByb3dzID0gY29ubi5leGVjdXRlKCIiIg0KICAgICAgICAgICAgU0VMRUNUICogRlJPTSBweXFnaXNfYXBpX2RvY3MNCiAgICAgICAgICAgIFdIRVJFIGNsYXNzX25hbWUgPSA/DQogICAgICAgICAgICBPUkRFUiBCWSBtZXRob2RfbmFtZQ0KICAgICAgICAgICAgTElNSVQgPw0KICAgICAgICAiIiIsIChjbGFzc19uYW1lLCB0b3BfaykpLmZldGNoYWxsKCkNCiAgICAgICAgcmV0dXJuIFtkaWN0KHJvdykgZm9yIHJvdyBpbiByb3dzXQ0KDQogICAgIyDilIDilIAgQ29va2Jvb2sgQ1JVRCDilIDilIANCg0KICAgIGRlZiBpbnNlcnRfY29va2Jvb2tfZW50cnkoc2VsZiwgZW50cnk6IGRpY3QpIC0+IGludDoNCiAgICAgICAgIiIi5o+S5YWl5LiA5p2hIENvb2tib29rIOahiOS+i+OAgui/lOWbniByb3dpZOOAgg0KDQogICAgICAgIEFyZ3M6DQogICAgICAgICAgICBlbnRyeTogew0KICAgICAgICAgICAgICAgICJ0YXNrX3N1bW1hcnkiOiAi5a+55Zu+5bGC5YGa57yT5Yay5Yy65YiG5p6QIiwNCiAgICAgICAgICAgICAgICAidXNlcl9pbnB1dCI6ICLluK7miJHlgZogMTAwIOexs+e8k+WGsuWMuiIsDQogICAgICAgICAgICAgICAgInRvb2xzX3VzZWQiOiBbImV4ZWN1dGVfcHlxZ2lzIl0sDQogICAgICAgICAgICAgICAgImNvZGVfc25pcHBldCI6ICJidWZmZXJfcmVzdWx0ID0gLi4uIiwNCiAgICAgICAgICAgICAgICAic3VjY2Vzc19yYXRpbmciOiA1LA0KICAgICAgICAgICAgICAgICJjb21wbGV4aXR5X3JhdGluZyI6IDMsDQogICAgICAgICAgICB9DQogICAgICAgICIiIg0KICAgICAgICBjb25uID0gc2VsZi5nZXRfY29ubmVjdGlvbigpDQogICAgICAgIHF1YWxpdHlfc2NvcmUgPSBlbnRyeS5nZXQoInF1YWxpdHlfc2NvcmUiLCAwLjApDQogICAgICAgIGlmIHF1YWxpdHlfc2NvcmUgPT0gMC4wOg0KICAgICAgICAgICAgcXVhbGl0eV9zY29yZSA9ICgNCiAgICAgICAgICAgICAgICBlbnRyeS5nZXQoInN1Y2Nlc3NfcmF0aW5nIiwgNSkNCiAgICAgICAgICAgICAgICAqIGVudHJ5LmdldCgiY29tcGxleGl0eV9yYXRpbmciLCAzKQ0KICAgICAgICAgICAgKQ0KDQogICAgICAgIGNvbm4uZXhlY3V0ZSgiIiINCiAgICAgICAgICAgIElOU0VSVCBJTlRPIGNvb2tib29rX2VudHJpZXMNCiAgICAgICAgICAgICAgICAodGFza19zdW1tYXJ5LCB1c2VyX2lucHV0LCB0b29sc191c2VkLCBjb2RlX3NuaXBwZXQsDQogICAgICAgICAgICAgICAgIHN1Y2Nlc3NfcmF0aW5nLCBjb21wbGV4aXR5X3JhdGluZywgcXVhbGl0eV9zY29yZSkNCiAgICAgICAgICAgIFZBTFVFUyAoPywgPywgPywgPywgPywgPywgPykNCiAgICAgICAgIiIiLCAoDQogICAgICAgICAgICBlbnRyeS5nZXQoInRhc2tfc3VtbWFyeSIsICIiKSwNCiAgICAgICAgICAgIGVudHJ5LmdldCgidXNlcl9pbnB1dCIsICIiKSwNCiAgICAgICAgICAgIGpzb24uZHVtcHMoZW50cnkuZ2V0KCJ0b29sc191c2VkIiwgW10pLCBlbnN1cmVfYXNjaWk9RmFsc2UpLA0KICAgICAgICAgICAgZW50cnkuZ2V0KCJjb2RlX3NuaXBwZXQiLCAiIiksDQogICAgICAgICAgICBlbnRyeS5nZXQoInN1Y2Nlc3NfcmF0aW5nIiwgNSksDQogICAgICAgICAgICBlbnRyeS5nZXQoImNvbXBsZXhpdHlfcmF0aW5nIiwgMyksDQogICAgICAgICAgICBxdWFsaXR5X3Njb3JlLA0KICAgICAgICApKQ0KICAgICAgICBjb25uLmNvbW1pdCgpDQogICAgICAgIHJldHVybiBjb25uLmV4ZWN1dGUoIlNFTEVDVCBsYXN0X2luc2VydF9yb3dpZCgpIikuZmV0Y2hvbmUoKVswXQ0KDQogICAgZGVmIHNlYXJjaF9jb29rYm9vayhzZWxmLCBxdWVyeTogc3RyLCB0b3BfazogaW50ID0gMykgLT4gbGlzdDoNCiAgICAgICAgIiIi5pCc57SiIENvb2tib29rIOahiOS+i+OAgg0KDQogICAgICAgIOWFiOeUqCBGVFM1IOaQnO+8jOWksei0peWImeWbnumAgOWIsCBMSUtF44CCDQogICAgICAgIOe7k+aenOaMiSBxdWFsaXR5X3Njb3JlIOmZjeW6j+aOkuWIl+OAgg0KICAgICAgICAiIiINCiAgICAgICAgY29ubiA9IHNlbGYuZ2V0X2Nvbm5lY3Rpb24oKQ0KICAgICAgICBrZXl3b3JkcyA9IFtrLnN0cmlwKCkgZm9yIGsgaW4gcXVlcnkuc3BsaXQoKSBpZiBrLnN0cmlwKCldDQogICAgICAgIGlmIG5vdCBrZXl3b3JkczoNCiAgICAgICAgICAgIHJldHVybiBzZWxmLl9nZXRfdG9wX2Nvb2tib29rKHRvcF9rKQ0KDQogICAgICAgIGZ0c19xdWVyeSA9ICIgT1IgIi5qb2luKGtleXdvcmRzKQ0KICAgICAgICB0cnk6DQogICAgICAgICAgICByb3dzID0gY29ubi5leGVjdXRlKCIiIg0KICAgICAgICAgICAgICAgIFNFTEVDVCBjLmlkLCBjLnRhc2tfc3VtbWFyeSwgYy51c2VyX2lucHV0LCBjLnRvb2xzX3VzZWQsDQogICAgICAgICAgICAgICAgICAgICAgIGMuY29kZV9zbmlwcGV0LCBjLnN1Y2Nlc3NfcmF0aW5nLCBjLmNvbXBsZXhpdHlfcmF0aW5nLA0KICAgICAgICAgICAgICAgICAgICAgICBjLnF1YWxpdHlfc2NvcmUsIGMudXNlX2NvdW50DQogICAgICAgICAgICAgICAgRlJPTSBjb29rYm9va19mdHMgZg0KICAgICAgICAgICAgICAgIEpPSU4gY29va2Jvb2tfZW50cmllcyBjIE9OIGYucm93aWQgPSBjLmlkDQogICAgICAgICAgICAgICAgV0hFUkUgY29va2Jvb2tfZnRzIE1BVENIID8NCiAgICAgICAgICAgICAgICBPUkRFUiBCWSBjLnF1YWxpdHlfc2NvcmUgREVTQw0KICAgICAgICAgICAgICAgIExJTUlUID8NCiAgICAgICAgICAgICIiIiwgKGZ0c19xdWVyeSwgdG9wX2spKS5mZXRjaGFsbCgpDQogICAgICAgICAgICBpZiByb3dzOg0KICAgICAgICAgICAgICAgICMg5pu05paw5L2/55So6K6h5pWwDQogICAgICAgICAgICAgICAgaWRzID0gW3Jvd1swXSBmb3Igcm93IGluIHJvd3NdDQogICAgICAgICAgICAgICAgY29ubi5leGVjdXRlbWFueSgNCiAgICAgICAgICAgICAgICAgICAgIlVQREFURSBjb29rYm9va19lbnRyaWVzIFNFVCB1c2VfY291bnQ9dXNlX2NvdW50KzEsIGxhc3RfdXNlZD1kYXRldGltZSgnbm93JykgV0hFUkUgaWQ9PyIsDQogICAgICAgICAgICAgICAgICAgIFsoaSwpIGZvciBpIGluIGlkc10NCiAgICAgICAgICAgICAgICApDQogICAgICAgICAgICAgICAgY29ubi5jb21taXQoKQ0KICAgICAgICAgICAgICAgIHJldHVybiBbZGljdChyb3cpIGZvciByb3cgaW4gcm93c10NCiAgICAgICAgZXhjZXB0IHNxbGl0ZTMuT3BlcmF0aW9uYWxFcnJvcjoNCiAgICAgICAgICAgIHBhc3MNCg0KICAgICAgICByZXR1cm4gc2VsZi5fZmFsbGJhY2tfY29va2Jvb2tfbGlrZShxdWVyeSwgdG9wX2spDQoNCiAgICBkZWYgX2ZhbGxiYWNrX2Nvb2tib29rX2xpa2Uoc2VsZiwgcXVlcnk6IHN0ciwgdG9wX2s6IGludCA9IDMpIC0+IGxpc3Q6DQogICAgICAgICIiIkNvb2tib29rIExJS0Ug5Zue6YCA5pCc57SiIiIiDQogICAgICAgIGNvbm4gPSBzZWxmLmdldF9jb25uZWN0aW9uKCkNCiAgICAgICAga2V5d29yZHMgPSBbay5zdHJpcCgpIGZvciBrIGluIHF1ZXJ5LnNwbGl0KCkgaWYgay5zdHJpcCgpXQ0KICAgICAgICBjb25kaXRpb25zID0gIiBPUiAiLmpvaW4oWyJ0YXNrX3N1bW1hcnkgTElLRSA/IE9SIHVzZXJfaW5wdXQgTElLRSA/Il0gKiBsZW4oa2V5d29yZHMpKQ0KICAgICAgICBwYXJhbXMgPSBbXQ0KICAgICAgICBmb3Iga3cgaW4ga2V5d29yZHM6DQogICAgICAgICAgICBwYXJhbXMuZXh0ZW5kKFtmIiV7a3d9JSIsIGYiJXtrd30lIl0pDQoNCiAgICAgICAgcm93cyA9IGNvbm4uZXhlY3V0ZShmIiIiDQogICAgICAgICAgICBTRUxFQ1QgKiBGUk9NIGNvb2tib29rX2VudHJpZXMNCiAgICAgICAgICAgIFdIRVJFIHtjb25kaXRpb25zfQ0KICAgICAgICAgICAgT1JERVIgQlkgcXVhbGl0eV9zY29yZSBERVNDDQogICAgICAgICAgICBMSU1JVCA/DQogICAgICAgICIiIiwgcGFyYW1zICsgW3RvcF9rXSkuZmV0Y2hhbGwoKQ0KICAgICAgICByZXR1cm4gW2RpY3Qocm93KSBmb3Igcm93IGluIHJvd3NdDQoNCiAgICBkZWYgX2dldF90b3BfY29va2Jvb2soc2VsZiwgdG9wX2s6IGludCA9IDMpIC0+IGxpc3Q6DQogICAgICAgICIiIuiOt+WPlui0qOmHj+ivhOWIhuacgOmrmOeahCBDb29rYm9vayDmoYjkvosiIiINCiAgICAgICAgY29ubiA9IHNlbGYuZ2V0X2Nvbm5lY3Rpb24oKQ0KICAgICAgICByb3dzID0gY29ubi5leGVjdXRlKCIiIg0KICAgICAgICAgICAgU0VMRUNUICogRlJPTSBjb29rYm9va19lbnRyaWVzDQogICAgICAgICAgICBPUkRFUiBCWSBxdWFsaXR5X3Njb3JlIERFU0MNCiAgICAgICAgICAgIExJTUlUID8NCiAgICAgICAgIiIiLCAodG9wX2ssKSkuZmV0Y2hhbGwoKQ0KICAgICAgICByZXR1cm4gW2RpY3Qocm93KSBmb3Igcm93IGluIHJvd3NdDQoNCiAgICBkZWYgZ2V0X2Nvb2tib29rX3N0YXRzKHNlbGYpIC0+IGRpY3Q6DQogICAgICAgICIiIuiOt+WPliBDb29rYm9vayDnu5/orqHkv6Hmga8iIiINCiAgICAgICAgY29ubiA9IHNlbGYuZ2V0X2Nvbm5lY3Rpb24oKQ0KICAgICAgICBjb3VudCA9IGNvbm4uZXhlY3V0ZSgiU0VMRUNUIENPVU5UKCopIEZST00gY29va2Jvb2tfZW50cmllcyIpLmZldGNob25lKClbMF0NCiAgICAgICAgaWYgY291bnQgPT0gMDoNCiAgICAgICAgICAgIHJldHVybiB7InRvdGFsIjogMCwgImF2Z19xdWFsaXR5IjogMC4wfQ0KICAgICAgICBhdmdfcSA9IGNvbm4uZXhlY3V0ZSgNCiAgICAgICAgICAgICJTRUxFQ1QgQVZHKHF1YWxpdHlfc2NvcmUpIEZST00gY29va2Jvb2tfZW50cmllcyINCiAgICAgICAgKS5mZXRjaG9uZSgpWzBdDQogICAgICAgIHJldHVybiB7InRvdGFsIjogY291bnQsICJhdmdfcXVhbGl0eSI6IHJvdW5kKGF2Z19xLCAxKX0NCg0KICAgICMg4pSA4pSAIOaVsOaNruW6k+eKtuaAgSDilIDilIANCg0KICAgIGRlZiBnZXRfc3RhdHMoc2VsZikgLT4gZGljdDoNCiAgICAgICAgIiIi6I635Y+W5a2Y5YKo57uf6K6h5L+h5oGvIiIiDQogICAgICAgIGNvbm4gPSBzZWxmLmdldF9jb25uZWN0aW9uKCkNCiAgICAgICAgYXBpX2NvdW50ID0gY29ubi5leGVjdXRlKCJTRUxFQ1QgQ09VTlQoKikgRlJPTSBweXFnaXNfYXBpX2RvY3MiKS5mZXRjaG9uZSgpWzBdDQogICAgICAgIGNvb2tib29rX2NvdW50ID0gY29ubi5leGVjdXRlKCJTRUxFQ1QgQ09VTlQoKikgRlJPTSBjb29rYm9va19lbnRyaWVzIikuZmV0Y2hvbmUoKVswXQ0KICAgICAgICByZXR1cm4gew0KICAgICAgICAgICAgImFwaV9kb2NzIjogYXBpX2NvdW50LA0KICAgICAgICAgICAgImNvb2tib29rX2VudHJpZXMiOiBjb29rYm9va19jb3VudCwNCiAgICAgICAgICAgICJkYl9wYXRoIjogc2VsZi5kYl9wYXRoLA0KICAgICAgICB9DQoNCiAgICBkZWYgY2xlYXJfYWxsKHNlbGYpOg0KICAgICAgICAiIiLmuIXnqbrmiYDmnInmlbDmja7vvIjnlKjkuo7ph43lu7rntKLlvJXvvIkiIiINCiAgICAgICAgY29ubiA9IHNlbGYuZ2V0X2Nvbm5lY3Rpb24oKQ0KICAgICAgICBjb25uLmV4ZWN1dGUoIkRFTEVURSBGUk9NIHB5cWdpc19hcGlfZG9jcyIpDQogICAgICAgIGNvbm4uZXhlY3V0ZSgiREVMRVRFIEZST00gY29va2Jvb2tfZW50cmllcyIpDQogICAgICAgIGNvbm4uZXhlY3V0ZSgiSU5TRVJUIElOVE8gcHlxZ2lzX2FwaV9mdHMocHlxZ2lzX2FwaV9mdHMpIFZBTFVFUygncmVidWlsZCcpIikNCiAgICAgICAgY29ubi5leGVjdXRlKCJJTlNFUlQgSU5UTyBjb29rYm9va19mdHMoY29va2Jvb2tfZnRzKSBWQUxVRVMoJ3JlYnVpbGQnKSIpDQogICAgICAgIGNvbm4uY29tbWl0KCkNCg==
+# -*- coding: utf-8 -*-
+"""
+SQLite FTS5 文档存储 — 零额外依赖的本地全文检索。
+
+表结构:
+- pyqgis_api_docs:     API 文档结构化存储
+- pyqgis_api_fts:      FTS5 全文索引（关联 pyqgis_api_docs）
+- cookbook_entries:     成功案例归档（Cookbook）
+- cookbook_fts:         Cookbook FTS5 全文索引
+"""
+
+import os
+import sqlite3
+import json
+import threading
+from typing import Optional
+
+
+class DocStore:
+    """本地 SQLite FTS5 文档存储管理器。
+
+    线程安全：每个工作线程需通过 get_connection() 获取独立连接。
+    """
+
+    def __init__(self, db_path: str = None):
+        if db_path is None:
+            # 默认存储在插件 data 目录下
+            plugin_dir = os.path.dirname(os.path.dirname(__file__))
+            db_path = os.path.join(plugin_dir, "data", "pyqgis_api.db")
+        self.db_path = db_path
+        self._local = threading.local()
+        self._ensure_tables()
+
+    # ── 线程安全连接 ──
+
+    def get_connection(self) -> sqlite3.Connection:
+        """获取当前线程的 SQLite 连接（自动创建）"""
+        if not hasattr(self._local, "conn") or self._local.conn is None:
+            self._local.conn = sqlite3.connect(self.db_path)
+            self._local.conn.row_factory = sqlite3.Row
+            self._local.conn.execute("PRAGMA journal_mode=WAL")
+            self._local.conn.execute("PRAGMA foreign_keys=ON")
+        return self._local.conn
+
+    def close(self):
+        """关闭当前线程的连接"""
+        if hasattr(self._local, "conn") and self._local.conn:
+            self._local.conn.close()
+            self._local.conn = None
+
+    # ── 表初始化 ──
+
+    def _ensure_tables(self):
+        """确保所有必要的表已创建"""
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        conn = self.get_connection()
+
+        # API 文档主表
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS pyqgis_api_docs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                class_name TEXT NOT NULL,
+                method_name TEXT,
+                full_signature TEXT NOT NULL,
+                description TEXT DEFAULT '',
+                parameters TEXT DEFAULT '[]',
+                return_type TEXT DEFAULT '',
+                example_code TEXT DEFAULT '',
+                source TEXT DEFAULT 'runtime',
+                version_added TEXT DEFAULT '',
+                deprecated INTEGER DEFAULT 0,
+                created_at TEXT DEFAULT (datetime('now')),
+                UNIQUE(class_name, method_name)
+            )
+        """)
+
+        # FTS5 全文索引（独立表，内容同步）
+        conn.execute("""
+            CREATE VIRTUAL TABLE IF NOT EXISTS pyqgis_api_fts USING fts5(
+                class_name, method_name, full_signature, description, example_code,
+                content='pyqgis_api_docs',
+                content_rowid='id',
+                tokenize='unicode61 remove_diacritics 1'
+            )
+        """)
+
+        # Cookbook 案例表
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS cookbook_entries (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                task_summary TEXT NOT NULL,
+                user_input TEXT NOT NULL,
+                tools_used TEXT DEFAULT '[]',
+                code_snippet TEXT DEFAULT '',
+                success_rating INTEGER DEFAULT 5,
+                complexity_rating INTEGER DEFAULT 3,
+                quality_score REAL DEFAULT 15.0,
+                created_at TEXT DEFAULT (datetime('now')),
+                use_count INTEGER DEFAULT 1,
+                last_used TEXT DEFAULT (datetime('now'))
+            )
+        """)
+
+        # Cookbook FTS5
+        conn.execute("""
+            CREATE VIRTUAL TABLE IF NOT EXISTS cookbook_fts USING fts5(
+                task_summary, user_input, code_snippet,
+                content='cookbook_entries',
+                content_rowid='id',
+                tokenize='unicode61 remove_diacritics 1'
+            )
+        """)
+
+        conn.commit()
+
+    # ── API 文档 CRUD ──
+
+    def insert_api_doc(self, doc: dict) -> int:
+        """插入或更新一条 API 文档记录。返回 rowid。"""
+        conn = self.get_connection()
+        params = (
+            doc.get("class_name", ""),
+            doc.get("method_name", ""),
+            doc.get("full_signature", ""),
+            doc.get("description", ""),
+            json.dumps(doc.get("parameters", []), ensure_ascii=False),
+            doc.get("return_type", ""),
+            doc.get("example_code", ""),
+            doc.get("source", "runtime"),
+            doc.get("version_added", ""),
+            doc.get("deprecated", 0),
+        )
+        conn.execute("""
+            INSERT INTO pyqgis_api_docs
+                (class_name, method_name, full_signature, description,
+                 parameters, return_type, example_code, source, version_added, deprecated)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(class_name, method_name) DO UPDATE SET
+                full_signature=excluded.full_signature,
+                description=excluded.description,
+                parameters=excluded.parameters,
+                return_type=excluded.return_type,
+                example_code=excluded.example_code,
+                deprecated=excluded.deprecated
+        """, params)
+        conn.commit()
+        return conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+    def insert_batch(self, docs: list):
+        """批量插入 API 文档"""
+        conn = self.get_connection()
+        for doc in docs:
+            try:
+                self.insert_api_doc(doc)
+            except Exception:
+                pass
+        conn.commit()
+        # 重建 FTS5 索引
+        conn.execute("INSERT INTO pyqgis_api_fts(pyqgis_api_fts) VALUES('rebuild')")
+        conn.commit()
+
+    def get_api_count(self) -> int:
+        """获取 API 文档总数"""
+        conn = self.get_connection()
+        return conn.execute("SELECT COUNT(*) FROM pyqgis_api_docs").fetchone()[0]
+
+    # ── FTS5 检索 ──
+
+    def search_fts(self, query: str, top_k: int = 5) -> list:
+        """FTS5 全文搜索 API 文档。
+
+        Args:
+            query: 搜索关键词（支持多词，自动 OR 连接）
+            top_k: 返回结果数量
+
+        Returns:
+            [{"class_name": ..., "method_name": ..., "full_signature": ..., "description": ..., ...}, ...]
+        """
+        conn = self.get_connection()
+        # 将空格分隔的关键词转为 FTS5 OR 查询
+        keywords = [k.strip() for k in query.split() if k.strip()]
+        if not keywords:
+            return []
+        fts_query = " OR ".join(keywords)
+
+        try:
+            rows = conn.execute("""
+                SELECT d.id, d.class_name, d.method_name, d.full_signature,
+                       d.description, d.parameters, d.return_type, d.example_code,
+                       d.source, d.version_added, d.deprecated
+                FROM pyqgis_api_fts f
+                JOIN pyqgis_api_docs d ON f.rowid = d.id
+                WHERE pyqgis_api_fts MATCH ?
+                ORDER BY rank
+                LIMIT ?
+            """, (fts_query, top_k)).fetchall()
+
+            return [dict(row) for row in rows]
+        except sqlite3.OperationalError:
+            # FTS5 查询语法错误时回退到 LIKE 搜索
+            return self._fallback_like_search(query, top_k)
+
+    def _fallback_like_search(self, query: str, top_k: int = 5) -> list:
+        """FTS5 失败时的 LIKE 回退搜索"""
+        conn = self.get_connection()
+        keywords = [k.strip() for k in query.split() if k.strip()]
+        if not keywords:
+            return []
+
+        conditions = " OR ".join([
+            "full_signature LIKE ? OR description LIKE ? OR class_name LIKE ?"
+        ] * len(keywords))
+        params = []
+        for kw in keywords:
+            params.extend([f"%{kw}%", f"%{kw}%", f"%{kw}%"])
+
+        rows = conn.execute(f"""
+            SELECT * FROM pyqgis_api_docs
+            WHERE {conditions}
+            LIMIT ?
+        """, params + [top_k]).fetchall()
+
+        return [dict(row) for row in rows]
+
+    def search_by_class(self, class_name: str, top_k: int = 20) -> list:
+        """按类名搜索所有方法"""
+        conn = self.get_connection()
+        rows = conn.execute("""
+            SELECT * FROM pyqgis_api_docs
+            WHERE class_name = ?
+            ORDER BY method_name
+            LIMIT ?
+        """, (class_name, top_k)).fetchall()
+        return [dict(row) for row in rows]
+
+    # ── Cookbook CRUD ──
+
+    def insert_cookbook_entry(self, entry: dict) -> int:
+        """插入一条 Cookbook 案例。返回 rowid。
+
+        Args:
+            entry: {
+                "task_summary": "对图层做缓冲区分析",
+                "user_input": "帮我做 100 米缓冲区",
+                "tools_used": ["execute_pyqgis"],
+                "code_snippet": "buffer_result = ...",
+                "success_rating": 5,
+                "complexity_rating": 3,
+            }
+        """
+        conn = self.get_connection()
+        quality_score = entry.get("quality_score", 0.0)
+        if quality_score == 0.0:
+            quality_score = (
+                entry.get("success_rating", 5)
+                * entry.get("complexity_rating", 3)
+            )
+
+        conn.execute("""
+            INSERT INTO cookbook_entries
+                (task_summary, user_input, tools_used, code_snippet,
+                 success_rating, complexity_rating, quality_score)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            entry.get("task_summary", ""),
+            entry.get("user_input", ""),
+            json.dumps(entry.get("tools_used", []), ensure_ascii=False),
+            entry.get("code_snippet", ""),
+            entry.get("success_rating", 5),
+            entry.get("complexity_rating", 3),
+            quality_score,
+        ))
+        conn.commit()
+        return conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+    def search_cookbook(self, query: str, top_k: int = 3) -> list:
+        """搜索 Cookbook 案例。
+
+        先用 FTS5 搜，失败则回退到 LIKE。
+        结果按 quality_score 降序排列。
+        """
+        conn = self.get_connection()
+        keywords = [k.strip() for k in query.split() if k.strip()]
+        if not keywords:
+            return self._get_top_cookbook(top_k)
+
+        fts_query = " OR ".join(keywords)
+        try:
+            rows = conn.execute("""
+                SELECT c.id, c.task_summary, c.user_input, c.tools_used,
+                       c.code_snippet, c.success_rating, c.complexity_rating,
+                       c.quality_score, c.use_count
+                FROM cookbook_fts f
+                JOIN cookbook_entries c ON f.rowid = c.id
+                WHERE cookbook_fts MATCH ?
+                ORDER BY c.quality_score DESC
+                LIMIT ?
+            """, (fts_query, top_k)).fetchall()
+            if rows:
+                # 更新使用计数
+                ids = [row[0] for row in rows]
+                conn.executemany(
+                    "UPDATE cookbook_entries SET use_count=use_count+1, last_used=datetime('now') WHERE id=?",
+                    [(i,) for i in ids]
+                )
+                conn.commit()
+                return [dict(row) for row in rows]
+        except sqlite3.OperationalError:
+            pass
+
+        return self._fallback_cookbook_like(query, top_k)
+
+    def _fallback_cookbook_like(self, query: str, top_k: int = 3) -> list:
+        """Cookbook LIKE 回退搜索"""
+        conn = self.get_connection()
+        keywords = [k.strip() for k in query.split() if k.strip()]
+        conditions = " OR ".join(["task_summary LIKE ? OR user_input LIKE ?"] * len(keywords))
+        params = []
+        for kw in keywords:
+            params.extend([f"%{kw}%", f"%{kw}%"])
+
+        rows = conn.execute(f"""
+            SELECT * FROM cookbook_entries
+            WHERE {conditions}
+            ORDER BY quality_score DESC
+            LIMIT ?
+        """, params + [top_k]).fetchall()
+        return [dict(row) for row in rows]
+
+    def _get_top_cookbook(self, top_k: int = 3) -> list:
+        """获取质量评分最高的 Cookbook 案例"""
+        conn = self.get_connection()
+        rows = conn.execute("""
+            SELECT * FROM cookbook_entries
+            ORDER BY quality_score DESC
+            LIMIT ?
+        """, (top_k,)).fetchall()
+        return [dict(row) for row in rows]
+
+    def get_cookbook_stats(self) -> dict:
+        """获取 Cookbook 统计信息"""
+        conn = self.get_connection()
+        count = conn.execute("SELECT COUNT(*) FROM cookbook_entries").fetchone()[0]
+        if count == 0:
+            return {"total": 0, "avg_quality": 0.0}
+        avg_q = conn.execute(
+            "SELECT AVG(quality_score) FROM cookbook_entries"
+        ).fetchone()[0]
+        return {"total": count, "avg_quality": round(avg_q, 1)}
+
+    # ── 数据库状态 ──
+
+    def get_stats(self) -> dict:
+        """获取存储统计信息"""
+        conn = self.get_connection()
+        api_count = conn.execute("SELECT COUNT(*) FROM pyqgis_api_docs").fetchone()[0]
+        cookbook_count = conn.execute("SELECT COUNT(*) FROM cookbook_entries").fetchone()[0]
+        return {
+            "api_docs": api_count,
+            "cookbook_entries": cookbook_count,
+            "db_path": self.db_path,
+        }
+
+    def clear_all(self):
+        """清空所有数据（用于重建索引）"""
+        conn = self.get_connection()
+        conn.execute("DELETE FROM pyqgis_api_docs")
+        conn.execute("DELETE FROM cookbook_entries")
+        conn.execute("INSERT INTO pyqgis_api_fts(pyqgis_api_fts) VALUES('rebuild')")
+        conn.execute("INSERT INTO cookbook_fts(cookbook_fts) VALUES('rebuild')")
+        conn.commit()

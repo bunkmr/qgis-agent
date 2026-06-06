@@ -1,1 +1,240 @@
-IyAtKi0gY29kaW5nOiB1dGYtOCAtKi0NCiIiIg0KQ29va2Jvb2sg6Ieq5oiR6L+b5YyW5qih5Z2XIOKAlCDmiJDlip/moYjkvovoh6rliqjlvZLmoaPkuI7mo4DntKLjgIINCg0K5qC45b+D5Yqf6IO9Og0KMS4g5Lu75Yqh5a6M5oiQ5ZCO6Ieq5Yqo5b2S5qGj5oiQ5Yqf5qGI5L6LDQoyLiDotKjph4/or4TliIbvvIjmiJDlip/luqYgw5cg5aSN5p2C5bqm77yJDQozLiDmiafooYzliY3mo4DntKLnm7jkvLzmoYjkvovvvIzmj5Dkvpvlj4LogIMNCjQuIOi2iueUqOi2iuiBquaYjiDigJQg5qGI5L6L5bqT6ZqP5pe26Ze05aKe6ZW/DQoiIiINCg0KaW1wb3J0IGpzb24NCmltcG9ydCByZQ0KaW1wb3J0IGRhdGV0aW1lDQpmcm9tIHR5cGluZyBpbXBvcnQgT3B0aW9uYWwNCg0KZnJvbSAuZG9jX3N0b3JlIGltcG9ydCBEb2NTdG9yZQ0KDQoNCmNsYXNzIENvb2tib29rOg0KICAgICIiIuiHquaIkei/m+WMluahiOS+i+W6k+OAgg0KDQogICAg6Ieq5Yqo5b2S5qGj5oiQ5Yqf55qE5Lu75Yqh5omn6KGM6K6w5b2V77yM5bm25pSv5oyB5Zyo5omn6KGM5YmN5qOA57Si55u45Ly85qGI5L6L44CCDQogICAgIiIiDQoNCiAgICBkZWYgX19pbml0X18oc2VsZiwgc3RvcmU6IERvY1N0b3JlID0gTm9uZSk6DQogICAgICAgIHNlbGYuc3RvcmUgPSBzdG9yZSBvciBEb2NTdG9yZSgpDQoNCiAgICAjIOKUgOKUgCDlvZLmoaMg4pSA4pSADQoNCiAgICBkZWYgYXJjaGl2ZSgNCiAgICAgICAgc2VsZiwNCiAgICAgICAgdXNlcl9pbnB1dDogc3RyLA0KICAgICAgICB0b29sc191c2VkOiBsaXN0W3N0cl0sDQogICAgICAgIGNvZGVfc25pcHBldDogc3RyID0gIiIsDQogICAgICAgIHN1Y2Nlc3NfcmF0aW5nOiBpbnQgPSA1LA0KICAgICAgICBjb21wbGV4aXR5X3JhdGluZzogaW50ID0gMywNCiAgICAgICAgdGFza19zdW1tYXJ5OiBzdHIgPSAiIiwNCiAgICApIC0+IGludDoNCiAgICAgICAgIiIi5b2S5qGj5LiA5Liq5oiQ5Yqf5qGI5L6L5YiwIENvb2tib29r44CCDQoNCiAgICAgICAgQXJnczoNCiAgICAgICAgICAgIHVzZXJfaW5wdXQ6IOeUqOaIt+eahOWOn+Wni+i+k+WFpQ0KICAgICAgICAgICAgdG9vbHNfdXNlZDog5L2/55So55qE5bel5YW35YiX6KGo77yM5aaCIFsiZ2V0X3FnaXNfaW5mbyIsICJleGVjdXRlX3B5cWdpcyJdDQogICAgICAgICAgICBjb2RlX3NuaXBwZXQ6IOaJp+ihjOeahCBQeVFHSVMg5Luj56CB77yI5aaC5pyJ77yJDQogICAgICAgICAgICBzdWNjZXNzX3JhdGluZzog5oiQ5Yqf5bqm6K+E5YiGIDEtNe+8iDU95a6M576O5oiQ5Yqf77yJDQogICAgICAgICAgICBjb21wbGV4aXR5X3JhdGluZzog5aSN5p2C5bqm6K+E5YiGIDEtNe+8iDE95Y2V5q2l5pON5L2c77yMNT3lpJrmraXpqqTlpI3mnYLku7vliqHvvIkNCiAgICAgICAgICAgIHRhc2tfc3VtbWFyeTog5Lu75Yqh5pGY6KaB77yI5Y+v6YCJ77yM5LiN5Lyg5YiZ6Ieq5Yqo55Sf5oiQ77yJDQoNCiAgICAgICAgUmV0dXJuczoNCiAgICAgICAgICAgIOaPkuWFpeeahCByb3dpZA0KICAgICAgICAiIiINCiAgICAgICAgaWYgbm90IHRhc2tfc3VtbWFyeToNCiAgICAgICAgICAgIHRhc2tfc3VtbWFyeSA9IHNlbGYuX2dlbmVyYXRlX3N1bW1hcnkodXNlcl9pbnB1dCwgdG9vbHNfdXNlZCwgY29kZV9zbmlwcGV0KQ0KDQogICAgICAgICMg6K6h566X6LSo6YeP6K+E5YiGDQogICAgICAgIHF1YWxpdHlfc2NvcmUgPSBzdWNjZXNzX3JhdGluZyAqIGNvbXBsZXhpdHlfcmF0aW5nDQoNCiAgICAgICAgZW50cnkgPSB7DQogICAgICAgICAgICAidGFza19zdW1tYXJ5IjogdGFza19zdW1tYXJ5LA0KICAgICAgICAgICAgInVzZXJfaW5wdXQiOiB1c2VyX2lucHV0LA0KICAgICAgICAgICAgInRvb2xzX3VzZWQiOiB0b29sc191c2VkLA0KICAgICAgICAgICAgImNvZGVfc25pcHBldCI6IGNvZGVfc25pcHBldCwNCiAgICAgICAgICAgICJzdWNjZXNzX3JhdGluZyI6IHN1Y2Nlc3NfcmF0aW5nLA0KICAgICAgICAgICAgImNvbXBsZXhpdHlfcmF0aW5nIjogY29tcGxleGl0eV9yYXRpbmcsDQogICAgICAgICAgICAicXVhbGl0eV9zY29yZSI6IHF1YWxpdHlfc2NvcmUsDQogICAgICAgIH0NCg0KICAgICAgICByZXR1cm4gc2VsZi5zdG9yZS5pbnNlcnRfY29va2Jvb2tfZW50cnkoZW50cnkpDQoNCiAgICBkZWYgYXJjaGl2ZV9mcm9tX2FnZW50X3Jlc3VsdCgNCiAgICAgICAgc2VsZiwNCiAgICAgICAgdXNlcl9pbnB1dDogc3RyLA0KICAgICAgICB0b29sX2NhbGxzX2xvZzogbGlzdFtkaWN0XSwNCiAgICAgICAgZmluYWxfcmVzcG9uc2U6IHN0ciwNCiAgICAgICAgc3VjY2VzczogYm9vbCA9IFRydWUsDQogICAgKSAtPiBPcHRpb25hbFtpbnRdOg0KICAgICAgICAiIiLku44gQWdlbnQg5omn6KGM57uT5p6c6Ieq5Yqo5b2S5qGj44CCDQoNCiAgICAgICAgQXJnczoNCiAgICAgICAgICAgIHVzZXJfaW5wdXQ6IOeUqOaIt+WOn+Wni+i+k+WFpQ0KICAgICAgICAgICAgdG9vbF9jYWxsc19sb2c6IOW3peWFt+iwg+eUqOaXpeW/l++8iGFnZW50X2NoYXQg5Lit55qEIGFsbF90b29sX2NhbGxzX2xvZ++8iQ0KICAgICAgICAgICAgZmluYWxfcmVzcG9uc2U6IExMTSDmnIDnu4jlm57lpI0NCiAgICAgICAgICAgIHN1Y2Nlc3M6IOaYr+WQpuaIkOWKnw0KDQogICAgICAgIFJldHVybnM6DQogICAgICAgICAgICDmj5LlhaXnmoQgcm93aWTvvIzlpoLmnpzkuI3lpJ/moLzlvZLmoaPliJnov5Tlm54gTm9uZQ0KICAgICAgICAiIiINCiAgICAgICAgdG9vbHNfdXNlZCA9IFt0Yy5nZXQoInRvb2wiLCAidW5rbm93biIpIGZvciB0YyBpbiB0b29sX2NhbGxzX2xvZ10NCg0KICAgICAgICAjIOaPkOWPluS7o+eggQ0KICAgICAgICBjb2RlX3NuaXBwZXQgPSAiIg0KICAgICAgICBmb3IgdGMgaW4gdG9vbF9jYWxsc19sb2c6DQogICAgICAgICAgICBpZiB0Yy5nZXQoInRvb2wiKSA9PSAiZXhlY3V0ZV9weXFnaXMiOg0KICAgICAgICAgICAgICAgIGNvZGVfc25pcHBldCA9IHRjLmdldCgiYXJncyIsIHt9KS5nZXQoImNvZGUiLCAiIikNCiAgICAgICAgICAgICAgICBicmVhaw0KDQogICAgICAgICMg6K6h566X5aSN5p2C5bqmDQogICAgICAgIGNvbXBsZXhpdHkgPSBtaW4obGVuKHRvb2xzX3VzZWQpLCA1KQ0KICAgICAgICBpZiBsZW4odG9vbHNfdXNlZCkgPT0gMDoNCiAgICAgICAgICAgIGNvbXBsZXhpdHkgPSAxDQogICAgICAgIGVsaWYgYW55KHQgPT0gImV4ZWN1dGVfcHlxZ2lzIiBmb3IgdCBpbiB0b29sc191c2VkKToNCiAgICAgICAgICAgIGNvbXBsZXhpdHkgPSBtaW4oY29tcGxleGl0eSArIDEsIDUpDQoNCiAgICAgICAgIyDmiJDlip/luqYNCiAgICAgICAgc3VjY2Vzc19yYXRpbmcgPSA1IGlmIHN1Y2Nlc3MgZWxzZSAyDQoNCiAgICAgICAgIyDlj6rlvZLmoaPmnInkuIDlrprku7flgLznmoTmoYjkvovvvIjoh7PlsJHnlKjkuoblt6XlhbfmiJbnlJ/miJDkuobku6PnoIHvvIkNCiAgICAgICAgaWYgbm90IHRvb2xzX3VzZWQgYW5kIG5vdCBjb2RlX3NuaXBwZXQ6DQogICAgICAgICAgICByZXR1cm4gTm9uZQ0KDQogICAgICAgIHJldHVybiBzZWxmLmFyY2hpdmUoDQogICAgICAgICAgICB1c2VyX2lucHV0PXVzZXJfaW5wdXQsDQogICAgICAgICAgICB0b29sc191c2VkPXRvb2xzX3VzZWQsDQogICAgICAgICAgICBjb2RlX3NuaXBwZXQ9Y29kZV9zbmlwcGV0LA0KICAgICAgICAgICAgc3VjY2Vzc19yYXRpbmc9c3VjY2Vzc19yYXRpbmcsDQogICAgICAgICAgICBjb21wbGV4aXR5X3JhdGluZz1jb21wbGV4aXR5LA0KICAgICAgICApDQoNCiAgICAjIOKUgOKUgCDmo4DntKIg4pSA4pSADQoNCiAgICBkZWYgc2VhcmNoKHNlbGYsIHF1ZXJ5OiBzdHIsIHRvcF9rOiBpbnQgPSAzKSAtPiBsaXN0W2RpY3RdOg0KICAgICAgICAiIiLmkJzntKLnm7jkvLznmoQgQ29va2Jvb2sg5qGI5L6L44CCDQoNCiAgICAgICAg6L+U5Zue6LSo6YeP6K+E5YiG5pyA6auY55qE5Yy56YWN5qGI5L6L44CCDQogICAgICAgICIiIg0KICAgICAgICByZXR1cm4gc2VsZi5zdG9yZS5zZWFyY2hfY29va2Jvb2socXVlcnksIHRvcF9rKQ0KDQogICAgZGVmIHNlYXJjaF9mb3JfdGFzayhzZWxmLCB1c2VyX2lucHV0OiBzdHIsIHRvcF9rOiBpbnQgPSAzKSAtPiBsaXN0W2RpY3RdOg0KICAgICAgICAiIiLpkojlr7nnlKjmiLflvZPliY3ku7vliqHmkJzntKLnm7jlhbPmoYjkvovjgIINCg0KICAgICAgICDmj5Dlj5bkuK3mloflhbPplK7or43lubbmianlsZXmn6Xor6LjgIINCiAgICAgICAgIiIiDQogICAgICAgICMg5omp5bGV5YWz6ZSu6K+NDQogICAgICAgIGV4cGFuZGVkID0gc2VsZi5fZXhwYW5kX3F1ZXJ5KHVzZXJfaW5wdXQpDQogICAgICAgIHJlc3VsdHMgPSBzZWxmLnN0b3JlLnNlYXJjaF9jb29rYm9vayhleHBhbmRlZCwgdG9wX2spDQogICAgICAgIGlmIGxlbihyZXN1bHRzKSA8IHRvcF9rOg0KICAgICAgICAgICAgIyDnlKjljp/lp4vovpPlhaXlho3mkJwNCiAgICAgICAgICAgIGV4dHJhID0gc2VsZi5zdG9yZS5zZWFyY2hfY29va2Jvb2sodXNlcl9pbnB1dCwgdG9wX2spDQogICAgICAgICAgICBzZWVuID0ge3JbImlkIl0gZm9yIHIgaW4gcmVzdWx0c30NCiAgICAgICAgICAgIGZvciByIGluIGV4dHJhOg0KICAgICAgICAgICAgICAgIGlmIHJbImlkIl0gbm90IGluIHNlZW46DQogICAgICAgICAgICAgICAgICAgIHJlc3VsdHMuYXBwZW5kKHIpDQogICAgICAgICAgICAgICAgICAgIHNlZW4uYWRkKHJbImlkIl0pDQogICAgICAgIHJldHVybiByZXN1bHRzWzp0b3Bfa10NCg0KICAgIGRlZiBmb3JtYXRfYXNfY29udGV4dChzZWxmLCByZXN1bHRzOiBsaXN0W2RpY3RdLCBtYXhfY2hhcnM6IGludCA9IDIwMDApIC0+IHN0cjoNCiAgICAgICAgIiIi5bCGIENvb2tib29rIOahiOS+i+agvOW8j+WMluS4uiBMTE0g5Y+v6K+755qE5LiK5LiL5paH44CCDQoNCiAgICAgICAgQXJnczoNCiAgICAgICAgICAgIHJlc3VsdHM6IHNlYXJjaCgpIOaIliBzZWFyY2hfZm9yX3Rhc2soKSDov5Tlm57nmoTmoYjkvovliJfooagNCiAgICAgICAgICAgIG1heF9jaGFyczog5pyA5aSn5a2X56ym5pWwDQoNCiAgICAgICAgUmV0dXJuczoNCiAgICAgICAgICAgIOagvOW8j+WMlueahOahiOS+i+WPguiAg+aWh+acrA0KICAgICAgICAiIiINCiAgICAgICAgaWYgbm90IHJlc3VsdHM6DQogICAgICAgICAgICByZXR1cm4gIiINCg0KICAgICAgICBsaW5lcyA9IFsiIyMg5Y6G5Y+y5oiQ5Yqf5qGI5L6L77yIQ29va2Jvb2sg5Y+C6ICD77yJXG4iXQ0KICAgICAgICBsaW5lcy5hcHBlbmQoIuS7peS4i+aYr+S9oOi/h+WOu+aIkOWKn+aJp+ihjOi/h+eahOexu+S8vOS7u+WKoe+8jOWPr+S7peWPguiAg+WFtuaWueazle+8mlxuIikNCiAgICAgICAgY2hhcl9jb3VudCA9IDANCg0KICAgICAgICBmb3IgaSwgZW50cnkgaW4gZW51bWVyYXRlKHJlc3VsdHMsIDEpOg0KICAgICAgICAgICAgc3VtbWFyeSA9IGVudHJ5LmdldCgidGFza19zdW1tYXJ5IiwgIiIpDQogICAgICAgICAgICBjb2RlID0gZW50cnkuZ2V0KCJjb2RlX3NuaXBwZXQiLCAiIikNCiAgICAgICAgICAgIHRvb2xzID0gZW50cnkuZ2V0KCJ0b29sc191c2VkIiwgIltdIikNCg0KICAgICAgICAgICAgdHJ5Og0KICAgICAgICAgICAgICAgIHRvb2xzX2xpc3QgPSBqc29uLmxvYWRzKHRvb2xzKSBpZiBpc2luc3RhbmNlKHRvb2xzLCBzdHIpIGVsc2UgdG9vbHMNCiAgICAgICAgICAgIGV4Y2VwdCAoanNvbi5KU09ORGVjb2RlRXJyb3IsIFR5cGVFcnJvcik6DQogICAgICAgICAgICAgICAgdG9vbHNfbGlzdCA9IFtdDQoNCiAgICAgICAgICAgIGJsb2NrID0gZiIjIyMg5qGI5L6LIHtpfToge3N1bW1hcnl9XG4iDQogICAgICAgICAgICBibG9jayArPSBmIueUqOaIt+mcgOaxgjoge2VudHJ5LmdldCgndXNlcl9pbnB1dCcsICcnKX1cbiINCiAgICAgICAgICAgIGlmIHRvb2xzX2xpc3Q6DQogICAgICAgICAgICAgICAgYmxvY2sgKz0gZiLkvb/nlKjlt6Xlhbc6IHsnLCAnLmpvaW4odG9vbHNfbGlzdCl9XG4iDQogICAgICAgICAgICBpZiBjb2RlOg0KICAgICAgICAgICAgICAgIGJsb2NrICs9IGYiXG5gYGBweXRob25cbntjb2RlfVxuYGBgXG4iDQoNCiAgICAgICAgICAgIGlmIGNoYXJfY291bnQgKyBsZW4oYmxvY2spID4gbWF4X2NoYXJzOg0KICAgICAgICAgICAgICAgIGJyZWFrDQoNCiAgICAgICAgICAgIGxpbmVzLmFwcGVuZChibG9jaykNCiAgICAgICAgICAgIGNoYXJfY291bnQgKz0gbGVuKGJsb2NrKQ0KDQogICAgICAgIHJldHVybiAiXG4iLmpvaW4obGluZXMpDQoNCiAgICAjIOKUgOKUgCDnu5/orqEg4pSA4pSADQoNCiAgICBkZWYgZ2V0X3N0YXRzKHNlbGYpIC0+IGRpY3Q6DQogICAgICAgICIiIuiOt+WPliBDb29rYm9vayDnu5/orqHkv6Hmga8iIiINCiAgICAgICAgcmV0dXJuIHNlbGYuc3RvcmUuZ2V0X2Nvb2tib29rX3N0YXRzKCkNCg0KICAgICMg4pSA4pSAIOWGhemDqOaWueazlSDilIDilIANCg0KICAgIGRlZiBfZ2VuZXJhdGVfc3VtbWFyeSgNCiAgICAgICAgc2VsZiwgdXNlcl9pbnB1dDogc3RyLCB0b29sc191c2VkOiBsaXN0W3N0cl0sIGNvZGVfc25pcHBldDogc3RyID0gIiINCiAgICApIC0+IHN0cjoNCiAgICAgICAgIiIi5LuO55So5oi36L6T5YWl5ZKM5bel5YW36LCD55So55Sf5oiQ5Lu75Yqh5pGY6KaBIiIiDQogICAgICAgICMg5oiq5pat6L+H6ZW/55qE6L6T5YWlDQogICAgICAgIHN1bW1hcnkgPSB1c2VyX2lucHV0WzoxMDBdDQogICAgICAgIGlmIGxlbih1c2VyX2lucHV0KSA+IDEwMDoNCiAgICAgICAgICAgIHN1bW1hcnkgKz0gIi4uLiINCg0KICAgICAgICAjIOa3u+WKoOW3peWFt+S/oeaBrw0KICAgICAgICBpZiB0b29sc191c2VkOg0KICAgICAgICAgICAgdG9vbF9uYW1lcyA9IFt0IGZvciB0IGluIHRvb2xzX3VzZWQgaWYgdCBub3QgaW4gKCJzYXZlX21lbW9yeSIsICJsb2FkX21lbW9yeSIpXQ0KICAgICAgICAgICAgaWYgdG9vbF9uYW1lczoNCiAgICAgICAgICAgICAgICBzdW1tYXJ5ICs9IGYiIFt7JywgJy5qb2luKHRvb2xfbmFtZXNbOjNdKX1dIg0KDQogICAgICAgIHJldHVybiBzdW1tYXJ5DQoNCiAgICBkZWYgX2V4cGFuZF9xdWVyeShzZWxmLCB1c2VyX2lucHV0OiBzdHIpIC0+IHN0cjoNCiAgICAgICAgIiIi5omp5bGV5p+l6K+i5YWz6ZSu6K+NIiIiDQogICAgICAgICMg5o+Q5Y+W5Lit5paH5Zyw55CG5pON5L2c5YWz6ZSu6K+NDQogICAgICAgIGtleXdvcmRzID0gW10NCiAgICAgICAgY25fa2V5d29yZHMgPSB7DQogICAgICAgICAgICAi57yT5Yay5Yy6IjogImJ1ZmZlciIsDQogICAgICAgICAgICAi6KOB5YmqIjogImNsaXAgaW50ZXJzZWN0IiwNCiAgICAgICAgICAgICLnm7jkuqQiOiAiaW50ZXJzZWN0aW9uIiwNCiAgICAgICAgICAgICLlkIjlubYiOiAibWVyZ2UgZGlzc29sdmUiLA0KICAgICAgICAgICAgIuaKleW9sSI6ICJyZXByb2plY3QgQ1JTIiwNCiAgICAgICAgICAgICLnroDljJYiOiAic2ltcGxpZnkiLA0KICAgICAgICAgICAgIuagh+azqCI6ICJsYWJlbGluZyIsDQogICAgICAgICAgICAi5qC35byPIjogInJlbmRlcmVyIHN5bWJvbCIsDQogICAgICAgICAgICAi5a+85Ye6IjogImV4cG9ydCBzYXZlIiwNCiAgICAgICAgICAgICLpgInmi6kiOiAic2VsZWN0IGZpbHRlciIsDQogICAgICAgICAgICAi57yW6L6RIjogImVkaXQiLA0KICAgICAgICAgICAgIua4suafkyI6ICJyZW5kZXIiLA0KICAgICAgICAgICAgIuWtl+auteiuoeeulyI6ICJmaWVsZCBjYWxjdWxhdG9yIiwNCiAgICAgICAgICAgICLnqbrpl7Tmn6Xor6IiOiAic3BhdGlhbCBxdWVyeSIsDQogICAgICAgIH0NCiAgICAgICAgZm9yIGNuLCBlbiBpbiBjbl9rZXl3b3Jkcy5pdGVtcygpOg0KICAgICAgICAgICAgaWYgY24gaW4gdXNlcl9pbnB1dDoNCiAgICAgICAgICAgICAgICBrZXl3b3Jkcy5hcHBlbmQoZW4pDQoNCiAgICAgICAgaWYga2V5d29yZHM6DQogICAgICAgICAgICByZXR1cm4gdXNlcl9pbnB1dCArICIgIiArICIgIi5qb2luKGtleXdvcmRzKQ0KICAgICAgICByZXR1cm4gdXNlcl9pbnB1dA0K
+# -*- coding: utf-8 -*-
+"""
+Cookbook 自我进化模块 — 成功案例自动归档与检索。
+
+核心功能:
+1. 任务完成后自动归档成功案例
+2. 质量评分（成功度 × 复杂度）
+3. 执行前检索相似案例，提供参考
+4. 越用越聪明 — 案例库随时间增长
+"""
+
+import json
+import re
+import datetime
+from typing import Optional
+
+from .doc_store import DocStore
+
+
+class Cookbook:
+    """自我进化案例库。
+
+    自动归档成功的任务执行记录，并支持在执行前检索相似案例。
+    """
+
+    def __init__(self, store: DocStore = None):
+        self.store = store or DocStore()
+
+    # ── 归档 ──
+
+    def archive(
+        self,
+        user_input: str,
+        tools_used: list[str],
+        code_snippet: str = "",
+        success_rating: int = 5,
+        complexity_rating: int = 3,
+        task_summary: str = "",
+    ) -> int:
+        """归档一个成功案例到 Cookbook。
+
+        Args:
+            user_input: 用户的原始输入
+            tools_used: 使用的工具列表，如 ["get_qgis_info", "execute_pyqgis"]
+            code_snippet: 执行的 PyQGIS 代码（如有）
+            success_rating: 成功度评分 1-5（5=完美成功）
+            complexity_rating: 复杂度评分 1-5（1=单步操作，5=多步骤复杂任务）
+            task_summary: 任务摘要（可选，不传则自动生成）
+
+        Returns:
+            插入的 rowid
+        """
+        if not task_summary:
+            task_summary = self._generate_summary(user_input, tools_used, code_snippet)
+
+        # 计算质量评分
+        quality_score = success_rating * complexity_rating
+
+        entry = {
+            "task_summary": task_summary,
+            "user_input": user_input,
+            "tools_used": tools_used,
+            "code_snippet": code_snippet,
+            "success_rating": success_rating,
+            "complexity_rating": complexity_rating,
+            "quality_score": quality_score,
+        }
+
+        return self.store.insert_cookbook_entry(entry)
+
+    def archive_from_agent_result(
+        self,
+        user_input: str,
+        tool_calls_log: list[dict],
+        final_response: str,
+        success: bool = True,
+    ) -> Optional[int]:
+        """从 Agent 执行结果自动归档。
+
+        Args:
+            user_input: 用户原始输入
+            tool_calls_log: 工具调用日志（agent_chat 中的 all_tool_calls_log）
+            final_response: LLM 最终回复
+            success: 是否成功
+
+        Returns:
+            插入的 rowid，如果不够格归档则返回 None
+        """
+        tools_used = [tc.get("tool", "unknown") for tc in tool_calls_log]
+
+        # 提取代码
+        code_snippet = ""
+        for tc in tool_calls_log:
+            if tc.get("tool") == "execute_pyqgis":
+                code_snippet = tc.get("args", {}).get("code", "")
+                break
+
+        # 计算复杂度
+        complexity = min(len(tools_used), 5)
+        if len(tools_used) == 0:
+            complexity = 1
+        elif any(t == "execute_pyqgis" for t in tools_used):
+            complexity = min(complexity + 1, 5)
+
+        # 成功度
+        success_rating = 5 if success else 2
+
+        # 只归档有一定价值的案例（至少用了工具或生成了代码）
+        if not tools_used and not code_snippet:
+            return None
+
+        return self.archive(
+            user_input=user_input,
+            tools_used=tools_used,
+            code_snippet=code_snippet,
+            success_rating=success_rating,
+            complexity_rating=complexity,
+        )
+
+    # ── 检索 ──
+
+    def search(self, query: str, top_k: int = 3) -> list[dict]:
+        """搜索相似的 Cookbook 案例。
+
+        返回质量评分最高的匹配案例。
+        """
+        return self.store.search_cookbook(query, top_k)
+
+    def search_for_task(self, user_input: str, top_k: int = 3) -> list[dict]:
+        """针对用户当前任务搜索相关案例。
+
+        提取中文关键词并扩展查询。
+        """
+        # 扩展关键词
+        expanded = self._expand_query(user_input)
+        results = self.store.search_cookbook(expanded, top_k)
+        if len(results) < top_k:
+            # 用原始输入再搜
+            extra = self.store.search_cookbook(user_input, top_k)
+            seen = {r["id"] for r in results}
+            for r in extra:
+                if r["id"] not in seen:
+                    results.append(r)
+                    seen.add(r["id"])
+        return results[:top_k]
+
+    def format_as_context(self, results: list[dict], max_chars: int = 2000) -> str:
+        """将 Cookbook 案例格式化为 LLM 可读的上下文。
+
+        Args:
+            results: search() 或 search_for_task() 返回的案例列表
+            max_chars: 最大字符数
+
+        Returns:
+            格式化的案例参考文本
+        """
+        if not results:
+            return ""
+
+        lines = ["## 历史成功案例（Cookbook 参考）\n"]
+        lines.append("以下是你过去成功执行过的类似任务，可以参考其方法：\n")
+        char_count = 0
+
+        for i, entry in enumerate(results, 1):
+            summary = entry.get("task_summary", "")
+            code = entry.get("code_snippet", "")
+            tools = entry.get("tools_used", "[]")
+
+            try:
+                tools_list = json.loads(tools) if isinstance(tools, str) else tools
+            except (json.JSONDecodeError, TypeError):
+                tools_list = []
+
+            block = f"### 案例 {i}: {summary}\n"
+            block += f"用户需求: {entry.get('user_input', '')}\n"
+            if tools_list:
+                block += f"使用工具: {', '.join(tools_list)}\n"
+            if code:
+                block += f"\n```python\n{code}\n```\n"
+
+            if char_count + len(block) > max_chars:
+                break
+
+            lines.append(block)
+            char_count += len(block)
+
+        return "\n".join(lines)
+
+    # ── 统计 ──
+
+    def get_stats(self) -> dict:
+        """获取 Cookbook 统计信息"""
+        return self.store.get_cookbook_stats()
+
+    # ── 内部方法 ──
+
+    def _generate_summary(
+        self, user_input: str, tools_used: list[str], code_snippet: str = ""
+    ) -> str:
+        """从用户输入和工具调用生成任务摘要"""
+        # 截断过长的输入
+        summary = user_input[:100]
+        if len(user_input) > 100:
+            summary += "..."
+
+        # 添加工具信息
+        if tools_used:
+            tool_names = [t for t in tools_used if t not in ("save_memory", "load_memory")]
+            if tool_names:
+                summary += f" [{', '.join(tool_names[:3])}]"
+
+        return summary
+
+    def _expand_query(self, user_input: str) -> str:
+        """扩展查询关键词"""
+        # 提取中文地理操作关键词
+        keywords = []
+        cn_keywords = {
+            "缓冲区": "buffer",
+            "裁剪": "clip intersect",
+            "相交": "intersection",
+            "合并": "merge dissolve",
+            "投影": "reproject CRS",
+            "简化": "simplify",
+            "标注": "labeling",
+            "样式": "renderer symbol",
+            "导出": "export save",
+            "选择": "select filter",
+            "编辑": "edit",
+            "渲染": "render",
+            "字段计算": "field calculator",
+            "空间查询": "spatial query",
+        }
+        for cn, en in cn_keywords.items():
+            if cn in user_input:
+                keywords.append(en)
+
+        if keywords:
+            return user_input + " " + " ".join(keywords)
+        return user_input

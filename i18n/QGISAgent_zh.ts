@@ -1,1 +1,19 @@
-PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjwhRE9DVFlQRSBUUz4NCjxUUyB2ZXJzaW9uPSIyLjEiIGxhbmd1YWdlPSJ6aF9DTiI+DQo8Y29udGV4dD4NCiAgICA8bmFtZT5RR0lTQWdlbnQ8L25hbWU+DQogICAgPG1lc3NhZ2U+DQogICAgICAgIDxzb3VyY2U+UUdJUyBBZ2VudDwvc291cmNlPg0KICAgICAgICA8dHJhbnNsYXRpb24+UUdJUyDmmbrog73liqnmiYs8L3RyYW5zbGF0aW9uPg0KICAgIDwvbWVzc2FnZT4NCiAgICA8bWVzc2FnZT4NCiAgICAgICAgPHNvdXJjZT4mYW1wO1FHSVMgQWdlbnQ8L3NvdXJjZT4NCiAgICAgICAgPHRyYW5zbGF0aW9uPlFHSVMg5pm66IO95Yqp5omLKCZhbXA7USk8L3RyYW5zbGF0aW9uPg0KICAgIDwvbWVzc2FnZT4NCiAgICA8bWVzc2FnZT4NCiAgICAgICAgPHNvdXJjZT5PcGVuIFFHSVMgQWdlbnQ8L3NvdXJjZT4NCiAgICAgICAgPHRyYW5zbGF0aW9uPuaJk+W8gCBRR0lTIOaZuuiDveWKqeaJizwvdHJhbnNsYXRpb24+DQogICAgPC9tZXNzYWdlPg0KPC9jb250ZXh0Pg0KPC9UUz4NCg==
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS>
+<TS version="2.1" language="zh_CN">
+<context>
+    <name>QGISAgent</name>
+    <message>
+        <source>QGIS Agent</source>
+        <translation>QGIS 智能助手</translation>
+    </message>
+    <message>
+        <source>&amp;QGIS Agent</source>
+        <translation>QGIS 智能助手(&amp;Q)</translation>
+    </message>
+    <message>
+        <source>Open QGIS Agent</source>
+        <translation>打开 QGIS 智能助手</translation>
+    </message>
+</context>
+</TS>

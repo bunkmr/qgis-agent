@@ -1,1 +1,38 @@
-aW1wb3J0IG9zCmZyb20gdHlwaW5nIGltcG9ydCBPcHRpb25hbAoKaW1wb3J0IGh0dHB4CmZyb20gbGFuZ2NoYWluX29wZW5haSBpbXBvcnQgQ2hhdE9wZW5BSQpmcm9tIGxhbmdjaGFpbl9kZWVwc2VlayBpbXBvcnQgQ2hhdERlZXBTZWVrCgoKZGVmIGdldF9sbG1faW5zdGFuY2UocHJvdmlkZXIsIG1vZGVsLCBhcGlfa2V5LCBlbmRwb2ludCwgdGVtcGVyYXR1cmU9MCk6CiAgICAjIOWIm+W7uuS4gOS4quS4jeS9v+eUqOezu+e7n+S7o+eQhueahCBodHRweCBjbGllbnTvvIzpgb/lhY3ku6PnkIblr7zoh7QgRE5TIOino+aekOWksei0pQogICAgaHR0cF9jbGllbnQgPSBodHRweC5DbGllbnQocHJveHk9Tm9uZSkKCiAgICBpZiBwcm92aWRlciA9PSAiRGVlcFNlZWsiOgogICAgICAgIHJldHVybiBDaGF0RGVlcFNlZWsoCiAgICAgICAgICAgIG1vZGVsPW1vZGVsLAogICAgICAgICAgICBhcGlfa2V5PWFwaV9rZXksCiAgICAgICAgICAgIHRlbXBlcmF0dXJlPXRlbXBlcmF0dXJlLAogICAgICAgICAgICBodHRwX2NsaWVudD1odHRwX2NsaWVudCwKICAgICAgICApCiAgICAjIOWFtuS7luaJgOaciSBwcm92aWRlcu+8iEdMTSwgWGlhb21pTWlNbywgR2VtaW5pLCBPcGVuQUksIEN1c3RvbSDnrYnvvInpg73otbAgT3BlbkFJIOWFvOWuueaOpeWPowogICAgcmV0dXJuIENoYXRPcGVuQUkoCiAgICAgICAgbW9kZWw9bW9kZWwsCiAgICAgICAgb3BlbmFpX2FwaV9rZXk9YXBpX2tleSwKICAgICAgICBvcGVuYWlfYXBpX2Jhc2U9ZW5kcG9pbnQsCiAgICAgICAgdGVtcGVyYXR1cmU9dGVtcGVyYXR1cmUsCiAgICAgICAgaHR0cF9jbGllbnQ9aHR0cF9jbGllbnQsCiAgICApCgoKZGVmIGdldF9kZWZhdWx0X2FwaV9rZXkocHJvdmlkZXIpOgogICAgZW52X21hcCA9IHsKICAgICAgICAiR0xNIjogIkdMTV9BUElfS0VZIiwKICAgICAgICAiRGVlcFNlZWsiOiAiREVFUFNFRUtfQVBJX0tFWSIsCiAgICAgICAgIlhpYW9taU1pTW8iOiAiWElBT01JX0FQSV9LRVkiLAogICAgICAgICJHZW1pbmkiOiAiR0VNSU5JX0FQSV9LRVkiLAogICAgICAgICJPcGVuQUkiOiAiT1BFTkFJX0FQSV9LRVkiLAogICAgfQogICAgcmV0dXJuIG9zLmdldGVudihlbnZfbWFwLmdldChwcm92aWRlciwgIiIpLCAiIikK
+import os
+from typing import Optional
+
+import httpx
+from langchain_openai import ChatOpenAI
+from langchain_deepseek import ChatDeepSeek
+
+
+def get_llm_instance(provider, model, api_key, endpoint, temperature=0):
+    # 创建一个不使用系统代理的 httpx client，避免代理导致 DNS 解析失败
+    http_client = httpx.Client(proxy=None)
+
+    if provider == "DeepSeek":
+        return ChatDeepSeek(
+            model=model,
+            api_key=api_key,
+            temperature=temperature,
+            http_client=http_client,
+        )
+    # 其他所有 provider（GLM, XiaomiMiMo, Gemini, OpenAI, Custom 等）都走 OpenAI 兼容接口
+    return ChatOpenAI(
+        model=model,
+        openai_api_key=api_key,
+        openai_api_base=endpoint,
+        temperature=temperature,
+        http_client=http_client,
+    )
+
+
+def get_default_api_key(provider):
+    env_map = {
+        "GLM": "GLM_API_KEY",
+        "DeepSeek": "DEEPSEEK_API_KEY",
+        "XiaomiMiMo": "XIAOMI_API_KEY",
+        "Gemini": "GEMINI_API_KEY",
+        "OpenAI": "OPENAI_API_KEY",
+    }
+    return os.getenv(env_map.get(provider, ""), "")

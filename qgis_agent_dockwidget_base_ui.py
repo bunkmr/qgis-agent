@@ -1,1 +1,212 @@
-ZnJvbSBQeVF0NSBpbXBvcnQgUXRDb3JlLCBRdEd1aSwgUXRXaWRnZXRzCgoKY2xhc3MgVWlfUUdJU0FnZW50RG9ja1dpZGdldChvYmplY3QpOgogICAgZGVmIHNldHVwVWkoc2VsZiwgUUdJU0FnZW50RG9ja1dpZGdldCk6CiAgICAgICAgUUdJU0FnZW50RG9ja1dpZGdldC5zZXRPYmplY3ROYW1lKCJRR0lTQWdlbnREb2NrV2lkZ2V0IikKICAgICAgICBRR0lTQWdlbnREb2NrV2lkZ2V0LnNldFdpbmRvd1RpdGxlKCJRR0lTIEFnZW50IikKICAgICAgICBRR0lTQWdlbnREb2NrV2lkZ2V0LnNldE1pbmltdW1TaXplKDM2MCwgNTAwKQoKICAgICAgICBzZWxmLmNlbnRyYWxXaWRnZXQgPSBRdFdpZGdldHMuUVdpZGdldCgpCiAgICAgICAgc2VsZi5jZW50cmFsV2lkZ2V0LnNldE9iamVjdE5hbWUoImNlbnRyYWxXaWRnZXQiKQoKICAgICAgICBzZWxmLm1haW5MYXlvdXQgPSBRdFdpZGdldHMuUVZCb3hMYXlvdXQoc2VsZi5jZW50cmFsV2lkZ2V0KQogICAgICAgIHNlbGYubWFpbkxheW91dC5zZXRDb250ZW50c01hcmdpbnMoNiwgNiwgNiwgNikKICAgICAgICBzZWxmLm1haW5MYXlvdXQuc2V0U3BhY2luZyg0KQoKICAgICAgICAjIOagh+etvumhtQogICAgICAgIHNlbGYudHdUYWJzID0gUXRXaWRnZXRzLlFUYWJXaWRnZXQoKQogICAgICAgIHNlbGYudHdUYWJzLnNldE9iamVjdE5hbWUoInR3VGFicyIpCgogICAgICAgICMgLS0tIOWvueivneagh+etvumhtSAtLS0KICAgICAgICBzZWxmLnRiTWVzc2FnZXMgPSBRdFdpZGdldHMuUVdpZGdldCgpCiAgICAgICAgc2VsZi50Yk1lc3NhZ2VzLnNldE9iamVjdE5hbWUoInRiTWVzc2FnZXMiKQogICAgICAgIHNlbGYubWVzc2FnZXNMYXlvdXQgPSBRdFdpZGdldHMuUVZCb3hMYXlvdXQoc2VsZi50Yk1lc3NhZ2VzKQogICAgICAgIHNlbGYubWVzc2FnZXNMYXlvdXQuc2V0Q29udGVudHNNYXJnaW5zKDAsIDAsIDAsIDApCiAgICAgICAgc2VsZi5tZXNzYWdlc0xheW91dC5zZXRTcGFjaW5nKDQpCgogICAgICAgICMg5qCH6aKY6KGM77yI5Y+q5pyJ5qCH6aKY77yM56e76Zmk5LqG6YWN572u5oyJ6ZKu77yJCiAgICAgICAgc2VsZi50aXRsZUxheW91dCA9IFF0V2lkZ2V0cy5RSEJveExheW91dCgpCiAgICAgICAgc2VsZi5sYlRpdGxlID0gUXRXaWRnZXRzLlFMYWJlbCgi5paw5bu65a+56K+dIikKICAgICAgICBzZWxmLmxiVGl0bGUuc2V0U3R5bGVTaGVldCgiZm9udC1zaXplOiAxNHB4OyBmb250LXdlaWdodDogYm9sZDsiKQogICAgICAgIHNlbGYubGJUaXRsZS5zZXRXb3JkV3JhcChUcnVlKQogICAgICAgIHNlbGYudGl0bGVMYXlvdXQuYWRkV2lkZ2V0KHNlbGYubGJUaXRsZSwgMSkKCiAgICAgICAgc2VsZi5sYkRlc2NyaXB0aW9uID0gUXRXaWRnZXRzLlFMYWJlbCgi6YCJ5oup5oiW5paw5bu65a+56K+d5byA5aeL5L2/55SoUUdJUyBBZ2VudCIpCiAgICAgICAgc2VsZi5sYkRlc2NyaXB0aW9uLnNldFdvcmRXcmFwKFRydWUpCiAgICAgICAgc2VsZi5sYkRlc2NyaXB0aW9uLnNldFN0eWxlU2hlZXQoImNvbG9yOiAjNjY2OyIpCgogICAgICAgIHNlbGYubGJNZXRhZGF0YSA9IFF0V2lkZ2V0cy5RTGFiZWwoIiIpCiAgICAgICAgc2VsZi5sYk1ldGFkYXRhLnNldFN0eWxlU2hlZXQoImNvbG9yOiAjODg4OyBmb250LXNpemU6IDExcHg7IikKICAgICAgICBzZWxmLmxiTWV0YWRhdGEuc2V0V29yZFdyYXAoVHJ1ZSkKCiAgICAgICAgIyDlr7nor53ljoblj7IKICAgICAgICBzZWxmLnR4SGlzdG9yeSA9IFF0V2lkZ2V0cy5RVGV4dEJyb3dzZXIoKQogICAgICAgIHNlbGYudHhIaXN0b3J5LnNldE9wZW5FeHRlcm5hbExpbmtzKFRydWUpCiAgICAgICAgc2VsZi50eEhpc3Rvcnkuc2V0UmVhZE9ubHkoVHJ1ZSkKCiAgICAgICAgIyDmtojmga/ovpPlhaXljLoKICAgICAgICBzZWxmLm1lc3NhZ2VGcmFtZSA9IFF0V2lkZ2V0cy5RRnJhbWUoKQogICAgICAgIHNlbGYubWVzc2FnZUZyYW1lLnNldE9iamVjdE5hbWUoIm1lc3NhZ2VGcmFtZSIpCiAgICAgICAgc2VsZi5tZXNzYWdlTGF5b3V0ID0gUXRXaWRnZXRzLlFIQm94TGF5b3V0KHNlbGYubWVzc2FnZUZyYW1lKQogICAgICAgIHNlbGYubWVzc2FnZUxheW91dC5zZXRDb250ZW50c01hcmdpbnMoMCwgMCwgMCwgMCkKCiAgICAgICAgc2VsZi5wdE1lc3NhZ2UgPSBRdFdpZGdldHMuUVBsYWluVGV4dEVkaXQoKQogICAgICAgIHNlbGYucHRNZXNzYWdlLnNldFBsYWNlaG9sZGVyVGV4dCgi6L6T5YWl5oKo55qE6Zeu6aKYLi4uIikKICAgICAgICBzZWxmLnB0TWVzc2FnZS5zZXRGaXhlZEhlaWdodCg2MCkKICAgICAgICBzZWxmLnB0TWVzc2FnZS5zZXRPYmplY3ROYW1lKCJwdE1lc3NhZ2UiKQoKICAgICAgICBzZWxmLnBiU2VuZCA9IFF0V2lkZ2V0cy5RUHVzaEJ1dHRvbigi5Y+R6YCBIikKICAgICAgICBzZWxmLnBiU2VuZC5zZXRGaXhlZFNpemUoNjAsIDYwKQogICAgICAgIHNlbGYucGJTZW5kLnNldFN0eWxlU2hlZXQoIiIiCiAgICAgICAgICAgIFFQdXNoQnV0dG9uIHsgYmFja2dyb3VuZC1jb2xvcjogIzRBOTBEOTsgY29sb3I6IHdoaXRlOyBib3JkZXItcmFkaXVzOiA0cHg7IGZvbnQtc2l6ZTogMTRweDsgfQogICAgICAgICAgICBRUHVzaEJ1dHRvbjpob3ZlciB7IGJhY2tncm91bmQtY29sb3I6ICMzNTdBQkQ7IH0KICAgICAgICAgICAgUVB1c2hCdXR0b246ZGlzYWJsZWQgeyBiYWNrZ3JvdW5kLWNvbG9yOiAjY2NjOyB9CiAgICAgICAgIiIiKQoKICAgICAgICBzZWxmLm1lc3NhZ2VMYXlvdXQuYWRkV2lkZ2V0KHNlbGYucHRNZXNzYWdlKQogICAgICAgIHNlbGYubWVzc2FnZUxheW91dC5hZGRXaWRnZXQoc2VsZi5wYlNlbmQpCgogICAgICAgICMg5bqV6YOo5qCP77ya5qih5Z6L6YCJ5oupICsgVGVtcGVyYXR1cmUgKyDlgZzmraLmjInpkq4KICAgICAgICBzZWxmLmJvdHRvbUJhckxheW91dCA9IFF0V2lkZ2V0cy5RSEJveExheW91dCgpCiAgICAgICAgc2VsZi5ib3R0b21CYXJMYXlvdXQuc2V0Q29udGVudHNNYXJnaW5zKDAsIDIsIDAsIDApCiAgICAgICAgc2VsZi5ib3R0b21CYXJMYXlvdXQuc2V0U3BhY2luZyg2KQoKICAgICAgICBzZWxmLmxibE1vZGVsID0gUXRXaWRnZXRzLlFMYWJlbCgi5qih5Z6LOiIpCiAgICAgICAgc2VsZi5sYmxNb2RlbC5zZXRTdHlsZVNoZWV0KCJmb250LXNpemU6IDEycHg7IGNvbG9yOiAjODg4OyIpCiAgICAgICAgc2VsZi5jYk1vZGVsU2VsZWN0b3IgPSBRdFdpZGdldHMuUUNvbWJvQm94KCkKICAgICAgICBzZWxmLmNiTW9kZWxTZWxlY3Rvci5zZXRNaW5pbXVtV2lkdGgoMTIwKQogICAgICAgIHNlbGYuY2JNb2RlbFNlbGVjdG9yLnNldFN0eWxlU2hlZXQoIlFDb21ib0JveCB7IGZvbnQtc2l6ZTogMTJweDsgcGFkZGluZzogMnB4IDRweDsgfSIpCgogICAgICAgIHNlbGYubGJsVGVtcGVyYXR1cmUgPSBRdFdpZGdldHMuUUxhYmVsKCLmuKnluqY6IikKICAgICAgICBzZWxmLmxibFRlbXBlcmF0dXJlLnNldFN0eWxlU2hlZXQoImZvbnQtc2l6ZTogMTJweDsgY29sb3I6ICM4ODg7IikKICAgICAgICBzZWxmLnNsaWRlclRlbXBlcmF0dXJlID0gUXRXaWRnZXRzLlFTbGlkZXIoUXRDb3JlLlF0Lkhvcml6b250YWwpCiAgICAgICAgc2VsZi5zbGlkZXJUZW1wZXJhdHVyZS5zZXRSYW5nZSgwLCAxMDApCiAgICAgICAgc2VsZi5zbGlkZXJUZW1wZXJhdHVyZS5zZXRWYWx1ZSgwKQogICAgICAgIHNlbGYuc2xpZGVyVGVtcGVyYXR1cmUuc2V0Rml4ZWRXaWR0aCg4MCkKICAgICAgICBzZWxmLnNsaWRlclRlbXBlcmF0dXJlLnNldFRvb2xUaXAoIkxMTSDmuKnluqYgKDA957K+56GuLCAxPeWIm+mAoCkiKQogICAgICAgIHNlbGYubGJsVGVtcFZhbHVlID0gUXRXaWRnZXRzLlFMYWJlbCgiMC4wIikKICAgICAgICBzZWxmLmxibFRlbXBWYWx1ZS5zZXRTdHlsZVNoZWV0KCJmb250LXNpemU6IDExcHg7IGNvbG9yOiAjODg4OyBtaW4td2lkdGg6IDI0cHg7IikKICAgICAgICBzZWxmLnNsaWRlclRlbXBlcmF0dXJlLnZhbHVlQ2hhbmdlZC5jb25uZWN0KAogICAgICAgICAgICBsYW1iZGEgdjogc2VsZi5sYmxUZW1wVmFsdWUuc2V0VGV4dChmInt2LzEwMDouMWZ9IikKICAgICAgICApCgogICAgICAgIHNlbGYucGJTdG9wID0gUXRXaWRnZXRzLlFQdXNoQnV0dG9uKCLij7kg5YGc5q2iIikKICAgICAgICBzZWxmLnBiU3RvcC5zZXRGaXhlZFNpemUoNzAsIDI2KQogICAgICAgIHNlbGYucGJTdG9wLnNldFZpc2libGUoRmFsc2UpCiAgICAgICAgc2VsZi5wYlN0b3Auc2V0U3R5bGVTaGVldCgiIiIKICAgICAgICAgICAgUVB1c2hCdXR0b24geyBiYWNrZ3JvdW5kLWNvbG9yOiAjRkE3MDcwOyBjb2xvcjogd2hpdGU7IGJvcmRlci1yYWRpdXM6IDRweDsgZm9udC1zaXplOiAxMnB4OyB9CiAgICAgICAgICAgIFFQdXNoQnV0dG9uOmhvdmVyIHsgYmFja2dyb3VuZC1jb2xvcjogI0UwNTA1MDsgfQogICAgICAgICIiIikKCiAgICAgICAgIyDot7Pov4fku6PnoIHnoa7orqTnmoTlvIDlhbMKICAgICAgICBzZWxmLmNiU2tpcENvbmZpcm0gPSBRdFdpZGdldHMuUUNoZWNrQm94KCLot7Pov4fnoa7orqQiKQogICAgICAgIHNlbGYuY2JTa2lwQ29uZmlybS5zZXRUb29sVGlwKCLli77pgInlkI7nm7TmjqXmiafooYzmiYDmnIkgUHlRR0lTL1Byb2Nlc3Npbmcg5Luj56CB77yM5LiN5YaN5by556qX56Gu6K6kIikKICAgICAgICBzZWxmLmNiU2tpcENvbmZpcm0uc2V0U3R5bGVTaGVldCgiUUNoZWNrQm94IHsgZm9udC1zaXplOiAxMXB4OyBjb2xvcjogIzg4ODsgfSIpCgogICAgICAgIHNlbGYuYm90dG9tQmFyTGF5b3V0LmFkZFdpZGdldChzZWxmLmxibE1vZGVsKQogICAgICAgIHNlbGYuYm90dG9tQmFyTGF5b3V0LmFkZFdpZGdldChzZWxmLmNiTW9kZWxTZWxlY3RvciwgMSkKICAgICAgICBzZWxmLmJvdHRvbUJhckxheW91dC5hZGRXaWRnZXQoc2VsZi5sYmxUZW1wZXJhdHVyZSkKICAgICAgICBzZWxmLmJvdHRvbUJhckxheW91dC5hZGRXaWRnZXQoc2VsZi5zbGlkZXJUZW1wZXJhdHVyZSkKICAgICAgICBzZWxmLmJvdHRvbUJhckxheW91dC5hZGRXaWRnZXQoc2VsZi5sYmxUZW1wVmFsdWUpCiAgICAgICAgc2VsZi5ib3R0b21CYXJMYXlvdXQuYWRkV2lkZ2V0KHNlbGYuY2JTa2lwQ29uZmlybSkKICAgICAgICBzZWxmLmJvdHRvbUJhckxheW91dC5hZGRXaWRnZXQoc2VsZi5wYlN0b3ApCgogICAgICAgIHNlbGYubWVzc2FnZXNMYXlvdXQuYWRkTGF5b3V0KHNlbGYudGl0bGVMYXlvdXQpCiAgICAgICAgc2VsZi5tZXNzYWdlc0xheW91dC5hZGRXaWRnZXQoc2VsZi5sYkRlc2NyaXB0aW9uKQogICAgICAgIHNlbGYubWVzc2FnZXNMYXlvdXQuYWRkV2lkZ2V0KHNlbGYubGJNZXRhZGF0YSkKICAgICAgICBzZWxmLm1lc3NhZ2VzTGF5b3V0LmFkZFdpZGdldChzZWxmLnR4SGlzdG9yeSkKICAgICAgICBzZWxmLm1lc3NhZ2VzTGF5b3V0LmFkZFdpZGdldChzZWxmLm1lc3NhZ2VGcmFtZSkKICAgICAgICBzZWxmLm1lc3NhZ2VzTGF5b3V0LmFkZExheW91dChzZWxmLmJvdHRvbUJhckxheW91dCkKCiAgICAgICAgIyAtLS0g5a+56K+d5YiX6KGo5qCH562+6aG1IC0tLQogICAgICAgIHNlbGYudGJDb252ZXJzYXRpb25zID0gUXRXaWRnZXRzLlFXaWRnZXQoKQogICAgICAgIHNlbGYudGJDb252ZXJzYXRpb25zLnNldE9iamVjdE5hbWUoInRiQ29udmVyc2F0aW9ucyIpCiAgICAgICAgc2VsZi5jb252ZXJzYXRpb25zTGF5b3V0ID0gUXRXaWRnZXRzLlFWQm94TGF5b3V0KHNlbGYudGJDb252ZXJzYXRpb25zKQogICAgICAgIHNlbGYuY29udmVyc2F0aW9uc0xheW91dC5zZXRDb250ZW50c01hcmdpbnMoNCwgNCwgNCwgNCkKICAgICAgICBzZWxmLmNvbnZlcnNhdGlvbnNMYXlvdXQuc2V0U3BhY2luZyg0KQoKICAgICAgICAjIOaQnOe0ouWMugogICAgICAgIHNlbGYuc2VhcmNoRnJhbWUgPSBRdFdpZGdldHMuUUhCb3hMYXlvdXQoKQogICAgICAgIHNlbGYucHRTZWFyY2hDb252ZXJzYXRpb25DYXJkID0gUXRXaWRnZXRzLlFQbGFpblRleHRFZGl0KCkKICAgICAgICBzZWxmLnB0U2VhcmNoQ29udmVyc2F0aW9uQ2FyZC5zZXRQbGFjZWhvbGRlclRleHQoIuaQnOe0ouWvueivnS4uLiIpCiAgICAgICAgc2VsZi5wdFNlYXJjaENvbnZlcnNhdGlvbkNhcmQuc2V0Rml4ZWRIZWlnaHQoMzApCiAgICAgICAgc2VsZi5wYlNlYXJjaENvbnZlcnNhdGlvbkNhcmQgPSBRdFdpZGdldHMuUVB1c2hCdXR0b24oIuaQnOe0oiIpCiAgICAgICAgc2VsZi5wYlNlYXJjaENvbnZlcnNhdGlvbkNhcmQuc2V0Rml4ZWRXaWR0aCg2MCkKICAgICAgICBzZWxmLnNlYXJjaEZyYW1lLmFkZFdpZGdldChzZWxmLnB0U2VhcmNoQ29udmVyc2F0aW9uQ2FyZCkKICAgICAgICBzZWxmLnNlYXJjaEZyYW1lLmFkZFdpZGdldChzZWxmLnBiU2VhcmNoQ29udmVyc2F0aW9uQ2FyZCkKCiAgICAgICAgIyDmlrDlu7rmjInpkq4KICAgICAgICBzZWxmLnBiTmV3ID0gUXRXaWRnZXRzLlFQdXNoQnV0dG9uKCIrIOaWsOW7uuWvueivnSIpCiAgICAgICAgc2VsZi5wYk5ldy5zZXRTdHlsZVNoZWV0KCIiIgogICAgICAgICAgICBRUHVzaEJ1dHRvbiB7IGJhY2tncm91bmQtY29sb3I6ICM1Q0I4NUM7IGNvbG9yOiB3aGl0ZTsgYm9yZGVyLXJhZGl1czogNHB4OyBmb250LXNpemU6IDEzcHg7IHBhZGRpbmc6IDZweDsgfQogICAgICAgICAgICBRUHVzaEJ1dHRvbjpob3ZlciB7IGJhY2tncm91bmQtY29sb3I6ICM0Q0FFNEM7IH0KICAgICAgICAiIiIpCgogICAgICAgICMg5a+56K+d5Y2h54mH5rua5Yqo5Yy6CiAgICAgICAgc2VsZi5zYUNvbnZlcnNhdGlvbkNhcmQgPSBRdFdpZGdldHMuUVNjcm9sbEFyZWEoKQogICAgICAgIHNlbGYuc2FDb252ZXJzYXRpb25DYXJkLnNldFdpZGdldFJlc2l6YWJsZShUcnVlKQogICAgICAgIHNlbGYuc2FDb252ZXJzYXRpb25DYXJkLnNldE9iamVjdE5hbWUoInNhQ29udmVyc2F0aW9uQ2FyZCIpCgogICAgICAgIHNlbGYuY29udmVyc2F0aW9uc0xheW91dC5hZGRMYXlvdXQoc2VsZi5zZWFyY2hGcmFtZSkKICAgICAgICBzZWxmLmNvbnZlcnNhdGlvbnNMYXlvdXQuYWRkV2lkZ2V0KHNlbGYucGJOZXcpCiAgICAgICAgc2VsZi5jb252ZXJzYXRpb25zTGF5b3V0LmFkZFdpZGdldChzZWxmLnNhQ29udmVyc2F0aW9uQ2FyZCkKCiAgICAgICAgIyAtLS0g5aSn5qih5Z6L6YWN572u5qCH562+6aG1IC0tLQogICAgICAgIHNlbGYudGJTZXR0aW5ncyA9IFF0V2lkZ2V0cy5RV2lkZ2V0KCkKICAgICAgICBzZWxmLnRiU2V0dGluZ3Muc2V0T2JqZWN0TmFtZSgidGJTZXR0aW5ncyIpCiAgICAgICAgc2VsZi5zZXR0aW5nc0xheW91dCA9IFF0V2lkZ2V0cy5RVkJveExheW91dChzZWxmLnRiU2V0dGluZ3MpCiAgICAgICAgc2VsZi5zZXR0aW5nc0xheW91dC5zZXRDb250ZW50c01hcmdpbnMoNCwgNCwgNCwgNCkKICAgICAgICBzZWxmLnNldHRpbmdzTGF5b3V0LnNldFNwYWNpbmcoNikKCiAgICAgICAgIyDphY3nva7pobXmoIfpopgKICAgICAgICBzZWxmLmxibFNldHRpbmdzVGl0bGUgPSBRdFdpZGdldHMuUUxhYmVsKCLlpKfmqKHlnovphY3nva4iKQogICAgICAgIHNlbGYubGJsU2V0dGluZ3NUaXRsZS5zZXRTdHlsZVNoZWV0KCJmb250LXNpemU6IDE0cHg7IGZvbnQtd2VpZ2h0OiBib2xkOyIpCgogICAgICAgIHNlbGYubGJsU2V0dGluZ3NIaW50ID0gUXRXaWRnZXRzLlFMYWJlbCgi566h55CGIEFQSSDnq6/ngrnlj4rlr4bpkqXjgILmt7vliqDmqKHlnovml7blj6/lj4LogIPlhoXnva7kv6Hmga/vvIzmlK/mjIHku7vmhI8gT3BlbkFJIOWFvOWuueaOpeWPo+OAgiIpCiAgICAgICAgc2VsZi5sYmxTZXR0aW5nc0hpbnQuc2V0V29yZFdyYXAoVHJ1ZSkKICAgICAgICBzZWxmLmxibFNldHRpbmdzSGludC5zZXRTdHlsZVNoZWV0KCJjb2xvcjogIzY2NjsgZm9udC1zaXplOiAxMXB4OyIpCgogICAgICAgICMg5qih5Z6L6YWN572u6KGo5qC8CiAgICAgICAgc2VsZi5zZXR0aW5nc1RhYmxlID0gUXRXaWRnZXRzLlFUYWJsZVdpZGdldCgpCiAgICAgICAgc2VsZi5zZXR0aW5nc1RhYmxlLnNldENvbHVtbkNvdW50KDQpCiAgICAgICAgc2VsZi5zZXR0aW5nc1RhYmxlLnNldEhvcml6b250YWxIZWFkZXJMYWJlbHMoWyLmqKHlnovlkI3np7AiLCAiQVBJIOerr+eCuSIsICJBUEkgS2V5IiwgIiJdKQogICAgICAgIHNlbGYuc2V0dGluZ3NUYWJsZS5ob3Jpem9udGFsSGVhZGVyKCkuc2V0U3RyZXRjaExhc3RTZWN0aW9uKEZhbHNlKQogICAgICAgIHNlbGYuc2V0dGluZ3NUYWJsZS5ob3Jpem9udGFsSGVhZGVyKCkuc2V0U2VjdGlvblJlc2l6ZU1vZGUoMCwgUXRXaWRnZXRzLlFIZWFkZXJWaWV3LlN0cmV0Y2gpCiAgICAgICAgc2VsZi5zZXR0aW5nc1RhYmxlLmhvcml6b250YWxIZWFkZXIoKS5zZXRTZWN0aW9uUmVzaXplTW9kZSgxLCBRdFdpZGdldHMuUUhlYWRlclZpZXcuU3RyZXRjaCkKICAgICAgICBzZWxmLnNldHRpbmdzVGFibGUuaG9yaXpvbnRhbEhlYWRlcigpLnNldFNlY3Rpb25SZXNpemVNb2RlKDIsIFF0V2lkZ2V0cy5RSGVhZGVyVmlldy5TdHJldGNoKQogICAgICAgIHNlbGYuc2V0dGluZ3NUYWJsZS5zZXRDb2x1bW5XaWR0aCgzLCA2MCkKICAgICAgICBzZWxmLnNldHRpbmdzVGFibGUudmVydGljYWxIZWFkZXIoKS5zZXRWaXNpYmxlKEZhbHNlKQogICAgICAgIHNlbGYuc2V0dGluZ3NUYWJsZS5zZXRTZWxlY3Rpb25CZWhhdmlvcihRdFdpZGdldHMuUUFic3RyYWN0SXRlbVZpZXcuU2VsZWN0Um93cykKCiAgICAgICAgIyDmt7vliqDmqKHlnovmjInpkq4KICAgICAgICBzZWxmLmJ0bkFkZE1vZGVsID0gUXRXaWRnZXRzLlFQdXNoQnV0dG9uKCIrIOa3u+WKoOaooeWeiyIpCiAgICAgICAgc2VsZi5idG5BZGRNb2RlbC5zZXRTdHlsZVNoZWV0KCIiIgogICAgICAgICAgICBRUHVzaEJ1dHRvbiB7IGJhY2tncm91bmQtY29sb3I6ICM1Q0I4NUM7IGNvbG9yOiB3aGl0ZTsgYm9yZGVyLXJhZGl1czogNHB4OyBwYWRkaW5nOiA2cHggMTZweDsgfQogICAgICAgICAgICBRUHVzaEJ1dHRvbjpob3ZlciB7IGJhY2tncm91bmQtY29sb3I6ICM0Q0FFNEM7IH0KICAgICAgICAiIiIpCgogICAgICAgICMg5qih5Z6L6YWN572u6aG155qEIui3s+i/h+ehruiupCLlvIDlhbPvvIjkuI7lupXpg6jmoI/nmoQgY2JTa2lwQ29uZmlybSDkv53mjIHlkIzmraXvvIkKICAgICAgICBzZWxmLmNiU2tpcENvbmZpcm1TZXR0aW5ncyA9IFF0V2lkZ2V0cy5RQ2hlY2tCb3goIui3s+i/h+S7o+eggeaJp+ihjOehruiupO+8iOebtOaOpeaJp+ihjCBQeVFHSVMvUHJvY2Vzc2luZ++8jOS4jeWGjeW8ueeql++8iSIpCiAgICAgICAgc2VsZi5jYlNraXBDb25maXJtU2V0dGluZ3Muc2V0U3R5bGVTaGVldCgiUUNoZWNrQm94IHsgZm9udC1zaXplOiAxMnB4OyBjb2xvcjogIzg4ODsgbWFyZ2luLXRvcDogOHB4OyB9IikKCiAgICAgICAgc2VsZi5zZXR0aW5nc0xheW91dC5hZGRXaWRnZXQoc2VsZi5sYmxTZXR0aW5nc1RpdGxlKQogICAgICAgIHNlbGYuc2V0dGluZ3NMYXlvdXQuYWRkV2lkZ2V0KHNlbGYubGJsU2V0dGluZ3NIaW50KQogICAgICAgIHNlbGYuc2V0dGluZ3NMYXlvdXQuYWRkV2lkZ2V0KHNlbGYuc2V0dGluZ3NUYWJsZSkKICAgICAgICBzZWxmLnNldHRpbmdzTGF5b3V0LmFkZFdpZGdldChzZWxmLmJ0bkFkZE1vZGVsKQogICAgICAgIHNlbGYuc2V0dGluZ3NMYXlvdXQuYWRkV2lkZ2V0KHNlbGYuY2JTa2lwQ29uZmlybVNldHRpbmdzKQogICAgICAgIHNlbGYuc2V0dGluZ3NMYXlvdXQuYWRkU3RyZXRjaCgpCgogICAgICAgIHNlbGYudHdUYWJzLmFkZFRhYihzZWxmLnRiTWVzc2FnZXMsICLlr7nor50iKQogICAgICAgIHNlbGYudHdUYWJzLmFkZFRhYihzZWxmLnRiQ29udmVyc2F0aW9ucywgIuWvueivneWIl+ihqCIpCiAgICAgICAgc2VsZi50d1RhYnMuYWRkVGFiKHNlbGYudGJTZXR0aW5ncywgIuaooeWei+mFjee9riIpCgogICAgICAgIHNlbGYubWFpbkxheW91dC5hZGRXaWRnZXQoc2VsZi50d1RhYnMpCgogICAgICAgIFFHSVNBZ2VudERvY2tXaWRnZXQuc2V0V2lkZ2V0KHNlbGYuY2VudHJhbFdpZGdldCkKCiAgICAgICAgc2VsZi5yZXRyYW5zbGF0ZVVpKCkKICAgICAgICBRdENvcmUuUU1ldGFPYmplY3QuY29ubmVjdFNsb3RzQnlOYW1lKFFHSVNBZ2VudERvY2tXaWRnZXQpCgogICAgZGVmIHJldHJhbnNsYXRlVWkoc2VsZik6CiAgICAgICAgcGFzcwo=
+from PyQt5 import QtCore, QtGui, QtWidgets
+
+
+class Ui_QGISAgentDockWidget(object):
+    def setupUi(self, QGISAgentDockWidget):
+        QGISAgentDockWidget.setObjectName("QGISAgentDockWidget")
+        QGISAgentDockWidget.setWindowTitle("QGIS Agent")
+        QGISAgentDockWidget.setMinimumSize(360, 500)
+
+        self.centralWidget = QtWidgets.QWidget()
+        self.centralWidget.setObjectName("centralWidget")
+
+        self.mainLayout = QtWidgets.QVBoxLayout(self.centralWidget)
+        self.mainLayout.setContentsMargins(6, 6, 6, 6)
+        self.mainLayout.setSpacing(4)
+
+        # 标签页
+        self.twTabs = QtWidgets.QTabWidget()
+        self.twTabs.setObjectName("twTabs")
+
+        # --- 对话标签页 ---
+        self.tbMessages = QtWidgets.QWidget()
+        self.tbMessages.setObjectName("tbMessages")
+        self.messagesLayout = QtWidgets.QVBoxLayout(self.tbMessages)
+        self.messagesLayout.setContentsMargins(0, 0, 0, 0)
+        self.messagesLayout.setSpacing(4)
+
+        # 标题行（只有标题，移除了配置按钮）
+        self.titleLayout = QtWidgets.QHBoxLayout()
+        self.lbTitle = QtWidgets.QLabel("新建对话")
+        self.lbTitle.setStyleSheet("font-size: 14px; font-weight: bold;")
+        self.lbTitle.setWordWrap(True)
+        self.titleLayout.addWidget(self.lbTitle, 1)
+
+        self.lbDescription = QtWidgets.QLabel("选择或新建对话开始使用QGIS Agent")
+        self.lbDescription.setWordWrap(True)
+        self.lbDescription.setStyleSheet("color: #666;")
+
+        self.lbMetadata = QtWidgets.QLabel("")
+        self.lbMetadata.setStyleSheet("color: #888; font-size: 11px;")
+        self.lbMetadata.setWordWrap(True)
+
+        # 对话历史
+        self.txHistory = QtWidgets.QTextBrowser()
+        self.txHistory.setOpenExternalLinks(True)
+        self.txHistory.setReadOnly(True)
+
+        # 消息输入区
+        self.messageFrame = QtWidgets.QFrame()
+        self.messageFrame.setObjectName("messageFrame")
+        self.messageLayout = QtWidgets.QHBoxLayout(self.messageFrame)
+        self.messageLayout.setContentsMargins(0, 0, 0, 0)
+
+        self.ptMessage = QtWidgets.QPlainTextEdit()
+        self.ptMessage.setPlaceholderText("输入您的问题...")
+        self.ptMessage.setFixedHeight(60)
+        self.ptMessage.setObjectName("ptMessage")
+
+        self.pbSend = QtWidgets.QPushButton("发送")
+        self.pbSend.setFixedSize(60, 60)
+        self.pbSend.setStyleSheet("""
+            QPushButton { background-color: #4A90D9; color: white; border-radius: 4px; font-size: 14px; }
+            QPushButton:hover { background-color: #357ABD; }
+            QPushButton:disabled { background-color: #ccc; }
+        """)
+
+        self.messageLayout.addWidget(self.ptMessage)
+        self.messageLayout.addWidget(self.pbSend)
+
+        # 底部栏：模型选择 + Temperature + 停止按钮
+        self.bottomBarLayout = QtWidgets.QHBoxLayout()
+        self.bottomBarLayout.setContentsMargins(0, 2, 0, 0)
+        self.bottomBarLayout.setSpacing(6)
+
+        self.lblModel = QtWidgets.QLabel("模型:")
+        self.lblModel.setStyleSheet("font-size: 12px; color: #888;")
+        self.cbModelSelector = QtWidgets.QComboBox()
+        self.cbModelSelector.setMinimumWidth(120)
+        self.cbModelSelector.setStyleSheet("QComboBox { font-size: 12px; padding: 2px 4px; }")
+
+        self.lblTemperature = QtWidgets.QLabel("温度:")
+        self.lblTemperature.setStyleSheet("font-size: 12px; color: #888;")
+        self.sliderTemperature = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.sliderTemperature.setRange(0, 100)
+        self.sliderTemperature.setValue(0)
+        self.sliderTemperature.setFixedWidth(80)
+        self.sliderTemperature.setToolTip("LLM 温度 (0=精确, 1=创造)")
+        self.lblTempValue = QtWidgets.QLabel("0.0")
+        self.lblTempValue.setStyleSheet("font-size: 11px; color: #888; min-width: 24px;")
+        self.sliderTemperature.valueChanged.connect(
+            lambda v: self.lblTempValue.setText(f"{v/100:.1f}")
+        )
+
+        self.pbStop = QtWidgets.QPushButton("⏹ 停止")
+        self.pbStop.setFixedSize(70, 26)
+        self.pbStop.setVisible(False)
+        self.pbStop.setStyleSheet("""
+            QPushButton { background-color: #FA7070; color: white; border-radius: 4px; font-size: 12px; }
+            QPushButton:hover { background-color: #E05050; }
+        """)
+
+        # 跳过代码确认的开关
+        self.cbSkipConfirm = QtWidgets.QCheckBox("跳过确认")
+        self.cbSkipConfirm.setToolTip("勾选后直接执行所有 PyQGIS/Processing 代码，不再弹窗确认")
+        self.cbSkipConfirm.setStyleSheet("QCheckBox { font-size: 11px; color: #888; }")
+
+        self.bottomBarLayout.addWidget(self.lblModel)
+        self.bottomBarLayout.addWidget(self.cbModelSelector, 1)
+        self.bottomBarLayout.addWidget(self.lblTemperature)
+        self.bottomBarLayout.addWidget(self.sliderTemperature)
+        self.bottomBarLayout.addWidget(self.lblTempValue)
+        self.bottomBarLayout.addWidget(self.cbSkipConfirm)
+        self.bottomBarLayout.addWidget(self.pbStop)
+
+        self.messagesLayout.addLayout(self.titleLayout)
+        self.messagesLayout.addWidget(self.lbDescription)
+        self.messagesLayout.addWidget(self.lbMetadata)
+        self.messagesLayout.addWidget(self.txHistory)
+        self.messagesLayout.addWidget(self.messageFrame)
+        self.messagesLayout.addLayout(self.bottomBarLayout)
+
+        # --- 对话列表标签页 ---
+        self.tbConversations = QtWidgets.QWidget()
+        self.tbConversations.setObjectName("tbConversations")
+        self.conversationsLayout = QtWidgets.QVBoxLayout(self.tbConversations)
+        self.conversationsLayout.setContentsMargins(4, 4, 4, 4)
+        self.conversationsLayout.setSpacing(4)
+
+        # 搜索区
+        self.searchFrame = QtWidgets.QHBoxLayout()
+        self.ptSearchConversationCard = QtWidgets.QPlainTextEdit()
+        self.ptSearchConversationCard.setPlaceholderText("搜索对话...")
+        self.ptSearchConversationCard.setFixedHeight(30)
+        self.pbSearchConversationCard = QtWidgets.QPushButton("搜索")
+        self.pbSearchConversationCard.setFixedWidth(60)
+        self.searchFrame.addWidget(self.ptSearchConversationCard)
+        self.searchFrame.addWidget(self.pbSearchConversationCard)
+
+        # 新建按钮
+        self.pbNew = QtWidgets.QPushButton("+ 新建对话")
+        self.pbNew.setStyleSheet("""
+            QPushButton { background-color: #5CB85C; color: white; border-radius: 4px; font-size: 13px; padding: 6px; }
+            QPushButton:hover { background-color: #4CAE4C; }
+        """)
+
+        # 对话卡片滚动区
+        self.saConversationCard = QtWidgets.QScrollArea()
+        self.saConversationCard.setWidgetResizable(True)
+        self.saConversationCard.setObjectName("saConversationCard")
+
+        self.conversationsLayout.addLayout(self.searchFrame)
+        self.conversationsLayout.addWidget(self.pbNew)
+        self.conversationsLayout.addWidget(self.saConversationCard)
+
+        # --- 大模型配置标签页 ---
+        self.tbSettings = QtWidgets.QWidget()
+        self.tbSettings.setObjectName("tbSettings")
+        self.settingsLayout = QtWidgets.QVBoxLayout(self.tbSettings)
+        self.settingsLayout.setContentsMargins(4, 4, 4, 4)
+        self.settingsLayout.setSpacing(6)
+
+        # 配置页标题
+        self.lblSettingsTitle = QtWidgets.QLabel("大模型配置")
+        self.lblSettingsTitle.setStyleSheet("font-size: 14px; font-weight: bold;")
+
+        self.lblSettingsHint = QtWidgets.QLabel("管理 API 端点及密钥。添加模型时可参考内置信息，支持任意 OpenAI 兼容接口。")
+        self.lblSettingsHint.setWordWrap(True)
+        self.lblSettingsHint.setStyleSheet("color: #666; font-size: 11px;")
+
+        # 模型配置表格
+        self.settingsTable = QtWidgets.QTableWidget()
+        self.settingsTable.setColumnCount(4)
+        self.settingsTable.setHorizontalHeaderLabels(["模型名称", "API 端点", "API Key", ""])
+        self.settingsTable.horizontalHeader().setStretchLastSection(False)
+        self.settingsTable.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        self.settingsTable.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        self.settingsTable.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
+        self.settingsTable.setColumnWidth(3, 60)
+        self.settingsTable.verticalHeader().setVisible(False)
+        self.settingsTable.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+
+        # 添加模型按钮
+        self.btnAddModel = QtWidgets.QPushButton("+ 添加模型")
+        self.btnAddModel.setStyleSheet("""
+            QPushButton { background-color: #5CB85C; color: white; border-radius: 4px; padding: 6px 16px; }
+            QPushButton:hover { background-color: #4CAE4C; }
+        """)
+
+        # 模型配置页的"跳过确认"开关（与底部栏的 cbSkipConfirm 保持同步）
+        self.cbSkipConfirmSettings = QtWidgets.QCheckBox("跳过代码执行确认（直接执行 PyQGIS/Processing，不再弹窗）")
+        self.cbSkipConfirmSettings.setStyleSheet("QCheckBox { font-size: 12px; color: #888; margin-top: 8px; }")
+
+        self.settingsLayout.addWidget(self.lblSettingsTitle)
+        self.settingsLayout.addWidget(self.lblSettingsHint)
+        self.settingsLayout.addWidget(self.settingsTable)
+        self.settingsLayout.addWidget(self.btnAddModel)
+        self.settingsLayout.addWidget(self.cbSkipConfirmSettings)
+        self.settingsLayout.addStretch()
+
+        self.twTabs.addTab(self.tbMessages, "对话")
+        self.twTabs.addTab(self.tbConversations, "对话列表")
+        self.twTabs.addTab(self.tbSettings, "模型配置")
+
+        self.mainLayout.addWidget(self.twTabs)
+
+        QGISAgentDockWidget.setWidget(self.centralWidget)
+
+        self.retranslateUi()
+        QtCore.QMetaObject.connectSlotsByName(QGISAgentDockWidget)
+
+    def retranslateUi(self):
+        pass

@@ -1,1 +1,62 @@
-5bi46KeB6Zeu6aKYDQo9PT09PT09PT09PT0NCg0KUTog5o+S5Lu25o+Q56S657y65bCR5L6d6LWW5oCO5LmI5Yqe77yfDQotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tDQoNCkE6IOmmluasoeWQr+WKqOaXtuS8muaPkOekuuiHquWKqOWuieijhe+8jOeCueWHu+OAjOaYr+OAjeWNs+WPr+OAguWmguaenOiHquWKqOWuieijheWksei0pe+8jA0K6K+35ZyoIE9TR2VvNFcgU2hlbGwg5Lit5omL5Yqo6L+Q6KGM77yaDQoNCi4uIGNvZGUtYmxvY2s6OiBiYXNoDQoNCiAgICBwaXAgaW5zdGFsbCBsYW5nY2hhaW4gbGFuZ2NoYWluLWNvcmUgbGFuZ2NoYWluLW9wZW5haSBsYW5nY2hhaW4tZGVlcHNlZWsgcmVxdWVzdHMNCg0KUTog5Li65LuA5LmI5Y+R6YCB5raI5oGv5ZCO5rKh5pyJ5Y+N5bqU77yfDQotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tDQoNCkE6IOivt+ajgOafpe+8mg0KDQoxLiDmmK/lkKblt7LlnKjjgIzmqKHlnovphY3nva7jgI3moIfnrb7pobXmt7vliqDkuoYgTExNDQoyLiBBUEkgS2V5IOaYr+WQpuato+ehrg0KMy4g572R57uc5piv5ZCm5Y+v5Lul6K6/6ZeuIEFQSSDnq6/ngrkNCjQuIOafpeeciyBRR0lTIOeahOOAjOaXpeW/l+a2iOaBr+OAjemdouadv+aYr+WQpuaciemUmeivr+S/oeaBrw0KDQpROiBBZ2VudCDnlJ/miJDnmoTku6PnoIHmmK/lkKbmraPnoa7vvJ8NCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0NCg0KQTogQWdlbnQg5L2/55SoIExMTSDnlJ/miJDku6PnoIHvvIzlj6/og73kuI3lrozlhajmraPnoa7jgILlu7rorq7vvJoNCg0KMS4g5Zyo5omn6KGM5Luj56CB5YmN77yM5LuU57uG5qOA5p+l56Gu6K6k5a+56K+d5qGG5Lit55qE5Luj56CB6aKE6KeIDQoyLiDlhYjnlKjnroDljZXku7vliqHmtYvor5UNCjMuIOWmguaenOS7o+eggeaJp+ihjOWksei0pe+8jEFnZW50IOS8muiHquWKqOWIhuaekOmUmeivr+W5tuWwneivleS/ruWkjQ0KDQpROiDlpoLkvZXorqkgQWdlbnQg6K6w5L2P5oiR55qE5YGP5aW977yfDQotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQ0KDQpBOiBBZ2VudCDmlK/mjIHplb/mnJ/orrDlv4blip/og73vvJoNCg0KLSDnm7TmjqXlkYror4kgQWdlbnQgIuivt+iusOS9jy4uLiLvvIzlroPkvJrosIPnlKggc2F2ZV9tZW1vcnkg5bel5YW3DQotIOS5n+WPr+S7peivtCAi5biu5oiR6K6w5L2P5bi455So6Lev5b6E5pivLi4uIg0KLSDkuIvmrKHlr7nor53ml7bvvIxBZ2VudCDkvJroh6rliqjliqDovb3kuYvliY3nmoTorrDlv4YNCg0KUTog5pSv5oyB5ZOq5Lqb5pWw5o2u5qC85byP77yfDQotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQ0KDQpBOiDpgJrov4cgUUdJUyDnmoQgT0dSL0dEQUwg6amx5Yqo77yM5pSv5oyB5Yeg5LmO5omA5pyJ5bi46KeBIEdJUyDmoLzlvI/vvJoNCg0KLSDnn6Lph486IFNoYXBlZmlsZSwgR2VvSlNPTiwgR1BLRywgS01MLCBHTUwsIENTViDnrYkNCi0g5qCF5qC8OiBHZW9USUZGLCBJTUcsIEVDVywgSlBFRzIwMDAg562JDQoNClE6IOS4uuS7gOS5iOagh+azqOiuvue9ruWksei0pe+8nw0KLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQ0KDQpBOiBRR0lTIOWQhOeJiOacrOagh+azqCBBUEkg5beu5byC6L6D5aSn44CCUUdJUyBBZ2VudCDnmoQgc2V0X2xheWVyX2xhYmVsaW5nDQrlt6Xlhbflt7LlpITnkIbkuoblpJrniYjmnKzlhbzlrrnpl67popjjgILlpoLmnpzku43mnInpl67popjvvIzor7flnKggR2l0SHViIElzc3Vlcw0K5Lit5Y+N6aaI5L2g55qEIFFHSVMg54mI5pys44CCDQoNClE6IOWPr+S7peemu+e6v+S9v+eUqOWQl++8nw0KLS0tLS0tLS0tLS0tLS0tLS0tLS0tDQoNCkE6IOS4jeWPr+S7peOAgkFnZW50IOmcgOimgemAmui/h+e9kee7nOiwg+eUqCBMTE0gQVBJIOaJjeiDveW3peS9nOOAgg0K5aaC5p6c6ZyA6KaB56a757q/5L2/55So77yM5Y+v5Lul6ICD6JmR6YOo572y5pys5ZywIExMTe+8iOWmgiBPbGxhbWHvvInvvIwNCueEtuWQjumAmui/h+OAjOiHquWumuS5ieOAjeaooeWei+mFjee9rui/nuaOpeWIsOacrOWcsOacjeWKoeOAgg0K
+常见问题
+============
+
+Q: 插件提示缺少依赖怎么办？
+----------------------------
+
+A: 首次启动时会提示自动安装，点击「是」即可。如果自动安装失败，
+请在 OSGeo4W Shell 中手动运行：
+
+.. code-block:: bash
+
+    pip install langchain langchain-core langchain-openai langchain-deepseek requests
+
+Q: 为什么发送消息后没有反应？
+-------------------------------
+
+A: 请检查：
+
+1. 是否已在「模型配置」标签页添加了 LLM
+2. API Key 是否正确
+3. 网络是否可以访问 API 端点
+4. 查看 QGIS 的「日志消息」面板是否有错误信息
+
+Q: Agent 生成的代码是否正确？
+-------------------------------
+
+A: Agent 使用 LLM 生成代码，可能不完全正确。建议：
+
+1. 在执行代码前，仔细检查确认对话框中的代码预览
+2. 先用简单任务测试
+3. 如果代码执行失败，Agent 会自动分析错误并尝试修复
+
+Q: 如何让 Agent 记住我的偏好？
+--------------------------------
+
+A: Agent 支持长期记忆功能：
+
+- 直接告诉 Agent "请记住..."，它会调用 save_memory 工具
+- 也可以说 "帮我记住常用路径是..."
+- 下次对话时，Agent 会自动加载之前的记忆
+
+Q: 支持哪些数据格式？
+-----------------------
+
+A: 通过 QGIS 的 OGR/GDAL 驱动，支持几乎所有常见 GIS 格式：
+
+- 矢量: Shapefile, GeoJSON, GPKG, KML, GML, CSV 等
+- 栅格: GeoTIFF, IMG, ECW, JPEG2000 等
+
+Q: 为什么标注设置失败？
+-------------------------
+
+A: QGIS 各版本标注 API 差异较大。QGIS Agent 的 set_layer_labeling
+工具已处理了多版本兼容问题。如果仍有问题，请在 GitHub Issues
+中反馈你的 QGIS 版本。
+
+Q: 可以离线使用吗？
+---------------------
+
+A: 不可以。Agent 需要通过网络调用 LLM API 才能工作。
+如果需要离线使用，可以考虑部署本地 LLM（如 Ollama），
+然后通过「自定义」模型配置连接到本地服务。

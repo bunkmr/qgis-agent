@@ -1,1 +1,36 @@
-Li4gUUdJUyBBZ2VudCBkb2N1bWVudGF0aW9uIG1hc3RlciBmaWxlDQoNClFHSVMgQWdlbnQg55So5oi35omL5YaMDQo9PT09PT09PT09PT09PT09PT09PT09PT0NCg0KUUdJUyBBZ2VudCDmmK/kuIDkuKrlsIblpKfor63oqIDmqKHlnosgKExMTSkg5bWM5YWlIFFHSVMg55qE5pm66IO95Yqp5omL5o+S5Lu277yMDQrnlKjoh6rnhLbor63oqIDmk43mjqcgUUdJU++8jOaXoOmcgOe8luWGmeS7o+eggeOAgg0KDQouLiB0b2N0cmVlOjoNCiAgIDptYXhkZXB0aDogMg0KICAgOmNhcHRpb246IOebruW9lQ0KDQogICBpbnRyb2R1Y3Rpb24NCiAgIGluc3RhbGxhdGlvbg0KICAgdXNhZ2UNCiAgIHRvb2xzDQogICBtb2RlbHMNCiAgIGZhcQ0KDQrlv6vpgJ/lvIDlp4sNCi0tLS0tLS0tDQoNCjEuICoq5a6J6KOF5o+S5Lu2Kio6IFFHSVMg4oaSIOaPkuS7tiDihpIg566h55CG5bm25a6J6KOF5o+S5Lu2IOKGkiDku44gWklQIOWuieijhQ0KMi4gKirphY3nva7mqKHlnosqKjog5Zyo44CM5qih5Z6L6YWN572u44CN5qCH562+6aG15re75YqgIExMTe+8iOWmgiBEZWVwU2Vla+OAgU9wZW5BSe+8iQ0KMy4gKirmlrDlu7rlr7nor50qKjog54K55Ye744CMKyDmlrDlu7rlr7nor53jgI3liJvlu7rmlrDkvJror50NCjQuICoq5byA5aeL5o+Q6ZeuKio6IOeUqOiHqueEtuivreiogOaPj+i/sOmcgOaxgu+8jEFnZW50IOiHquWKqOiwg+eUqOW3peWFt+WujOaIkA0KDQrmlK/mjIHnmoTlip/og70NCi0tLS0tLS0tLS0NCg0KLSDwn6egICoq5aSa5qih5Z6L5pSv5oyBKio6IERlZXBTZWVr44CBT3BlbkFJ44CBR0xN44CBR2VtaW5p44CBTWlNbyDnrYkNCi0g8J+boCAqKjExIOS4quWGhee9riBRR0lTIOW3peWFtyoqOiDlm77lsYLnrqHnkIbjgIHnqbrpl7TliIbmnpDjgIHlnLDlm77muLLmn5MNCi0g8J+SrCAqKuWvueivneaMgeS5heWMlioqOiBTUUxpdGUg5a2Y5YKo77yM5pSv5oyB6ZW/5pyf6K6w5b+GDQotIOKaoSAqKue6v+eoi+WuieWFqCoqOiDln7rkuo4gUVRocmVhZFBvb2zvvIzkuI3pmLvloZ4gVUkNCi0g8J+MkCAqKuS7o+eggeaJp+ihjOehruiupCoqOiDmiafooYwgUHlRR0lTIOS7o+eggeWJjeW8ueeql+ehruiupA0KLSDwn4yh77iPICoqVGVtcGVyYXR1cmUg5o6n5Yi2Kio6IOWPr+iwg+iKgiBMTE0g5Yib6YCg5YqbL+eyvuehruW6pg0K
+.. QGIS Agent documentation master file
+
+QGIS Agent 用户手册
+========================
+
+QGIS Agent 是一个将大语言模型 (LLM) 嵌入 QGIS 的智能助手插件，
+用自然语言操控 QGIS，无需编写代码。
+
+.. toctree::
+   :maxdepth: 2
+   :caption: 目录
+
+   introduction
+   installation
+   usage
+   tools
+   models
+   faq
+
+快速开始
+--------
+
+1. **安装插件**: QGIS → 插件 → 管理并安装插件 → 从 ZIP 安装
+2. **配置模型**: 在「模型配置」标签页添加 LLM（如 DeepSeek、OpenAI）
+3. **新建对话**: 点击「+ 新建对话」创建新会话
+4. **开始提问**: 用自然语言描述需求，Agent 自动调用工具完成
+
+支持的功能
+----------
+
+- 🧠 **多模型支持**: DeepSeek、OpenAI、GLM、Gemini、MiMo 等
+- 🛠 **11 个内置 QGIS 工具**: 图层管理、空间分析、地图渲染
+- 💬 **对话持久化**: SQLite 存储，支持长期记忆
+- ⚡ **线程安全**: 基于 QThreadPool，不阻塞 UI
+- 🌐 **代码执行确认**: 执行 PyQGIS 代码前弹窗确认
+- 🌡️ **Temperature 控制**: 可调节 LLM 创造力/精确度

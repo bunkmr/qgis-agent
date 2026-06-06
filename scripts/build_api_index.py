@@ -1,1 +1,70 @@
-IyAtKi0gY29kaW5nOiB1dGYtOCAtKi0NCiIiIg0K54us56uL6ISa5pys77ya5p6E5bu6IFB5UUdJUyBBUEkg5paH5qGj57Si5byV44CCDQoNCuS9v+eUqOaWueazle+8iOWcqCBRR0lTIFB5dGhvbiDmjqfliLblj7DkuK3ov5DooYzvvIk6DQogICAgZXhlYyhvcGVuKHInRDpcV29ya1xxZ2lzX2FnZW50XHNjcmlwdHNcYnVpbGRfYXBpX2luZGV4LnB5JykucmVhZCgpKQ0KDQrmiJblnKjlkb3ku6TooYzvvIjpnIDopoEgUUdJUyDnjq/looPvvIk6DQogICAgcHl0aG9uIGJ1aWxkX2FwaV9pbmRleC5weQ0KIiIiDQoNCmltcG9ydCBvcw0KaW1wb3J0IHN5cw0KDQojIOehruS/nSBxZ2lzX2FnZW50IOWcqCBQeXRob24gcGF0aCDkuK0NCnBsdWdpbl9kaXIgPSBvcy5wYXRoLmRpcm5hbWUob3MucGF0aC5kaXJuYW1lKG9zLnBhdGguYWJzcGF0aChfX2ZpbGVfXykpKQ0KaWYgcGx1Z2luX2RpciBub3QgaW4gc3lzLnBhdGg6DQogICAgc3lzLnBhdGguaW5zZXJ0KDAsIHBsdWdpbl9kaXIpDQoNCmZyb20gcmFnIGltcG9ydCBEb2NTdG9yZSwgZ2VuZXJhdGVfcHlxZ2lzX2RvY3MNCg0KDQpkZWYgbWFpbigpOg0KICAgIHByaW50KCI9IiAqIDYwKQ0KICAgIHByaW50KCIgIFFHSVMgQWdlbnQg4oCUIFB5UUdJUyBBUEkg5paH5qGj57Si5byV5p6E5bu65bel5YW3IikNCiAgICBwcmludCgiPSIgKiA2MCkNCg0KICAgIHN0b3JlID0gRG9jU3RvcmUoKQ0KDQogICAgIyDmo4Dmn6XnjrDmnInntKLlvJUNCiAgICBzdGF0cyA9IHN0b3JlLmdldF9zdGF0cygpDQogICAgaWYgc3RhdHNbImFwaV9kb2NzIl0gPiAwOg0KICAgICAgICBwcmludChmIlxu5b2T5YmN5bey5pyJIHtzdGF0c1snYXBpX2RvY3MnXX0g5p2hIEFQSSDmlofmoaPjgIIiKQ0KICAgICAgICBjaG9pY2UgPSBpbnB1dCgi5piv5ZCm6YeN5bu657Si5byV77yfKHkvTik6ICIpLnN0cmlwKCkubG93ZXIoKQ0KICAgICAgICBpZiBjaG9pY2UgPT0gInkiOg0KICAgICAgICAgICAgcHJpbnQoIua4heepuuaXp+e0ouW8lS4uLiIpDQogICAgICAgICAgICBzdG9yZS5jbGVhcl9hbGwoKQ0KICAgICAgICBlbHNlOg0KICAgICAgICAgICAgcHJpbnQoIuWPlua2iOOAgiIpDQogICAgICAgICAgICByZXR1cm4NCg0KICAgIHByaW50KCJcbuW8gOWni+aehOW7uiBBUEkg5paH5qGj57Si5byVLi4uIikNCiAgICBwcmludCgiLSIgKiA0MCkNCg0KICAgIGRlZiBwcm9ncmVzcyhwaGFzZSwgY3VycmVudCwgdG90YWwpOg0KICAgICAgICBwaGFzZXMgPSB7DQogICAgICAgICAgICAiaW5zcGVjdCI6ICLmraPlnKjlj43lsIQgUUdJUyDmoLjlv4PnsbsuLi4iLA0KICAgICAgICAgICAgInByb2Nlc3NpbmciOiAi5q2j5Zyo5o+Q5Y+WIFByb2Nlc3Npbmcg566X5rOVLi4uIiwNCiAgICAgICAgICAgICJtYW51YWwiOiAi5q2j5Zyo5a+85YWl5omL5Yqo6KGl5YWF5paH5qGjLi4uIiwNCiAgICAgICAgfQ0KICAgICAgICBsYWJlbCA9IHBoYXNlcy5nZXQocGhhc2UsIHBoYXNlKQ0KICAgICAgICBpZiB0b3RhbCA+IDE6DQogICAgICAgICAgICBwcmludChmIiAgW3tjdXJyZW50fS97dG90YWx9XSB7bGFiZWx9IikNCiAgICAgICAgZWxzZToNCiAgICAgICAgICAgIHByaW50KGYiICB7bGFiZWx9IikNCg0KICAgIHJlc3VsdCA9IGdlbmVyYXRlX3B5cWdpc19kb2NzKHN0b3JlLCBwcm9ncmVzc19jYWxsYmFjaz1wcm9ncmVzcykNCg0KICAgIHByaW50KCItIiAqIDQwKQ0KICAgIHByaW50KGYiXG7inIUg57Si5byV5p6E5bu65a6M5oiQ77yBIikNCiAgICBwcmludChmIiAgIC0g6L+Q6KGM5pe2IEFQSSDlj43lsIQ6IHtyZXN1bHRbJ2FwaV9jb3VudCddfSDmnaEiKQ0KICAgIHByaW50KGYiICAgLSBQcm9jZXNzaW5nIOeul+azlToge3Jlc3VsdFsncHJvY2Vzc2luZ19jb3VudCddfSDmnaEiKQ0KICAgIHByaW50KGYiICAgLSDmiYvliqjooaXlhYXmlofmoaM6ICAge3Jlc3VsdFsnbWFudWFsX2NvdW50J119IOadoSIpDQogICAgcHJpbnQoZiIgICAtIOaAu+iuoTogICAgICAgICAgIHtyZXN1bHRbJ3RvdGFsJ119IOadoSIpDQogICAgcHJpbnQoZiJcbuaVsOaNruW6k+S9jee9rjoge3N0b3JlLmRiX3BhdGh9IikNCiAgICBwcmludCgiXG7ntKLlvJXlt7LlsLHnu6rvvIxRR0lTIEFnZW50IOWwhuWcqOS4i+asoeWvueivneaXtuiHquWKqOS9v+eUqCBSQUcg5qOA57Si44CCIikNCg0KDQppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOg0KICAgIG1haW4oKQ0K
+# -*- coding: utf-8 -*-
+"""
+独立脚本：构建 PyQGIS API 文档索引。
+
+使用方法（在 QGIS Python 控制台中运行）:
+    exec(open(r'D:\Work\qgis_agent\scripts\build_api_index.py').read())
+
+或在命令行（需要 QGIS 环境）:
+    python build_api_index.py
+"""
+
+import os
+import sys
+
+# 确保 qgis_agent 在 Python path 中
+plugin_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if plugin_dir not in sys.path:
+    sys.path.insert(0, plugin_dir)
+
+from rag import DocStore, generate_pyqgis_docs
+
+
+def main():
+    print("=" * 60)
+    print("  QGIS Agent — PyQGIS API 文档索引构建工具")
+    print("=" * 60)
+
+    store = DocStore()
+
+    # 检查现有索引
+    stats = store.get_stats()
+    if stats["api_docs"] > 0:
+        print(f"\n当前已有 {stats['api_docs']} 条 API 文档。")
+        choice = input("是否重建索引？(y/N): ").strip().lower()
+        if choice == "y":
+            print("清空旧索引...")
+            store.clear_all()
+        else:
+            print("取消。")
+            return
+
+    print("\n开始构建 API 文档索引...")
+    print("-" * 40)
+
+    def progress(phase, current, total):
+        phases = {
+            "inspect": "正在反射 QGIS 核心类...",
+            "processing": "正在提取 Processing 算法...",
+            "manual": "正在导入手动补充文档...",
+        }
+        label = phases.get(phase, phase)
+        if total > 1:
+            print(f"  [{current}/{total}] {label}")
+        else:
+            print(f"  {label}")
+
+    result = generate_pyqgis_docs(store, progress_callback=progress)
+
+    print("-" * 40)
+    print(f"\n✅ 索引构建完成！")
+    print(f"   - 运行时 API 反射: {result['api_count']} 条")
+    print(f"   - Processing 算法: {result['processing_count']} 条")
+    print(f"   - 手动补充文档:   {result['manual_count']} 条")
+    print(f"   - 总计:           {result['total']} 条")
+    print(f"\n数据库位置: {store.db_path}")
+    print("\n索引已就绪，QGIS Agent 将在下次对话时自动使用 RAG 检索。")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,1 +1,19 @@
-aW1wb3J0IG9zCgpkZWYgbG9hZF9lbnZfZmlsZShwYXRoPU5vbmUpOgogICAgaWYgcGF0aCBpcyBOb25lOgogICAgICAgIHBhdGggPSBvcy5wYXRoLmpvaW4ob3MucGF0aC5kaXJuYW1lKF9fZmlsZV9fKSwgIi5lbnYiKQogICAgaWYgb3MucGF0aC5leGlzdHMocGF0aCk6CiAgICAgICAgd2l0aCBvcGVuKHBhdGgpIGFzIGY6CiAgICAgICAgICAgIGZvciBsaW5lIGluIGY6CiAgICAgICAgICAgICAgICBsaW5lID0gbGluZS5zdHJpcCgpCiAgICAgICAgICAgICAgICBpZiBsaW5lIGFuZCBub3QgbGluZS5zdGFydHN3aXRoKCIjIikgYW5kICI9IiBpbiBsaW5lOgogICAgICAgICAgICAgICAgICAgIGtleSwgdmFsdWUgPSBsaW5lLnNwbGl0KCI9IiwgMSkKICAgICAgICAgICAgICAgICAgICBvcy5lbnZpcm9uW2tleS5zdHJpcCgpXSA9IHZhbHVlLnN0cmlwKCkKCmxvYWRfZW52X2ZpbGUoKQoKREVCVUdfTU9ERSA9IG9zLmVudmlyb24uZ2V0KCJRR0lTX0FHRU5UX0RFQlVHIiwgIkZhbHNlIikgPT0gIlRydWUiCkRCX05BTUUgPSAiUUdJU19BZ2VudC5kYiIKUExVR0lOX05BTUUgPSAiUUdJUyBBZ2VudCIKUExVR0lOX1ZFUlNJT04gPSAiMS4yLjAiCg==
+import os
+
+def load_env_file(path=None):
+    if path is None:
+        path = os.path.join(os.path.dirname(__file__), ".env")
+    if os.path.exists(path):
+        with open(path) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, value = line.split("=", 1)
+                    os.environ[key.strip()] = value.strip()
+
+load_env_file()
+
+DEBUG_MODE = os.environ.get("QGIS_AGENT_DEBUG", "False") == "True"
+DB_NAME = "QGIS_Agent.db"
+PLUGIN_NAME = "QGIS Agent"
+PLUGIN_VERSION = "1.2.0"

@@ -1,1 +1,17 @@
-IyAtKi0gY29kaW5nOiB1dGYtOCAtKi0NCiIiIg0KUkFHIOaooeWdlyDigJQg5pys5ZywIFB5UUdJUyBBUEkg5paH5qGj5qOA57SiICsgQ29va2Jvb2sg6Ieq5oiR6L+b5YyW44CCDQoNCuaguOW/g+e7hOS7tjoNCi0gZG9jX3N0b3JlOiAgIFNRTGl0ZSBGVFM1IOaWh+aho+WtmOWCqA0KLSByZXRyaWV2ZXI6ICAgQVBJIOaWh+aho+ajgOe0ouWZqA0KLSBkb2NfZ2VuZXJhdG9yOiDku44gUUdJUyDov5DooYzml7bmj5Dlj5YgQVBJIOaWh+ahow0KLSBjb29rYm9vazogICAg5oiQ5Yqf5qGI5L6L6Ieq5Yqo5b2S5qGj5LiO5qOA57SiDQoiIiINCg0KZnJvbSAuZG9jX3N0b3JlIGltcG9ydCBEb2NTdG9yZQ0KZnJvbSAucmV0cmlldmVyIGltcG9ydCBBUElEb2NSZXRyaWV2ZXIsIGdldF9yZXRyaWV2ZXIsIGluaXRfcmV0cmlldmVyDQpmcm9tIC5kb2NfZ2VuZXJhdG9yIGltcG9ydCBnZW5lcmF0ZV9weXFnaXNfZG9jcw0KZnJvbSAuY29va2Jvb2sgaW1wb3J0IENvb2tib29rDQoNCl9fYWxsX18gPSBbIkRvY1N0b3JlIiwgIkFQSURvY1JldHJpZXZlciIsICJnZXRfcmV0cmlldmVyIiwgImluaXRfcmV0cmlldmVyIiwgImdlbmVyYXRlX3B5cWdpc19kb2NzIiwgIkNvb2tib29rIl0NCg==
+# -*- coding: utf-8 -*-
+"""
+RAG 模块 — 本地 PyQGIS API 文档检索 + Cookbook 自我进化。
+
+核心组件:
+- doc_store:   SQLite FTS5 文档存储
+- retriever:   API 文档检索器
+- doc_generator: 从 QGIS 运行时提取 API 文档
+- cookbook:    成功案例自动归档与检索
+"""
+
+from .doc_store import DocStore
+from .retriever import APIDocRetriever, get_retriever, init_retriever
+from .doc_generator import generate_pyqgis_docs
+from .cookbook import Cookbook
+
+__all__ = ["DocStore", "APIDocRetriever", "get_retriever", "init_retriever", "generate_pyqgis_docs", "Cookbook"]

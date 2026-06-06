@@ -1,1 +1,211 @@
-aW1wb3J0IG9zCmltcG9ydCBzeXMKaW1wb3J0IHRlbXBmaWxlCmltcG9ydCB1bml0dGVzdAoKIyDms6jmhI/vvJrku47pobnnm67niLbnm67lvZXov5DooYzmtYvor5XvvJpjZCBEOlxXb3JrICYmIHB5dGhvbiAtbSB1bml0dGVzdCBxZ2lzX2FnZW50LnRlc3RzIC12Cgp0cnk6CiAgICBmcm9tIHFnaXMuY29yZSBpbXBvcnQgUWdpcwogICAgX0hBU19RR0lTID0gVHJ1ZQpleGNlcHQgSW1wb3J0RXJyb3I6CiAgICBfSEFTX1FHSVMgPSBGYWxzZQoKCmNsYXNzIFRlc3RVdGlscyh1bml0dGVzdC5UZXN0Q2FzZSk6CiAgICBkZWYgdGVzdF9nZW5lcmF0ZV91bmlxdWVfaWQoc2VsZik6CiAgICAgICAgZnJvbSBxZ2lzX2FnZW50LnV0aWxzIGltcG9ydCBnZW5lcmF0ZV91bmlxdWVfaWQKICAgICAgICB1aWQxID0gZ2VuZXJhdGVfdW5pcXVlX2lkKCkKICAgICAgICB1aWQyID0gZ2VuZXJhdGVfdW5pcXVlX2lkKCkKICAgICAgICBzZWxmLmFzc2VydE5vdEVxdWFsKHVpZDEsIHVpZDIpCiAgICAgICAgc2VsZi5hc3NlcnRJbigiXyIsIHVpZDEpCgogICAgZGVmIHRlc3RfZ2V0X2N1cnJlbnRfdGltZXN0YW1wKHNlbGYpOgogICAgICAgIGZyb20gcWdpc19hZ2VudC51dGlscyBpbXBvcnQgZ2V0X2N1cnJlbnRfdGltZXN0YW1wCiAgICAgICAgdHMgPSBnZXRfY3VycmVudF90aW1lc3RhbXAoKQogICAgICAgIHNlbGYuYXNzZXJ0SXNJbnN0YW5jZSh0cywgc3RyKQogICAgICAgIHNlbGYuYXNzZXJ0R3JlYXRlcihsZW4odHMpLCAwKQogICAgICAgIHNlbGYuYXNzZXJ0SW4oIjIwMjYiLCB0cykKCiAgICBkZWYgdGVzdF9wYWNrX3VucGFja19jb252ZXJzYXRpb24oc2VsZik6CiAgICAgICAgZnJvbSBxZ2lzX2FnZW50LnV0aWxzIGltcG9ydCBwYWNrLCB1bnBhY2sKICAgICAgICByb3cgPSAoImlkMSIsICJHTE06OmdsbS00IiwgIua1i+ivleWvueivnSIsICLmtYvor5Xmj4/ov7AiLAogICAgICAgICAgICAgICAiMDYgMDUgMjAyNiAxMDowMDowMCIsICIwNiAwNSAyMDI2IDEwOjAwOjAwIiwKICAgICAgICAgICAgICAgMCwgMCwgImxvY2FsIikKICAgICAgICBwYWNrZWQgPSBwYWNrKHJvdywgImNvbnZlcnNhdGlvbiIpCiAgICAgICAgc2VsZi5hc3NlcnRFcXVhbChwYWNrZWRbIklEIl0sICJpZDEiKQogICAgICAgIHNlbGYuYXNzZXJ0RXF1YWwocGFja2VkWyJ0aXRsZSJdLCAi5rWL6K+V5a+56K+dIikKICAgICAgICB1bnBhY2tlZCA9IHVucGFjayhwYWNrZWQsICJjb252ZXJzYXRpb24iKQogICAgICAgIHNlbGYuYXNzZXJ0RXF1YWwodW5wYWNrZWQsIGxpc3Qocm93KSkKCiAgICBkZWYgdGVzdF9wYWNrX3VucGFja19pbnRlcmFjdGlvbihzZWxmKToKICAgICAgICBmcm9tIHFnaXNfYWdlbnQudXRpbHMgaW1wb3J0IHBhY2ssIHVucGFjawogICAgICAgIHJvdyA9ICgiaTEiLCAiYzEiLCAicDEiLCAicmVxdWVzdCIsICJjb250ZXh0IiwKICAgICAgICAgICAgICAgInRpbWUxIiwgImlucHV0IiwgInJlc3BvbnNlIiwgInRpbWUyIiwgImVtcHR5IiwgIiIpCiAgICAgICAgcGFja2VkID0gcGFjayhyb3csICJpbnRlcmFjdGlvbiIpCiAgICAgICAgc2VsZi5hc3NlcnRFcXVhbChwYWNrZWRbInJlcXVlc3RUZXh0Il0sICJyZXF1ZXN0IikKICAgICAgICBzZWxmLmFzc2VydEVxdWFsKHBhY2tlZFsidHlwZU1lc3NhZ2UiXSwgImlucHV0IikKICAgICAgICB1bnBhY2tlZCA9IHVucGFjayhwYWNrZWQsICJpbnRlcmFjdGlvbiIpCiAgICAgICAgc2VsZi5hc3NlcnRFcXVhbCh1bnBhY2tlZCwgbGlzdChyb3cpKQoKICAgIGRlZiB0ZXN0X2V4dHJhY3RfY29kZShzZWxmKToKICAgICAgICBmcm9tIHFnaXNfYWdlbnQudXRpbHMgaW1wb3J0IGV4dHJhY3RfY29kZQogICAgICAgIHJlc3BvbnNlID0gIiIi5Luj56CB5aaC5LiL77yaYGBgcHl0aG9uCmxheWVyID0gaWZhY2UuYWN0aXZlTGF5ZXIoKQpwcmludChsYXllci5uYW1lKCkpCmBgYOe7k+adnyIiIgogICAgICAgIGNvZGUgPSBleHRyYWN0X2NvZGUocmVzcG9uc2UpCiAgICAgICAgc2VsZi5hc3NlcnRJbigibGF5ZXIgPSBpZmFjZS5hY3RpdmVMYXllcigpIiwgY29kZSkKICAgICAgICBzZWxmLmFzc2VydE5vdEluKCJgYGAiLCBjb2RlKQoKICAgIGRlZiB0ZXN0X2V4dHJhY3RfY29kZV9ub19jb2RlKHNlbGYpOgogICAgICAgIGZyb20gcWdpc19hZ2VudC51dGlscyBpbXBvcnQgZXh0cmFjdF9jb2RlCiAgICAgICAgcmVzcG9uc2UgPSAi6L+Z6YeM5rKh5pyJ5Luj56CB5Z2XIgogICAgICAgIGNvZGUgPSBleHRyYWN0X2NvZGUocmVzcG9uc2UpCiAgICAgICAgc2VsZi5hc3NlcnRFcXVhbChjb2RlLCAiIikKCiAgICBkZWYgdGVzdF9jcmVhdGVfbWFya2Rvd24oc2VsZik6CiAgICAgICAgZnJvbSBxZ2lzX2FnZW50LnV0aWxzIGltcG9ydCBjcmVhdGVfbWFya2Rvd24KICAgICAgICBtZCA9IGNyZWF0ZV9tYXJrZG93bigiYGBgcHl0aG9uXG5wcmludCgnaGVsbG8nKVxuYGBgIikKICAgICAgICBzZWxmLmFzc2VydEluKCI8cHJlPjxjb2RlIiwgbWQpCiAgICAgICAgc2VsZi5hc3NlcnRJbigicHJpbnQoJ2hlbGxvJykiLCBtZCkKCiAgICBkZWYgdGVzdF9uZXN0ZWRfZGljdF90b19saXN0KHNlbGYpOgogICAgICAgIGZyb20gcWdpc19hZ2VudC51dGlscyBpbXBvcnQgbmVzdGVkX2RpY3RfdG9fbGlzdAogICAgICAgIGQgPSB7IkEiOiBbImExIiwgImEyIl0sICJCIjogWyJiMSJdfQogICAgICAgIHJlc3VsdCA9IG5lc3RlZF9kaWN0X3RvX2xpc3QoZCkKICAgICAgICBzZWxmLmFzc2VydEluKCJBOjphMSIsIHJlc3VsdCkKICAgICAgICBzZWxmLmFzc2VydEluKCJBOjphMiIsIHJlc3VsdCkKICAgICAgICBzZWxmLmFzc2VydEluKCJCOjpiMSIsIHJlc3VsdCkKICAgICAgICBzZWxmLmFzc2VydEVxdWFsKGxlbihyZXN1bHQpLCAzKQoKICAgIGRlZiB0ZXN0X2Zvcm1hdF9kZXNjcmlwdGlvbihzZWxmKToKICAgICAgICBmcm9tIHFnaXNfYWdlbnQudXRpbHMgaW1wb3J0IGZvcm1hdF9kZXNjcmlwdGlvbgogICAgICAgIHNlbGYuYXNzZXJ0RXF1YWwoZm9ybWF0X2Rlc2NyaXB0aW9uKCJ0ZXN0IiksICJ0ZXN0XG4iKQoKICAgIGRlZiB0ZXN0X2dldF9xZ2lzX3ZlcnNpb25fbm9fcWdpcyhzZWxmKToKICAgICAgICBmcm9tIHFnaXNfYWdlbnQudXRpbHMgaW1wb3J0IGdldF9xZ2lzX3ZlcnNpb24KICAgICAgICBpZiBub3QgX0hBU19RR0lTOgogICAgICAgICAgICBzZWxmLmFzc2VydEVxdWFsKGdldF9xZ2lzX3ZlcnNpb24oKSwgIjAuMCIpCiAgICAgICAgZWxzZToKICAgICAgICAgICAgc2VsZi5hc3NlcnRJc0luc3RhbmNlKGdldF9xZ2lzX3ZlcnNpb24oKSwgc3RyKQoKICAgIGRlZiB0ZXN0X3NldF9mb250X2NvbG9yX25vX3FnaXMoc2VsZik6CiAgICAgICAgZnJvbSBxZ2lzX2FnZW50LnV0aWxzIGltcG9ydCBzZXRfZm9udF9jb2xvcgogICAgICAgIGlmIG5vdCBfSEFTX1FHSVM6CiAgICAgICAgICAgIHNlbGYuYXNzZXJ0RXF1YWwoc2V0X2ZvbnRfY29sb3IoTm9uZSksICIjMTgxQzE0IikKCgpjbGFzcyBUZXN0RGF0YUxvYWRlck5vUUdJUyh1bml0dGVzdC5UZXN0Q2FzZSk6CiAgICBkZWYgc2V0VXAoc2VsZik6CiAgICAgICAgc2VsZi5kYl9wYXRoID0gb3MucGF0aC5qb2luKHRlbXBmaWxlLmdldHRlbXBkaXIoKSwgInRlc3RfcWdpc19hZ2VudF9ub3FnaXMuZGIiKQogICAgICAgIGlmIG9zLnBhdGguZXhpc3RzKHNlbGYuZGJfcGF0aCk6CiAgICAgICAgICAgIG9zLnJlbW92ZShzZWxmLmRiX3BhdGgpCgogICAgZGVmIF9zZXR1cF9sb2FkZXIoc2VsZik6CiAgICAgICAgZnJvbSBxZ2lzX2FnZW50LmRhdGFsb2FkZXIgaW1wb3J0IERhdGFMb2FkZXIKICAgICAgICBsb2FkZXIgPSBEYXRhTG9hZGVyKCJ0ZXN0X3FnaXNfYWdlbnRfbm9xZ2lzLmRiIikKICAgICAgICBsb2FkZXIuZGF0YWJhc2VfcGF0aCA9IHNlbGYuZGJfcGF0aAogICAgICAgIHJldHVybiBsb2FkZXIKCiAgICBkZWYgdGVhckRvd24oc2VsZik6CiAgICAgICAgaWYgb3MucGF0aC5leGlzdHMoc2VsZi5kYl9wYXRoKToKICAgICAgICAgICAgdHJ5OgogICAgICAgICAgICAgICAgb3MucmVtb3ZlKHNlbGYuZGJfcGF0aCkKICAgICAgICAgICAgZXhjZXB0IFBlcm1pc3Npb25FcnJvcjoKICAgICAgICAgICAgICAgIHBhc3MKCiAgICBkZWYgdGVzdF9kYXRhYmFzZV9wYXRoKHNlbGYpOgogICAgICAgIGxvYWRlciA9IHNlbGYuX3NldHVwX2xvYWRlcigpCiAgICAgICAgc2VsZi5hc3NlcnRJbigidGVzdF9xZ2lzX2FnZW50X25vcWdpcy5kYiIsIGxvYWRlci5kYXRhYmFzZV9wYXRoKQoKICAgIGRlZiB0ZXN0X2xsbV9mdWxsX2RpY3Qoc2VsZik6CiAgICAgICAgbG9hZGVyID0gc2VsZi5fc2V0dXBfbG9hZGVyKCkKICAgICAgICBzZWxmLmFzc2VydEluKCJHTE0iLCBsb2FkZXIubGxtX2Z1bGxfZGljdCkKICAgICAgICBzZWxmLmFzc2VydEluKCJEZWVwU2VlayIsIGxvYWRlci5sbG1fZnVsbF9kaWN0KQogICAgICAgIHNlbGYuYXNzZXJ0SW4oIlhpYW9taU1pTW8iLCBsb2FkZXIubGxtX2Z1bGxfZGljdCkKICAgICAgICBzZWxmLmFzc2VydEluKCJHZW1pbmkiLCBsb2FkZXIubGxtX2Z1bGxfZGljdCkKICAgICAgICBzZWxmLmFzc2VydEluKCJnbG0tNCIsIGxvYWRlci5sbG1fZnVsbF9kaWN0WyJHTE0iXSkKICAgICAgICBzZWxmLmFzc2VydEluKCJkZWVwc2Vlay1jaGF0IiwgbG9hZGVyLmxsbV9mdWxsX2RpY3RbIkRlZXBTZWVrIl0pCiAgICAgICAgc2VsZi5hc3NlcnRJbigidjQtZmxhc2giLCBsb2FkZXIubGxtX2Z1bGxfZGljdFsiRGVlcFNlZWsiXSkKICAgICAgICBzZWxmLmFzc2VydEluKCJ2NC1wcm8iLCBsb2FkZXIubGxtX2Z1bGxfZGljdFsiRGVlcFNlZWsiXSkKCiAgICBkZWYgdGVzdF9sbG1fZW5kcG9pbnRzKHNlbGYpOgogICAgICAgIGxvYWRlciA9IHNlbGYuX3NldHVwX2xvYWRlcigpCiAgICAgICAgc2VsZi5hc3NlcnRJbigiaHR0cHM6Ly9vcGVuLmJpZ21vZGVsLmNuIiwgbG9hZGVyLmxsbV9lbmRwb2ludF9kaWN0WyJHTE0iXSkKICAgICAgICBzZWxmLmFzc2VydEluKCJodHRwczovL2FwaS5kZWVwc2Vlay5jb20iLCBsb2FkZXIubGxtX2VuZHBvaW50X2RpY3RbIkRlZXBTZWVrIl0pCgogICAgZGVmIHRlc3RfZ2V0X2xsbV9pbmZvKHNlbGYpOgogICAgICAgIGxvYWRlciA9IHNlbGYuX3NldHVwX2xvYWRlcigpCiAgICAgICAgcHJvdmlkZXIsIG1vZGVsID0gbG9hZGVyLmdldF9sbG1faW5mbygiR0xNOjpnbG0tNCIpCiAgICAgICAgc2VsZi5hc3NlcnRFcXVhbChwcm92aWRlciwgIkdMTSIpCiAgICAgICAgc2VsZi5hc3NlcnRFcXVhbChtb2RlbCwgImdsbS00IikKCiAgICBkZWYgdGVzdF9nZXRfbGxtX2luZm9fZGVmYXVsdChzZWxmKToKICAgICAgICBsb2FkZXIgPSBzZWxmLl9zZXR1cF9sb2FkZXIoKQogICAgICAgIHByb3ZpZGVyLCBtb2RlbCA9IGxvYWRlci5nZXRfbGxtX2luZm8oIlVua25vd246Ok1vZGVsIikKICAgICAgICBzZWxmLmFzc2VydEVxdWFsKHByb3ZpZGVyLCAiVW5rbm93biIpCiAgICAgICAgc2VsZi5hc3NlcnRFcXVhbChtb2RlbCwgIk1vZGVsIikKCgpjbGFzcyBUZXN0TExNUHJvdmlkZXJzKHVuaXR0ZXN0LlRlc3RDYXNlKToKICAgIGRlZiB0ZXN0X2dldF9kZWZhdWx0X2FwaV9rZXkoc2VsZik6CiAgICAgICAgZnJvbSBxZ2lzX2FnZW50LmxsbV9wcm92aWRlcnMgaW1wb3J0IGdldF9kZWZhdWx0X2FwaV9rZXkKICAgICAgICBzZWxmLmFzc2VydEVxdWFsKGdldF9kZWZhdWx0X2FwaV9rZXkoIkdMTSIpLCAiIikKCiAgICBkZWYgdGVzdF9nZXRfbGxtX2luc3RhbmNlX2RlZXBzZWVrKHNlbGYpOgogICAgICAgIGZyb20gcWdpc19hZ2VudC5sbG1fcHJvdmlkZXJzIGltcG9ydCBnZXRfbGxtX2luc3RhbmNlCiAgICAgICAgbGxtID0gZ2V0X2xsbV9pbnN0YW5jZSgiRGVlcFNlZWsiLCAiZGVlcHNlZWstY2hhdCIsICJ0ZXN0LWtleSIsICJodHRwczovL2FwaS5kZWVwc2Vlay5jb20iLCAwKQogICAgICAgIHNlbGYuYXNzZXJ0SXNOb3ROb25lKGxsbSkKCiAgICBkZWYgdGVzdF9nZXRfbGxtX2luc3RhbmNlX29wZW5haV9jb21wYXQoc2VsZik6CiAgICAgICAgZnJvbSBxZ2lzX2FnZW50LmxsbV9wcm92aWRlcnMgaW1wb3J0IGdldF9sbG1faW5zdGFuY2UKICAgICAgICBsbG0gPSBnZXRfbGxtX2luc3RhbmNlKCJHTE0iLCAiZ2xtLTQiLCAidGVzdC1rZXkiLCAiaHR0cHM6Ly9vcGVuLmJpZ21vZGVsLmNuL2FwaS9wYWFzL3Y0LyIsIDApCiAgICAgICAgc2VsZi5hc3NlcnRJc05vdE5vbmUobGxtKQoKICAgIGRlZiB0ZXN0X2dldF9sbG1faW5zdGFuY2VfY3VzdG9tKHNlbGYpOgogICAgICAgIGZyb20gcWdpc19hZ2VudC5sbG1fcHJvdmlkZXJzIGltcG9ydCBnZXRfbGxtX2luc3RhbmNlCiAgICAgICAgbGxtID0gZ2V0X2xsbV9pbnN0YW5jZSgiQ3VzdG9tIiwgIm15LW1vZGVsIiwgInRlc3Qta2V5IiwgImh0dHBzOi8vY3VzdG9tLmVuZHBvaW50L3YxIiwgMCkKICAgICAgICBzZWxmLmFzc2VydElzTm90Tm9uZShsbG0pCgoKY2xhc3MgVGVzdEljb25HZW5lcmF0b3IodW5pdHRlc3QuVGVzdENhc2UpOgogICAgZGVmIHRlc3RfaWNvbl9nZW5lcmF0aW9uKHNlbGYpOgogICAgICAgIGZyb20gcWdpc19hZ2VudC5nZW5lcmF0ZV9pY29uIGltcG9ydCBnZW5lcmF0ZV9pY29uCiAgICAgICAgcG5nX2RhdGEgPSBnZW5lcmF0ZV9pY29uKCkKICAgICAgICBzZWxmLmFzc2VydElzTm90Tm9uZShwbmdfZGF0YSkKICAgICAgICBzZWxmLmFzc2VydFRydWUocG5nX2RhdGEuc3RhcnRzd2l0aChiJ1x4ODlQTkcnKSkKICAgICAgICBzZWxmLmFzc2VydEdyZWF0ZXIobGVuKHBuZ19kYXRhKSwgMTAwKQoKICAgIGRlZiB0ZXN0X2ljb25fZmlsZV9leGlzdHMoc2VsZik6CiAgICAgICAgaWNvbl9wYXRoID0gb3MucGF0aC5qb2luKG9zLnBhdGguZGlybmFtZShvcy5wYXRoLmRpcm5hbWUob3MucGF0aC5hYnNwYXRoKF9fZmlsZV9fKSkpLCAiaWNvbi5wbmciKQogICAgICAgIHNlbGYuYXNzZXJ0VHJ1ZShvcy5wYXRoLmV4aXN0cyhpY29uX3BhdGgpKQogICAgICAgIHNlbGYuYXNzZXJ0R3JlYXRlcihvcy5wYXRoLmdldHNpemUoaWNvbl9wYXRoKSwgMTAwKQoKCmNsYXNzIFRlc3RQYWNrYWdlTWFuYWdlcih1bml0dGVzdC5UZXN0Q2FzZSk6CiAgICBkZWYgdGVzdF9pbml0KHNlbGYpOgogICAgICAgIGZyb20gcWdpc19hZ2VudC5wYWNrYWdlX21hbmFnZXIgaW1wb3J0IFBhY2thZ2VNYW5hZ2VyCiAgICAgICAgcG0gPSBQYWNrYWdlTWFuYWdlcihbIm9zIl0pCiAgICAgICAgc2VsZi5hc3NlcnRFcXVhbChsZW4ocG0ucmVxdWlyZWRfbW9kdWxlcyksIDEpCgogICAgZGVmIHRlc3RfY2hlY2tfZXhpc3RpbmdfbW9kdWxlKHNlbGYpOgogICAgICAgIGZyb20gcWdpc19hZ2VudC5wYWNrYWdlX21hbmFnZXIgaW1wb3J0IFBhY2thZ2VNYW5hZ2VyCiAgICAgICAgcG0gPSBQYWNrYWdlTWFuYWdlcihbIm9zIiwgInN5cyJdKQogICAgICAgIHRyeToKICAgICAgICAgICAgcG0uY2hlY2tfZGVwZW5kZW5jaWVzKCkKICAgICAgICBleGNlcHQgRXhjZXB0aW9uOgogICAgICAgICAgICBwYXNzCgoKY2xhc3MgVGVzdENvbmZpZyh1bml0dGVzdC5UZXN0Q2FzZSk6CiAgICBkZWYgdGVzdF9jb25maWdfdmFsdWVzKHNlbGYpOgogICAgICAgIGZyb20gcWdpc19hZ2VudC5jb25maWcgaW1wb3J0IERCX05BTUUsIFBMVUdJTl9OQU1FLCBQTFVHSU5fVkVSU0lPTiwgREVCVUdfTU9ERQogICAgICAgIHNlbGYuYXNzZXJ0RXF1YWwoREJfTkFNRSwgIlFHSVNfQWdlbnQuZGIiKQogICAgICAgIHNlbGYuYXNzZXJ0SW4oIkFnZW50IiwgUExVR0lOX05BTUUpCiAgICAgICAgc2VsZi5hc3NlcnRFcXVhbChQTFVHSU5fVkVSU0lPTiwgIjEuMC4wIikKICAgICAgICBzZWxmLmFzc2VydEluKERFQlVHX01PREUsIFtUcnVlLCBGYWxzZV0pCgoKaWYgX19uYW1lX18gPT0gIl9fbWFpbl9fIjoKICAgIHVuaXR0ZXN0Lm1haW4oKQo=
+import os
+import sys
+import tempfile
+import unittest
+
+# 注意：从项目父目录运行测试：cd D:\Work && python -m unittest qgis_agent.tests -v
+
+try:
+    from qgis.core import Qgis
+    _HAS_QGIS = True
+except ImportError:
+    _HAS_QGIS = False
+
+
+class TestUtils(unittest.TestCase):
+    def test_generate_unique_id(self):
+        from qgis_agent.utils import generate_unique_id
+        uid1 = generate_unique_id()
+        uid2 = generate_unique_id()
+        self.assertNotEqual(uid1, uid2)
+        self.assertIn("_", uid1)
+
+    def test_get_current_timestamp(self):
+        from qgis_agent.utils import get_current_timestamp
+        ts = get_current_timestamp()
+        self.assertIsInstance(ts, str)
+        self.assertGreater(len(ts), 0)
+        self.assertIn("2026", ts)
+
+    def test_pack_unpack_conversation(self):
+        from qgis_agent.utils import pack, unpack
+        row = ("id1", "GLM::glm-4", "测试对话", "测试描述",
+               "06 05 2026 10:00:00", "06 05 2026 10:00:00",
+               0, 0, "local")
+        packed = pack(row, "conversation")
+        self.assertEqual(packed["ID"], "id1")
+        self.assertEqual(packed["title"], "测试对话")
+        unpacked = unpack(packed, "conversation")
+        self.assertEqual(unpacked, list(row))
+
+    def test_pack_unpack_interaction(self):
+        from qgis_agent.utils import pack, unpack
+        row = ("i1", "c1", "p1", "request", "context",
+               "time1", "input", "response", "time2", "empty", "")
+        packed = pack(row, "interaction")
+        self.assertEqual(packed["requestText"], "request")
+        self.assertEqual(packed["typeMessage"], "input")
+        unpacked = unpack(packed, "interaction")
+        self.assertEqual(unpacked, list(row))
+
+    def test_extract_code(self):
+        from qgis_agent.utils import extract_code
+        response = """代码如下：```python
+layer = iface.activeLayer()
+print(layer.name())
+```结束"""
+        code = extract_code(response)
+        self.assertIn("layer = iface.activeLayer()", code)
+        self.assertNotIn("```", code)
+
+    def test_extract_code_no_code(self):
+        from qgis_agent.utils import extract_code
+        response = "这里没有代码块"
+        code = extract_code(response)
+        self.assertEqual(code, "")
+
+    def test_create_markdown(self):
+        from qgis_agent.utils import create_markdown
+        md = create_markdown("```python\nprint('hello')\n```")
+        self.assertIn("<pre><code", md)
+        self.assertIn("print('hello')", md)
+
+    def test_nested_dict_to_list(self):
+        from qgis_agent.utils import nested_dict_to_list
+        d = {"A": ["a1", "a2"], "B": ["b1"]}
+        result = nested_dict_to_list(d)
+        self.assertIn("A::a1", result)
+        self.assertIn("A::a2", result)
+        self.assertIn("B::b1", result)
+        self.assertEqual(len(result), 3)
+
+    def test_format_description(self):
+        from qgis_agent.utils import format_description
+        self.assertEqual(format_description("test"), "test\n")
+
+    def test_get_qgis_version_no_qgis(self):
+        from qgis_agent.utils import get_qgis_version
+        if not _HAS_QGIS:
+            self.assertEqual(get_qgis_version(), "0.0")
+        else:
+            self.assertIsInstance(get_qgis_version(), str)
+
+    def test_set_font_color_no_qgis(self):
+        from qgis_agent.utils import set_font_color
+        if not _HAS_QGIS:
+            self.assertEqual(set_font_color(None), "#181C14")
+
+
+class TestDataLoaderNoQGIS(unittest.TestCase):
+    def setUp(self):
+        self.db_path = os.path.join(tempfile.gettempdir(), "test_qgis_agent_noqgis.db")
+        if os.path.exists(self.db_path):
+            os.remove(self.db_path)
+
+    def _setup_loader(self):
+        from qgis_agent.dataloader import DataLoader
+        loader = DataLoader("test_qgis_agent_noqgis.db")
+        loader.database_path = self.db_path
+        return loader
+
+    def tearDown(self):
+        if os.path.exists(self.db_path):
+            try:
+                os.remove(self.db_path)
+            except PermissionError:
+                pass
+
+    def test_database_path(self):
+        loader = self._setup_loader()
+        self.assertIn("test_qgis_agent_noqgis.db", loader.database_path)
+
+    def test_llm_full_dict(self):
+        loader = self._setup_loader()
+        self.assertIn("GLM", loader.llm_full_dict)
+        self.assertIn("DeepSeek", loader.llm_full_dict)
+        self.assertIn("XiaomiMiMo", loader.llm_full_dict)
+        self.assertIn("Gemini", loader.llm_full_dict)
+        self.assertIn("glm-4", loader.llm_full_dict["GLM"])
+        self.assertIn("deepseek-chat", loader.llm_full_dict["DeepSeek"])
+        self.assertIn("v4-flash", loader.llm_full_dict["DeepSeek"])
+        self.assertIn("v4-pro", loader.llm_full_dict["DeepSeek"])
+
+    def test_llm_endpoints(self):
+        loader = self._setup_loader()
+        self.assertIn("https://open.bigmodel.cn", loader.llm_endpoint_dict["GLM"])
+        self.assertIn("https://api.deepseek.com", loader.llm_endpoint_dict["DeepSeek"])
+
+    def test_get_llm_info(self):
+        loader = self._setup_loader()
+        provider, model = loader.get_llm_info("GLM::glm-4")
+        self.assertEqual(provider, "GLM")
+        self.assertEqual(model, "glm-4")
+
+    def test_get_llm_info_default(self):
+        loader = self._setup_loader()
+        provider, model = loader.get_llm_info("Unknown::Model")
+        self.assertEqual(provider, "Unknown")
+        self.assertEqual(model, "Model")
+
+
+class TestLLMProviders(unittest.TestCase):
+    def test_get_default_api_key(self):
+        from qgis_agent.llm_providers import get_default_api_key
+        self.assertEqual(get_default_api_key("GLM"), "")
+
+    def test_get_llm_instance_deepseek(self):
+        from qgis_agent.llm_providers import get_llm_instance
+        llm = get_llm_instance("DeepSeek", "deepseek-chat", "test-key", "https://api.deepseek.com", 0)
+        self.assertIsNotNone(llm)
+
+    def test_get_llm_instance_openai_compat(self):
+        from qgis_agent.llm_providers import get_llm_instance
+        llm = get_llm_instance("GLM", "glm-4", "test-key", "https://open.bigmodel.cn/api/paas/v4/", 0)
+        self.assertIsNotNone(llm)
+
+    def test_get_llm_instance_custom(self):
+        from qgis_agent.llm_providers import get_llm_instance
+        llm = get_llm_instance("Custom", "my-model", "test-key", "https://custom.endpoint/v1", 0)
+        self.assertIsNotNone(llm)
+
+
+class TestIconGenerator(unittest.TestCase):
+    def test_icon_generation(self):
+        from qgis_agent.generate_icon import generate_icon
+        png_data = generate_icon()
+        self.assertIsNotNone(png_data)
+        self.assertTrue(png_data.startswith(b'\x89PNG'))
+        self.assertGreater(len(png_data), 100)
+
+    def test_icon_file_exists(self):
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "icon.png")
+        self.assertTrue(os.path.exists(icon_path))
+        self.assertGreater(os.path.getsize(icon_path), 100)
+
+
+class TestPackageManager(unittest.TestCase):
+    def test_init(self):
+        from qgis_agent.package_manager import PackageManager
+        pm = PackageManager(["os"])
+        self.assertEqual(len(pm.required_modules), 1)
+
+    def test_check_existing_module(self):
+        from qgis_agent.package_manager import PackageManager
+        pm = PackageManager(["os", "sys"])
+        try:
+            pm.check_dependencies()
+        except Exception:
+            pass
+
+
+class TestConfig(unittest.TestCase):
+    def test_config_values(self):
+        from qgis_agent.config import DB_NAME, PLUGIN_NAME, PLUGIN_VERSION, DEBUG_MODE
+        self.assertEqual(DB_NAME, "QGIS_Agent.db")
+        self.assertIn("Agent", PLUGIN_NAME)
+        self.assertEqual(PLUGIN_VERSION, "1.0.0")
+        self.assertIn(DEBUG_MODE, [True, False])
+
+
+if __name__ == "__main__":
+    unittest.main()

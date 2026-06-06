@@ -1,1 +1,375 @@
-IyBRR0lTIEFnZW50DQoNCj4g8J+Xuu+4jyDlsIblpKfor63oqIDmqKHlnosgKExMTSkg5bWM5YWlIFFHSVMg55qE5pm66IO95Yqp5omL5o+S5Lu2IOKAlOKAlCDnlKjoh6rnhLbor63oqIDmk43mjqcgUUdJUyDlrozmiJDlnLDnkIbnqbrpl7Tku7vliqHjgIINCg0KWyFbUUdJU10oaHR0cHM6Ly9pbWcuc2hpZWxkcy5pby9iYWRnZS9RR0lTLTMuMCstNTg5NjMyP2xvZ289cWdpcyZzdHlsZT1mbGF0LXNxdWFyZSldKGh0dHBzOi8vcWdpcy5vcmcvKQ0KWyFbUHl0aG9uXShodHRwczovL2ltZy5zaGllbGRzLmlvL2JhZGdlL1B5dGhvbi0zLjcrLTM3NzZBQj9sb2dvPXB5dGhvbiZzdHlsZT1mbGF0LXNxdWFyZSldKGh0dHBzOi8vd3d3LnB5dGhvbi5vcmcvKQ0KWyFbVmVyc2lvbl0oaHR0cHM6Ly9pbWcuc2hpZWxkcy5pby9iYWRnZS92ZXJzaW9uLTEuMi4wLWJsdWU/c3R5bGU9ZmxhdC1zcXVhcmUpXShDSEFOR0VMT0cubWQpDQpbIVtMaWNlbnNlXShodHRwczovL2ltZy5zaGllbGRzLmlvL2JhZGdlL0xpY2Vuc2UtTUlULWdyZWVuP3N0eWxlPWZsYXQtc3F1YXJlKV0oTElDRU5TRSkNCg0KLS0tDQoNCiMjIPCfjq8g5LiA5Y+l6K+d566A5LuLDQoNClFHSVMgQWdlbnQg5pivIFFHSVMg55qEIEFJIOWOn+eUn+aPkuS7tuKAlOKAlOeUqOiHqueEtuivreiogOebtOaOpeaTjeaOpyBRR0lT77yM5peg6ZyA57yW5YaZIFB5UUdJUyDku6PnoIHjgILpm4bmiJAgKipSQUcgQVBJIOaWh+aho+ajgOe0oioq5ZKMICoqQ29va2Jvb2sg6Ieq5oiR6L+b5YyWKirvvIzorqkgQUkg5YaZ55qE5Luj56CB5pu05YeG56Gu44CB6LaK55So6LaK6IGq5piO44CCDQoNCiMjIOKcqCDmoLjlv4Pkuq7ngrkNCg0KfCDkuq7ngrkgfCDor7TmmI4gfA0KfC0tLS0tLXwtLS0tLS18DQp8IPCfk5ogKipSQUcgQVBJIOaWh+aho+ajgOe0oioqIHwg5pys5ZywIFNRTGl0ZSBGVFM1IOWFqOaWh+W8leaTju+8jOaJp+ihjOS7o+eggeWJjeiHquWKqOafpeivoiBQeVFHSVMgQVBJIOetvuWQjeWSjOWPguaVsO+8jOWkp+W5hemZjeS9jiLlhpnplJnlj4LmlbAi55qE5qaC546HIHwNCnwg8J+nrCAqKkNvb2tib29rIOiHquaIkei/m+WMlioqIHwg5oiQ5Yqf5Lu75Yqh6Ieq5Yqo5b2S5qGj5Li65qGI5L6L77yM5LiL5qyh5omn6KGM5YmN5qOA57Si55u45Ly85qGI5L6L5rOo5YWl5LiK5LiL5paH77yM6LaK55So6LaK5YeG56GuIHwNCnwg8J+UkiAqKuS7o+eggeWuieWFqOehruiupCoqIHwg5omn6KGMIFB5UUdJUy9Qcm9jZXNzaW5nIOWJjeW8ueeql+ehruiupO+8jOadnOe7neivr+aTjeS9nCB8DQp8IPCfp7UgKirnur/nqIvlronlhagqKiB8IExMTSDosIPnlKjlnKjlt6XkvZznur/nqIvmiafooYzvvIxRR0lTIEFQSSDmk43kvZzpgJrov4cgUVRpbWVyIOiwg+W6puWbnuS4u+e6v+eoi++8jFVJIOmbtumYu+WhniB8DQp8IPCfp6AgKirlpJrmqKHlnosqKiB8IOaUr+aMgSBEZWVwU2Vla+OAgU9wZW5BSeOAgUdMTeOAgUdlbWluaeOAgU1pTW8g562J5omA5pyJIE9wZW5BSSDlhbzlrrkgQVBJIHwNCg0KIyMg8J+Pl++4jyDmnrbmnoTmpoLop4gNCg0KYGBgbWVybWFpZA0KZ3JhcGggVEINCiAgICBzdWJncmFwaCBVSVsi8J+Wpe+4jyBRR0lTIOS4u+e6v+eoiyDigJQgR1VJIl0NCiAgICAgICAgZGlyZWN0aW9uIExSDQogICAgICAgIEFbIvCfp6kgUUdJU0FnZW50PGJyLz48c21hbGw+5Li75o6n5Yi25ZmoPC9zbWFsbD4iXQ0KICAgICAgICBCWyLwn6qfIERvY2tXaWRnZXQ8YnIvPjxzbWFsbD5VSSDpnaLmnb88L3NtYWxsPiJdDQogICAgICAgIENbIvCfkqwgQ29udmVyc2F0aW9uPGJyLz48c21hbGw+5Lya6K+d566h55CGPC9zbWFsbD4iXQ0KICAgIGVuZA0KDQogICAgc3ViZ3JhcGggV09SS0VSWyLimpnvuI8g5bel5L2c57q/56iLIOKAlCBRVGhyZWFkUG9vbCJdDQogICAgICAgIGRpcmVjdGlvbiBMUg0KICAgICAgICBEWyLwn5SnIFRvb2xBZ2VudFdvcmtlcjxici8+PHNtYWxsPuW8guatpeaJp+ihjDwvc21hbGw+Il0NCiAgICAgICAgRVsi8J+noCBQcm9jZXNzb3I8YnIvPjxzbWFsbD5BZ2VudCDlvqrnjq8gKyBSQUcgKyBDb29rYm9vazwvc21hbGw+Il0NCiAgICBlbmQNCg0KICAgIHN1YmdyYXBoIFRPT0xTWyLwn5SpIFFHSVMg5bel5YW35bGCIOKAlCDkuLvnur/nqIvosIPluqYiXQ0KICAgICAgICBkaXJlY3Rpb24gTFINCiAgICAgICAgRlsi8J+TniBjYWxsX3Rvb2woKTxici8+PHNtYWxsPue6v+eoi+ahpTwvc21hbGw+Il0NCiAgICAgICAgR1si8J+nsCAxNSDkuKogUUdJUyDlt6XlhbciXQ0KICAgICAgICBIWyLwn5e677iPIFFHSVMgQVBJPGJyLz48c21hbGw+UWdzUHJvamVjdCAvIGlmYWNlIC8gUHJvY2Vzc2luZzwvc21hbGw+Il0NCiAgICBlbmQNCg0KICAgIHN1YmdyYXBoIFJBR1si8J+TmiBSQUcg5byV5pOOICjmnKzlnLApIl0NCiAgICAgICAgZGlyZWN0aW9uIExSDQogICAgICAgIEpbIvCfk5YgRG9jU3RvcmU8YnIvPjxzbWFsbD5TUUxpdGUgRlRTNTwvc21hbGw+Il0NCiAgICAgICAgS1si8J+UjSBSZXRyaWV2ZXI8YnIvPjxzbWFsbD7lhbPplK7or43mkJzntKI8L3NtYWxsPiJdDQogICAgICAgIExbIvCfp6wgQ29va2Jvb2s8YnIvPjxzbWFsbD7moYjkvovlvZLmoaM8L3NtYWxsPiJdDQogICAgZW5kDQoNCiAgICBzdWJncmFwaCBFWFRbIuKYge+4jyDlpJbpg6jmnI3liqEiXQ0KICAgICAgICBJWyLwn6SWIExMTSBBUEk8YnIvPjxzbWFsbD5EZWVwU2VlayAvIE9wZW5BSSDlhbzlrrk8L3NtYWxsPiJdDQogICAgZW5kDQoNCiAgICBBIC0tPnzliJvlu7ov566h55CGfCBCDQogICAgQSAtLT585Yib5bu6L+euoeeQhnwgQw0KICAgIEMgLS0+fGFzeW5jX3Jlc3BvbnNlfCBEDQogICAgRCAtLT585Zyo57q/56iL5Lit6L+Q6KGMfCBFDQogICAgRSAtLT58QVBJIOiwg+eUqHwgSQ0KICAgIEUgLS0+fOajgOe0ouaWh+ahoy/moYjkvot8IEsNCiAgICBLIC0tPnzmn6Xor6J8IEoNCiAgICBFIC0tPnzot6jnur/nqIvosIPnlKjlt6Xlhbd8IEYNCiAgICBGIC0tPnxRVGltZXIg6LCD5bqm5Yiw5Li757q/56iLfCBHDQogICAgRyAtLT585pON5L2cfCBIDQogICAgRSAtLT585b2S5qGj5qGI5L6LfCBMDQogICAgTCAtLT585YaZ5YWlfCBKDQogICAgRSAtLT58dGhpbmtpbmcg5L+h5Y+3fCBCDQogICAgRSAtLT58ZmluaXNoZWQg5L+h5Y+3fCBBDQpgYGANCg0KIyMg6LCD55So5rWB56iLDQoNCmBgYG1lcm1haWQNCnNlcXVlbmNlRGlhZ3JhbQ0KICAgIGF1dG9udW1iZXINCiAgICBhY3RvciBVc2VyIGFzIPCfkaQg55So5oi3DQogICAgcGFydGljaXBhbnQgVUkgYXMg8J+qnyBEb2NrV2lkZ2V0DQogICAgcGFydGljaXBhbnQgQWdlbnQgYXMg8J+nqSBRR0lTQWdlbnQNCiAgICBwYXJ0aWNpcGFudCBDb252IGFzIPCfkqwgQ29udmVyc2F0aW9uDQogICAgcGFydGljaXBhbnQgUHJvYyBhcyDwn6egIFByb2Nlc3Nvcg0KICAgIHBhcnRpY2lwYW50IFdvcmtlciBhcyDwn5SnIFdvcmtlcg0KICAgIHBhcnRpY2lwYW50IFRvb2wgYXMg8J+TniBjYWxsX3Rvb2wNCiAgICBwYXJ0aWNpcGFudCBRR0lTIGFzIPCfl7rvuI8gUUdJUyBBUEkNCg0KICAgIHJlY3QgcmdiKDIyNywgMjQyLCAyNTMpDQogICAgICAgIE5vdGUgb3ZlciBVc2VyLEFnZW50OiDwn5OlIOeUqOaIt+WPkei1t+ivt+axgg0KICAgICAgICBVc2VyLT4+VUk6IOi+k+WFpea2iOaBryArIOWbnui9pg0KICAgICAgICBVSS0+PkFnZW50OiBfb25fbmV3X21lc3NhZ2Vfc2VuZCgpDQogICAgICAgIEFnZW50LT4+VUk6IOaYvuekuueUqOaIt+a2iOaBryBIVE1MDQogICAgICAgIEFnZW50LT4+Q29udjogdXBkYXRlX3VzZXJfcHJvbXB0KG1lc3NhZ2UpDQogICAgICAgIENvbnYtPj5Qcm9jOiBhc3luY19yZXNwb25zZShtZXNzYWdlKQ0KICAgICAgICBQcm9jLT4+V29ya2VyOiDliJvlu7ogV29ya2VyIOaKleWFpee6v+eoi+axoA0KICAgIGVuZA0KDQogICAgcmVjdCByZ2IoMjU1LCAyNDMsIDIyNCkNCiAgICAgICAgTm90ZSBvdmVyIFdvcmtlcixQcm9jOiDimpnvuI8g5bel5L2c57q/56iL5omn6KGMDQogICAgICAgIFdvcmtlci0+PlByb2M6IGFnZW50X2NoYXQodXNlcl9pbnB1dCwgY2FsbGJhY2tzKQ0KICAgICAgICBQcm9jLT4+UHJvYzog8J+ThCDliqDovb0gTUVNT1JZLm1kIOmVv+acn+iusOW/hg0KICAgICAgICBQcm9jLT4+UHJvYzog8J+nrCDmo4DntKIgQ29va2Jvb2sg55u45Ly85qGI5L6LDQogICAgICAgIFByb2MtPj5Qcm9jOiDwn5eD77iPIOWKoOi9vSBTUUxpdGUg5a+56K+d5Y6G5Y+yDQogICAgICAgIFByb2MtPj5Qcm9jOiDwn5OmIOe7hOijhSBtZXNzYWdlcyA9IFtTeXN0ZW0gKyBDb29rYm9vayArIEhpc3RvcnkgKyBVc2VyXQ0KDQogICAgICAgIGxvb3Ag8J+UhCDmnIDlpJogMTAg6L2u5bel5YW36LCD55SoDQogICAgICAgICAgICBQcm9jLT4+UHJvYzogbGxtLmJpbmRfdG9vbHMoKS5pbnZva2UobWVzc2FnZXMpDQogICAgICAgICAgICBOb3RlIG92ZXIgUHJvYzog4o+zIOetieW+hSBMTE0g6L+U5ZueLi4uDQoNCiAgICAgICAgICAgIGFsdCDinIUgTExNIOi/lOWbniB0b29sX2NhbGxzDQogICAgICAgICAgICAgICAgbG9vcCDmr4/kuKogdG9vbF9jYWxsDQogICAgICAgICAgICAgICAgICAgIG9wdCDljbHpmanlt6XlhbcgKGV4ZWN1dGVfcHlxZ2lzL3Byb2Nlc3NpbmcpDQogICAgICAgICAgICAgICAgICAgICAgICBQcm9jLT4+UHJvYzog8J+TmiBSQUcg5qOA57SiIEFQSSDmlofmoaMNCiAgICAgICAgICAgICAgICAgICAgZW5kDQogICAgICAgICAgICAgICAgICAgIFByb2MtPj5Ub29sOiBjYWxsX3Rvb2wobmFtZSwgYXJncykNCiAgICAgICAgICAgICAgICAgICAgTm90ZSBvdmVyIFRvb2w6IPCflI0g5qOA5rWL57q/56iL77ya6Z2e5Li757q/56iLDQogICAgICAgICAgICAgICAgICAgIFRvb2wtLT4+UUdJUzogUVRpbWVyLnNpbmdsZVNob3QoMCkg6LCD5bqmDQogICAgICAgICAgICAgICAgICAgIE5vdGUgb3ZlciBRR0lTOiDinIUg5Li757q/56iL5omn6KGMDQogICAgICAgICAgICAgICAgICAgIFFHSVMtLT4+VG9vbDog6L+U5Zue57uT5p6cDQogICAgICAgICAgICAgICAgICAgIFRvb2wtLT4+UHJvYzog5bel5YW35omn6KGM57uT5p6cDQogICAgICAgICAgICAgICAgZW5kDQogICAgICAgICAgICAgICAgUHJvYy0+PlByb2M6IOi/veWKoCBUb29sTWVzc2FnZSDliLAgbWVzc2FnZXMNCiAgICAgICAgICAgIGVsc2Ug8J+OryBMTE0g6L+U5Zue5pyA57uI5Zue5aSNDQogICAgICAgICAgICAgICAgTm90ZSBvdmVyIFByb2M6IOKchSDpgIDlh7rlvqrnjq8NCiAgICAgICAgICAgIGVuZA0KICAgICAgICBlbmQNCg0KICAgICAgICBQcm9jLT4+UHJvYzog8J+SviDkv53lrZjkuqTkupLliLAgU1FMaXRlDQogICAgICAgIFByb2MtPj5Qcm9jOiDwn6esIOW9kuaho+aIkOWKn+ahiOS+i+WIsCBDb29rYm9vaw0KICAgIGVuZA0KDQogICAgcmVjdCByZ2IoMjI3LCAyNDIsIDI1MykNCiAgICAgICAgTm90ZSBvdmVyIFdvcmtlcixVc2VyOiDwn5OkIOi/lOWbnue7k+aenA0KICAgICAgICBXb3JrZXItPj5BZ2VudDogZmluaXNoZWQg5L+h5Y+3DQogICAgICAgIEFnZW50LT4+VUk6IHVwZGF0ZUNvbnZlcnNhdGlvbigpIOa4suafk+WbnuWkjQ0KICAgICAgICBVSS0+PlVzZXI6IOaYvuekuiBBSSDlm57lpI0NCiAgICBlbmQNCmBgYA0KDQojIyDnur/nqIvmqKHlnosNCg0KYGBgbWVybWFpZA0KZmxvd2NoYXJ0IExSDQogICAgc3ViZ3JhcGggTVRbIvCflqXvuI8gUUdJUyDkuLvnur/nqIsgKEdVSSBUaHJlYWQpIl0NCiAgICAgICAgZGlyZWN0aW9uIFRCDQogICAgICAgIE1UX1VJWyLwn6qfIERvY2tXaWRnZXQgVUk8YnIvPjxzbWFsbD7lr7nor53muLLmn5MgLyDovpPlhaXlpITnkIY8L3NtYWxsPiJdDQogICAgICAgIE1UX0FHRU5UWyLwn6epIFFHSVNBZ2VudDxici8+PHNtYWxsPuS/oeWPt+WkhOeQhiAvIOeKtuaAgeeuoeeQhjwvc21hbGw+Il0NCiAgICAgICAgTVRfVE9PTFNbIvCfl7rvuI8gUUdJUyBBUEkg5pON5L2cPGJyLz48c21hbGw+5Zu+5bGCIC8g5riy5p+TIC8gUHJvY2Vzc2luZzwvc21hbGw+Il0NCiAgICAgICAgTVRfQ0FOVkFTWyLwn5a877iPIE1hcCBDYW52YXM8YnIvPjxzbWFsbD7lnLDlm77muLLmn5M8L3NtYWxsPiJdDQogICAgZW5kDQoNCiAgICBzdWJncmFwaCBXVFsi4pqZ77iPIFFUaHJlYWRQb29sIOW3peS9nOe6v+eoiyJdDQogICAgICAgIGRpcmVjdGlvbiBUQg0KICAgICAgICBXVF9MTE1bIvCfpJYgTExNIEFQSSDosIPnlKg8YnIvPjxzbWFsbD7lj6/og73ogJfml7bmlbDnp5J+5pWw5Y2B56eSPC9zbWFsbD4iXQ0KICAgICAgICBXVF9ISVNUT1JZWyLwn5eD77iPIFNRTGl0ZSDor7vlhpk8YnIvPjxzbWFsbD7lr7nor53ljoblj7LmjIHkuYXljJY8L3NtYWxsPiJdDQogICAgICAgIFdUX0xPT1BbIvCflIQgQWdlbnQg5bel5YW36LCD55So5b6q546vPGJyLz48c21hbGw+5pyA5aSaIDEwIOi9rjwvc21hbGw+Il0NCiAgICBlbmQNCg0KICAgIFdUX0xPT1AgLS0+fCLij7HvuI8gUVRpbWVyLnNpbmdsZVNob3QoMCkifCBNVF9UT09MUw0KICAgIFdUX0xPT1AgLS0+fCLwn5OhIHRoaW5raW5nIC8gdG9vbF9zdGF0dXMg5L+h5Y+3InwgTVRfVUkNCiAgICBXVF9MTE0gLS0+IFdUX0xPT1ANCmBgYA0KDQo+ICoq5qC45b+D6K6+6K6h5Y6f5YiZKirvvJoNCj4gLSBMTE0gQVBJIOiwg+eUqOWcqOW3peS9nOe6v+eoi+S4reaJp+ihjO+8jCoq5LiN6Zi75aGeIFFHSVMg5Li757q/56iLIFVJKioNCj4gLSDmiYDmnIkgUUdJUyBBUEkg5pON5L2c6YCa6L+HIGBRVGltZXIuc2luZ2xlU2hvdCgwKWAg6LCD5bqm5Zue5Li757q/56iL5omn6KGM77yMKirkv53or4Hnur/nqIvlronlhagqKg0KPiAtIOW3peS9nOe6v+eoi+mAmui/h+S/oeWPty/mp73lkIzmraXnrYnlvoXkuLvnur/nqIvmiafooYznu5PmnpzvvIzotoXml7YgNjAg56eSDQoNCiMjIOaVsOaNrua1gQ0KDQpgYGBtZXJtYWlkDQpmbG93Y2hhcnQgVEQNCiAgICBJTlBVVFsi8J+RpCDnlKjmiLfoh6rnhLbor63oqIDovpPlhaUiXQ0KDQogICAgc3ViZ3JhcGggQ09OVEVYVFsi8J+TpiDkuIrkuIvmlofnu4Too4UiXQ0KICAgICAgICBkaXJlY3Rpb24gTFINCiAgICAgICAgTUVNT1JZWyLwn5OEIE1FTU9SWS5tZDxici8+PHNtYWxsPumVv+acn+iusOW/huaWh+S7tjwvc21hbGw+Il0NCiAgICAgICAgQ09PS0JPT0tbIvCfp6wgQ29va2Jvb2s8YnIvPjxzbWFsbD7nm7jkvLzmoYjkvovmo4DntKI8L3NtYWxsPiJdDQogICAgICAgIEhJU1RPUllbIvCfl4PvuI8gU1FMaXRlIOWvueivneWOhuWPsjxici8+PHNtYWxsPuacgOi/kSAyMCDmnaE8L3NtYWxsPiJdDQogICAgICAgIFNZU1RFTVsi8J+TiyBBR0VOVF9TWVNURU1fUFJPTVBUPGJyLz48c21hbGw+57O757uf5o+Q56S66K+NPC9zbWFsbD4iXQ0KICAgIGVuZA0KDQogICAgc3ViZ3JhcGggTExNWyLwn6egIExMTSDmjqjnkIYiXQ0KICAgICAgICBkaXJlY3Rpb24gTFINCiAgICAgICAgQklORFsi8J+UlyBsbG0uYmluZF90b29sczxici8+PHNtYWxsPue7keWumiAxNSDkuKrlt6Xlhbc8L3NtYWxsPiJdDQogICAgICAgIElORkVSWyLimqEgbGxtLmludm9rZTxici8+PHNtYWxsPuaOqOeQhiArIOW3peWFt+mAieaLqTwvc21hbGw+Il0NCiAgICBlbmQNCg0KICAgIHN1YmdyYXBoIFJBR1si8J+TmiBSQUcg5qOA57SiICjku6PnoIHmiafooYzliY0pIl0NCiAgICAgICAgUjFbIvCflI0gc2VhcmNoX3B5cWdpc19hcGk8YnIvPjxzbWFsbD5MTE0g5Li75Yqo5p+l6K+iPC9zbWFsbD4iXQ0KICAgICAgICBSMlsi8J+TliBGVFM1IOWFqOaWh+e0ouW8lTxici8+PHNtYWxsPuiHquWKqOajgOe0oiBBUEkg5paH5qGjPC9zbWFsbD4iXQ0KICAgIGVuZA0KDQogICAgc3ViZ3JhcGggVE9PTFNbIvCflKkg5bel5YW35omn6KGMICjkuLvnur/nqIvosIPluqYpIl0NCiAgICAgICAgVDFbIvCfk4ogZ2V0X3FnaXNfaW5mbyJdDQogICAgICAgIFQyWyLwn5OCIGFkZF92ZWN0b3JfbGF5ZXIiXQ0KICAgICAgICBUM1si8J+XviBhZGRfcmFzdGVyX2xheWVyIl0NCiAgICAgICAgVDRbIvCflI0gZ2V0X2xheWVyX2ZlYXR1cmVzIl0NCiAgICAgICAgVDVbIvCfl5HvuI8gcmVtb3ZlX2xheWVyIl0NCiAgICAgICAgVDZbIvCflI4gem9vbV90b19sYXllciJdDQogICAgICAgIFQ3WyLimpnvuI8gZXhlY3V0ZV9wcm9jZXNzaW5nIl0NCiAgICAgICAgVDhbIvCfkI0gZXhlY3V0ZV9weXFnaXMiXQ0KICAgICAgICBUOVsi8J+Pt++4jyBzZXRfbGF5ZXJfbGFiZWxpbmciXQ0KICAgICAgICBUMTBbIvCfk7ggcmVuZGVyX21hcCJdDQogICAgICAgIFQxMVsi8J+SviBzYXZlL2xvYWRfcHJvamVjdCJdDQogICAgICAgIFRNMVsi8J+noCBzYXZlX21lbW9yeSJdDQogICAgICAgIFRNMlsi8J+TliBsb2FkX21lbW9yeSJdDQogICAgZW5kDQoNCiAgICBDT09LQVJDSElWRVsi8J+nrCBDb29rYm9vayDlvZLmoaM8YnIvPjxzbWFsbD7miJDlip/moYjkvovoh6rliqjlrZjlgqg8L3NtYWxsPiJdDQoNCiAgICBPVVRQVVRbIvCfpJYgQUkg5Zue5aSN5paH5pysIl0NCg0KICAgIElOUFVUIC0tPiBDT05URVhUDQogICAgQ09OVEVYVCAtLT58Im1lc3NhZ2VzIOWIl+ihqCJ8IExMTQ0KICAgIExMTSAtLT58InRvb2xfY2FsbHMifCBUT09MUw0KICAgIExMTSAtLT58IuafpeivoiBBUEkifCBSQUcNCiAgICBSQUcgLS0+fCLmlofmoaPniYfmrrUifCBMTE0NCiAgICBUT09MUyAtLT58IlRvb2xNZXNzYWdlIOe7k+aenCJ8IExMTQ0KICAgIFRPT0xTIC0tPnwi5oiQ5Yqf5qGI5L6LInwgQ09PS0FSQ0hJVkUNCiAgICBDT09LQVJDSElWRSAtLT58IuWFpeW6kyJ8IENPT0tCT09LDQogICAgTExNIC0tPnwi5pyA57uI5Zue5aSNInwgT1VUUFVUDQpgYGANCg0KIyMg5Yqf6IO954m55oCnDQoNCnwg5YiG57G7IHwg5Yqf6IO9IHwg6K+05piOIHwNCnwtLS0tLS18LS0tLS0tfC0tLS0tLXwNCnwg8J+SrCDkuqTkupIgfCDoh6rnhLbor63oqIDmk43mjqcgUUdJUyB8IOi+k+WFpeS4reaWh+aMh+S7pO+8jEFJIOiHquWKqOmAieaLqeW3peWFt+aJp+ihjCB8DQp8IPCfp7Ag5bel5YW3IHwgMTUg5Liq5YaF572uIFFHSVMg5bel5YW3IHwg5Zu+5bGC566h55CG44CB56m66Ze05YiG5p6Q44CB5Zyw5Zu+5riy5p+T44CBQVBJIOajgOe0ouetiSB8DQp8IPCfp6Ag5qih5Z6LIHwg5aSaIExMTSDmlK/mjIEgfCBEZWVwU2Vla+OAgU9wZW5BSeOAgUdMTeOAgUdlbWluaeOAgU1pTW8g562JIHwNCnwg8J+TmiBSQUcgfCBBUEkg5paH5qGj5qOA57SiIHwg5pys5ZywIFNRTGl0ZSBGVFM1IOW8leaTju+8jOS7o+eggeaJp+ihjOWJjeiHquWKqOafpeivoiBQeVFHSVMgQVBJIOetvuWQjSB8DQp8IPCfp6wg6L+b5YyWIHwgQ29va2Jvb2sg6Ieq5oiR6L+b5YyWIHwg5oiQ5Yqf5qGI5L6L6Ieq5Yqo5b2S5qGj77yM5LiL5qyh5omn6KGM5YmN5qOA57Si55u45Ly85qGI5L6LIHwNCnwg8J+ntSDmnrbmnoQgfCDnur/nqIvlronlhaggfCBMTE0g6LCD55So5LiN6Zi75aGeIFVJ77yMUUdJUyBBUEkg6YCa6L+HIFFUaW1lciDosIPluqblm57kuLvnur/nqIsgfA0KfCDwn5K+IOWtmOWCqCB8IOWvueivneaMgeS5heWMliB8IFNRTGl0ZSDlrZjlgqjlrozmlbTlr7nor53ljoblj7LvvIzmlK/mjIHmo4DntKLkuI7mgaLlpI0gfA0KfCDwn5OdIOiusOW/hiB8IOmVv+acn+iusOW/hiB8IOi3qOWvueivneiusOW/hu+8jEFJIOiusOS9j+WBj+WlveWSjOW3peS9nOS5oOaDryB8DQp8IPCflJIg5a6J5YWoIHwg5Luj56CB5a6J5YWo56Gu6K6kIHwg5omn6KGMIFB5UUdJUy9Qcm9jZXNzaW5nIOWJjeW8ueeql+ehruiupCB8DQp8IPCfjKHvuI8g5Y+v5o6nIHwgVGVtcGVyYXR1cmUg5o6n5Yi2IHwgVUkg5ruR5Z2X6LCD6IqCIExMTSDovpPlh7rliJvpgKDmgKcgfA0KfCDwn4yQIOWbvemZheWMliB8IOS4reiLseaWh+eVjOmdoiB8IGkxOG4g57+76K+R5paH5Lu25pSv5oyBIHwNCg0KIyMg8J+TpSDlronoo4UNCg0KIyMjIFdpbmRvd3MNCg0KYGBgcG93ZXJzaGVsbA0KIyAxLiDlpI3liLbliLAgUUdJUyDmj5Lku7bnm67lvZUNCkNvcHktSXRlbSAtUmVjdXJzZSBxZ2lzX2FnZW50XCAiJGVudjpBUFBEQVRBXFFHSVNcUUdJUzNccHJvZmlsZXNcZGVmYXVsdFxweXRob25ccGx1Z2luc1xxZ2lzX2FnZW50Ig0KDQojIDIuIOWuieijheS+nei1lu+8iOS9v+eUqCBRR0lTIOWGhee9riBQeXRob27vvIkNCiYgIkM6XFByb2dyYW0gRmlsZXNcUUdJUyAzLnhcYmluXHB5dGhvbi1xZ2lzLmJhdCIgLW0gcGlwIGluc3RhbGwgLXIgIiRlbnY6QVBQREFUQVxRR0lTXFFHSVMzXHByb2ZpbGVzXGRlZmF1bHRccHl0aG9uXHBsdWdpbnNccWdpc19hZ2VudFxyZXF1aXJlbWVudHMudHh0Ig0KDQojIDMuIOmHjeWQryBRR0lT77yM5ZyoIOaPkuS7tiDihpIg566h55CG5ZKM5a6J6KOF5o+S5Lu2IOS4reWQr+eUqCBRR0lTIEFnZW50DQpgYGANCg0KIyMjIG1hY09TIC8gTGludXgNCg0KYGBgYmFzaA0KY3AgLXIgcWdpc19hZ2VudC8gfi8ubG9jYWwvc2hhcmUvUUdJUy9RR0lTMy9wcm9maWxlcy9kZWZhdWx0L3B5dGhvbi9wbHVnaW5zLw0KcGlwIGluc3RhbGwgLXIgfi8ubG9jYWwvc2hhcmUvUUdJUy9RR0lTMy9wcm9maWxlcy9kZWZhdWx0L3B5dGhvbi9wbHVnaW5zL3FnaXNfYWdlbnQvcmVxdWlyZW1lbnRzLnR4dA0KYGBgDQoNCj4gKirmjqjojZAqKu+8muS5n+WPr+mAmui/hyBRR0lTIOaPkuS7tueuoeeQhuWZqCDihpIg5LuOIFpJUCDlronoo4XvvIzmj5Lku7bkvJroh6rliqjlpITnkIbkvp3otZbjgIINCg0KIyMg4pqZ77iPIOmFjee9rg0KDQoxLiDmiZPlvIAgUUdJU++8jOeCueWHu+W3peWFt+agjyAqKlFHSVMgQWdlbnQqKiDlm77moIcNCjIuIOWIh+aNouWIsOOAjOaooeWei+mFjee9ruOAjeagh+etvumhtQ0KMy4g5re75YqgIExMTSDphY3nva7vvJoNCiAgIC0gKirlkI3np7AqKu+8muS7u+aEj++8iOWmgiBgRGVlcFNlZWtg77yJDQogICAtICoqQVBJIOerr+eCuSoq77ya5aaCIGBodHRwczovL2FwaS5kZWVwc2Vlay5jb20vdjFgDQogICAtICoqQVBJIEtleSoq77ya5L2g55qE5a+G6ZKlDQo0LiDkuZ/lj6/pgJrov4fnjq/looPlj5jph4/phY3nva7vvJpgREVFUFNFRUtfQVBJX0tFWWDjgIFgT1BFTkFJX0FQSV9LRVlgIOetiQ0KDQojIyDwn5qAIOW/q+mAn+S4iuaJiw0KDQrlnKggUUdJUyBBZ2VudCDpnaLmnb/ovpPlhaXmoYbkuK3ovpPlhaXoh6rnhLbor63oqIDmjIfku6TvvJoNCg0KfCDnpLrkvovmjIfku6QgfCDmlYjmnpwgfA0KfC0tLS0tLS0tLS18LS0tLS0tfA0KfCBg5re75Yqg5Zu+5bGCIEQ6L2RhdGEvcm9hZHMuc2hwYCB8IOWKoOi9veefoumHj+WbvuWxguWIsOW9k+WJjemhueebriB8DQp8IGDmn6XnnIvlvZPliY3pobnnm67mnInlk6rkupvlm77lsYJgIHwg5YiX5Ye65omA5pyJ5Zu+5bGC5Y+K5bGe5oCnIHwNCnwgYOWvueW7uuetkeWbvuWxguaMiemrmOW6puWtl+auteWIhue6p+iuvuiJsmAgfCDoh6rliqjorr7nva7liIbnuqfnrKblj7fljJbmuLLmn5MgfA0KfCBg5LulIHNlbGVjdGVkX2xheWVyIOS4uui+k+WFpeWBmiAxMDBtIOe8k+WGsuWMumAgfCDmiafooYznvJPlhrLljLrnqbrpl7TliIbmnpAgfA0KfCBg5bCG5Zyw5Zu+5riy5p+T5a+85Ye65Li6IFBOR2AgfCDlr7zlh7rlvZPliY3lnLDlm77nlLvluIPmiKrlm74gfA0KDQo+IPCfkqEgKirmj5DnpLoqKu+8mkFJIOWcqOaJp+ihjCBQeVFHSVMg5Luj56CB5YmN5Lya6Ieq5Yqo5qOA57SiIEFQSSDmlofmoaPvvIznoa7kv53lj4LmlbDlh4bnoa7jgILkvaDkuZ/lj6/ku6Xnm7TmjqXor7Qi5p+l5LiA5LiLIGJ1ZmZlciDnmoQgQVBJIOetvuWQjSLjgIINCg0KIyMg8J+UpyDlhoXnva7lt6XlhbcNCg0KfCDlt6XlhbcgfCDlip/og70gfCDliIbnsbsgfA0KfC0tLS0tLXwtLS0tLS18LS0tLS0tfA0KfCBgZ2V0X3FnaXNfaW5mb2AgfCDojrflj5YgUUdJUyDpobnnm67kv6Hmga/jgIHlm77lsYLliJfooaggfCDwn5OKIOafpeivoiB8DQp8IGBnZXRfbGF5ZXJfZmVhdHVyZXNgIHwg5p+l6K+i5Zu+5bGC6KaB57Sg5bGe5oCnIHwg8J+TiiDmn6Xor6IgfA0KfCBgYWRkX3ZlY3Rvcl9sYXllcmAgfCDmt7vliqDnn6Lph4/lm77lsYIgfCDwn5OCIOWbvuWxgueuoeeQhiB8DQp8IGBhZGRfcmFzdGVyX2xheWVyYCB8IOa3u+WKoOagheagvOWbvuWxgiB8IPCfk4Ig5Zu+5bGC566h55CGIHwNCnwgYHJlbW92ZV9sYXllcmAgfCDnp7vpmaTlm77lsYIgfCDwn5OCIOWbvuWxgueuoeeQhiB8DQp8IGB6b29tX3RvX2xheWVyYCB8IOe8qeaUvuWIsOWbvuWxguiMg+WbtCB8IPCflI4g5a+86IiqIHwNCnwgYHNldF9sYXllcl9sYWJlbGluZ2AgfCDorr7nva7lm77lsYLmoIfms6ggfCDwn4+377iPIOagh+azqCB8DQp8IGBleGVjdXRlX3Byb2Nlc3NpbmdgIHwg5omn6KGMIFByb2Nlc3Npbmcg566X5rOVIHwg4pqZ77iPIOepuumXtOWIhuaekCB8DQp8IGBleGVjdXRlX3B5cWdpc2AgfCDmiafooYzku7vmhI8gUHlRR0lTIOS7o+eggSB8IPCfkI0g6auY57qn5pON5L2cIHwNCnwgYHNlYXJjaF9weXFnaXNfYXBpYCB8IPCfhpUg5qOA57SiIFB5UUdJUyBBUEkg5paH5qGjIHwg8J+TmiBSQUcgfA0KfCBgcmVuZGVyX21hcGAgfCDmuLLmn5PlnLDlm77miKrlm74gfCDwn5O4IOi+k+WHuiB8DQp8IGBzYXZlX3Byb2plY3RgIHwg5L+d5a2YIFFHSVMg6aG555uuIHwg8J+SviDpobnnm64gfA0KfCBgbG9hZF9wcm9qZWN0YCB8IOWKoOi9vSBRR0lTIOmhueebriB8IPCfkr4g6aG555uuIHwNCnwgYHNhdmVfbWVtb3J5YCB8IOS/neWtmOmVv+acn+iusOW/hiB8IPCfp6Ag6K6w5b+GIHwNCnwgYGxvYWRfbWVtb3J5YCB8IOWKoOi9vemVv+acn+iusOW/hiB8IPCfp6Ag6K6w5b+GIHwNCg0KIyMg8J+TgSDpobnnm67nu5PmnoQNCg0KYGBgDQpxZ2lzX2FnZW50Lw0K4pSc4pSA4pSAIHFnaXNfYWdlbnQucHkgICAgICAgICAgICAgICAgIyDkuLvmjqfliLblmajvvIjlkKsgUkFHIOWIneWni+WMlu+8iQ0K4pSc4pSA4pSAIHByb2Nlc3Nvci5weSAgICAgICAgICAgICAgICAgIyBMTE0gQWdlbnQg5qC45b+D77yI6ZuG5oiQIFJBRyArIENvb2tib29r77yJDQrilJzilIDilIAgcWdpc190b29scy5weSAgICAgICAgICAgICAgICAjIOW3peWFt+mbhiArIOe6v+eoi+ahpSArIOS7o+eggeehruiupCArIEFQSSDmo4DntKINCuKUnOKUgOKUgCBjb252ZXJzYXRpb24ucHkgICAgICAgICAgICAgICMg5a+56K+d5Lya6K+d566h55CGDQrilJzilIDilIAgcmVzcG9uc2Vfd29ya2VyLnB5ICAgICAgICAgICAjIOWkmue6v+eoiyBXb3JrZXINCuKUnOKUgOKUgCBkYXRhbG9hZGVyLnB5ICAgICAgICAgICAgICAgICMgU1FMaXRlIOaVsOaNruWxgg0K4pSc4pSA4pSAIGxsbV9wcm92aWRlcnMucHkgICAgICAgICAgICAgIyBMTE0g5o+Q5L6b5ZWG5bel5Y6CDQrilJzilIDilIAgdXRpbHMucHkgLyBjb25maWcucHkgICAgICAgICAjIOW3peWFt+WHveaVsCAvIOWFqOWxgOmFjee9rg0K4pSc4pSA4pSAIHBhY2thZ2VfbWFuYWdlci5weSAgICAgICAgICAgIyDkvp3otZbnrqHnkIYNCuKUnOKUgOKUgCByYWcvICAgICAgICAgICAgICAgICAgICAgICAgICMg8J+TmiBSQUcg5qih5Z2XDQrilIIgICDilJzilIDilIAgZG9jX3N0b3JlLnB5ICAgICAgICAgICAgICMgICBTUUxpdGUgRlRTNSDmlofmoaPlrZjlgqgNCuKUgiAgIOKUnOKUgOKUgCByZXRyaWV2ZXIucHkgICAgICAgICAgICAgIyAgIEFQSSDmlofmoaPmo4DntKLlmagNCuKUgiAgIOKUnOKUgOKUgCBkb2NfZ2VuZXJhdG9yLnB5ICAgICAgICAgIyAgIEFQSSDmlofmoaPnlJ/miJDlmagNCuKUgiAgIOKUlOKUgOKUgCBjb29rYm9vay5weSAgICAgICAgICAgICAgIyAgIENvb2tib29rIOiHquaIkei/m+WMlg0K4pSc4pSA4pSAIHNjcmlwdHMvYnVpbGRfYXBpX2luZGV4LnB5ICAgIyDmnoTlu7ogQVBJIOe0ouW8lQ0K4pSc4pSA4pSAIGRhdGEvcHlxZ2lzX2FwaS5kYiAgICAgICAgICAgIyBBUEkg5paH5qGj5pWw5o2u5bqT77yI6Ieq5Yqo55Sf5oiQ77yJDQrilJzilIDilIAgcmVzb3VyY2VzL3Byb21wdC5qc29uICAgICAgICAjIOaPkOekuuivjeaooeadvw0K4pSc4pSA4pSAIGhlbHAvICAgICAgICAgICAgICAgICAgICAgICAgIyBTcGhpbngg5Lit5paH5paH5qGjDQrilJzilIDilIAgaTE4bi8gICAgICAgICAgICAgICAgICAgICAgICAjIOWbvemZheWMlue/u+ivkQ0K4pSc4pSA4pSAIHRlc3RzLyAgICAgICAgICAgICAgICAgICAgICAgIyDljZXlhYPmtYvor5UNCuKUnOKUgOKUgCBtZXRhZGF0YS50eHQgICAgICAgICAgICAgICAgICMgUUdJUyDmj5Lku7blhYPmlbDmja4NCuKUlOKUgOKUgCByZXF1aXJlbWVudHMudHh0ICAgICAgICAgICAgICMgUHl0aG9uIOS+nei1lg0KYGBgDQoNCiMjIOKdkyBGQVENCg0KPGRldGFpbHM+DQo8c3VtbWFyeT48Yj5ROiDpppbmrKHkvb/nlKjpnIDopoHogZTnvZHlkJfvvJ88L2I+PC9zdW1tYXJ5Pg0KDQotIOaPkuS7tuacrOi6qyoq5a6M5YWo5pys5Zyw6L+Q6KGMKirjgILpppbmrKHmnoTlu7ogQVBJIOaWh+aho+e0ouW8leaXtuS8muaPkOekuu+8jOe6piAxMC0zMCDnp5INCi0gTExNIOiwg+eUqOmcgOimgeiBlOe9ke+8iOiwg+eUqOS9oOmFjee9rueahCBBUEkg56uv54K577yJDQo8L2RldGFpbHM+DQoNCjxkZXRhaWxzPg0KPHN1bW1hcnk+PGI+UTogUkFHIOajgOe0ouS8muWinuWKoOWkmuWwkeW7tui/n++8nzwvYj48L3N1bW1hcnk+DQoNCi0gRlRTNSDlhajmlofmo4DntKLogJfml7YgKio8IDUwbXMqKu+8jOWvueaVtOS9k+WTjeW6lOaXtumXtOWHoOS5juaXoOW9seWTjQ0KPC9kZXRhaWxzPg0KDQo8ZGV0YWlscz4NCjxzdW1tYXJ5PjxiPlE6IENvb2tib29rIOS8muWNoOeUqOWkmuWwkeWtmOWCqO+8nzwvYj48L3N1bW1hcnk+DQoNCi0g5q+P5Liq5qGI5L6L57qmIDItNUtC77yMMTAwMCDkuKrmoYjkvovnuqYgMi01TULvvIzlrZjlgqjlnKggYGRhdGEvcHlxZ2lzX2FwaS5kYmAg5LitDQo8L2RldGFpbHM+DQoNCjxkZXRhaWxzPg0KPHN1bW1hcnk+PGI+UTog5pSv5oyB5ZOq5LqbIFFHSVMg54mI5pys77yfPC9iPjwvc3VtbWFyeT4NCg0KLSBRR0lTIDMuMCvvvIzmjqjojZAgMy4yOCBMVFIg5oiW5pu05paw54mI5pysDQo8L2RldGFpbHM+DQoNCjxkZXRhaWxzPg0KPHN1bW1hcnk+PGI+UTog5aaC5L2V6LSh54yuIEFQSSDmlofmoaPvvJ88L2I+PC9zdW1tYXJ5Pg0KDQotIOi/kOihjCBgc2NyaXB0cy9idWlsZF9hcGlfaW5kZXgucHlgIOWPr+mHjeaWsOaehOW7uue0ouW8lQ0KLSDlnKggYHJhZy9kb2NfZ2VuZXJhdG9yLnB5YCDnmoQgYE1BTlVBTF9ET0NTYCDkuK3mt7vliqDooaXlhYXmlofmoaMNCjwvZGV0YWlscz4NCg0KIyMg8J+ThCDorrjlj68NCg0KW01JVF0oTElDRU5TRSkNCg==
+# QGIS Agent
+
+> 🗺️ 将大语言模型 (LLM) 嵌入 QGIS 的智能助手插件 —— 用自然语言操控 QGIS 完成地理空间任务。
+
+[![QGIS](https://img.shields.io/badge/QGIS-3.0+-589632?logo=qgis&style=flat-square)](https://qgis.org/)
+[![Python](https://img.shields.io/badge/Python-3.7+-3776AB?logo=python&style=flat-square)](https://www.python.org/)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue?style=flat-square)](CHANGELOG.md)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+
+---
+
+## 🎯 一句话简介
+
+QGIS Agent 是 QGIS 的 AI 原生插件——用自然语言直接操控 QGIS，无需编写 PyQGIS 代码。集成 **RAG API 文档检索**和 **Cookbook 自我进化**，让 AI 写的代码更准确、越用越聪明。
+
+## ✨ 核心亮点
+
+| 亮点 | 说明 |
+|------|------|
+| 📚 **RAG API 文档检索** | 本地 SQLite FTS5 全文引擎，执行代码前自动查询 PyQGIS API 签名和参数，大幅降低"写错参数"的概率 |
+| 🧬 **Cookbook 自我进化** | 成功任务自动归档为案例，下次执行前检索相似案例注入上下文，越用越准确 |
+| 🔒 **代码安全确认** | 执行 PyQGIS/Processing 前弹窗确认，杜绝误操作 |
+| 🧵 **线程安全** | LLM 调用在工作线程执行，QGIS API 操作通过 QTimer 调度回主线程，UI 零阻塞 |
+| 🧠 **多模型** | 支持 DeepSeek、OpenAI、GLM、Gemini、MiMo 等所有 OpenAI 兼容 API |
+
+## 🏗️ 架构概览
+
+```mermaid
+graph TB
+    subgraph UI["🖥️ QGIS 主线程 — GUI"]
+        direction LR
+        A["🧩 QGISAgent<br/><small>主控制器</small>"]
+        B["🪟 DockWidget<br/><small>UI 面板</small>"]
+        C["💬 Conversation<br/><small>会话管理</small>"]
+    end
+
+    subgraph WORKER["⚙️ 工作线程 — QThreadPool"]
+        direction LR
+        D["🔧 ToolAgentWorker<br/><small>异步执行</small>"]
+        E["🧠 Processor<br/><small>Agent 循环 + RAG + Cookbook</small>"]
+    end
+
+    subgraph TOOLS["🔩 QGIS 工具层 — 主线程调度"]
+        direction LR
+        F["📞 call_tool()<br/><small>线程桥</small>"]
+        G["🧰 15 个 QGIS 工具"]
+        H["🗺️ QGIS API<br/><small>QgsProject / iface / Processing</small>"]
+    end
+
+    subgraph RAG["📚 RAG 引擎 (本地)"]
+        direction LR
+        J["📖 DocStore<br/><small>SQLite FTS5</small>"]
+        K["🔍 Retriever<br/><small>关键词搜索</small>"]
+        L["🧬 Cookbook<br/><small>案例归档</small>"]
+    end
+
+    subgraph EXT["☁️ 外部服务"]
+        I["🤖 LLM API<br/><small>DeepSeek / OpenAI 兼容</small>"]
+    end
+
+    A -->|创建/管理| B
+    A -->|创建/管理| C
+    C -->|async_response| D
+    D -->|在线程中运行| E
+    E -->|API 调用| I
+    E -->|检索文档/案例| K
+    K -->|查询| J
+    E -->|跨线程调用工具| F
+    F -->|QTimer 调度到主线程| G
+    G -->|操作| H
+    E -->|归档案例| L
+    L -->|写入| J
+    E -->|thinking 信号| B
+    E -->|finished 信号| A
+```
+
+## 调用流程
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as 👤 用户
+    participant UI as 🪟 DockWidget
+    participant Agent as 🧩 QGISAgent
+    participant Conv as 💬 Conversation
+    participant Proc as 🧠 Processor
+    participant Worker as 🔧 Worker
+    participant Tool as 📞 call_tool
+    participant QGIS as 🗺️ QGIS API
+
+    rect rgb(227, 242, 253)
+        Note over User,Agent: 📥 用户发起请求
+        User->>UI: 输入消息 + 回车
+        UI->>Agent: _on_new_message_send()
+        Agent->>UI: 显示用户消息 HTML
+        Agent->>Conv: update_user_prompt(message)
+        Conv->>Proc: async_response(message)
+        Proc->>Worker: 创建 Worker 投入线程池
+    end
+
+    rect rgb(255, 243, 224)
+        Note over Worker,Proc: ⚙️ 工作线程执行
+        Worker->>Proc: agent_chat(user_input, callbacks)
+        Proc->>Proc: 📄 加载 MEMORY.md 长期记忆
+        Proc->>Proc: 🧬 检索 Cookbook 相似案例
+        Proc->>Proc: 🗃️ 加载 SQLite 对话历史
+        Proc->>Proc: 📦 组装 messages = [System + Cookbook + History + User]
+
+        loop 🔄 最多 10 轮工具调用
+            Proc->>Proc: llm.bind_tools().invoke(messages)
+            Note over Proc: ⏳ 等待 LLM 返回...
+
+            alt ✅ LLM 返回 tool_calls
+                loop 每个 tool_call
+                    opt 危险工具 (execute_pyqgis/processing)
+                        Proc->>Proc: 📚 RAG 检索 API 文档
+                    end
+                    Proc->>Tool: call_tool(name, args)
+                    Note over Tool: 🔍 检测线程：非主线程
+                    Tool-->>QGIS: QTimer.singleShot(0) 调度
+                    Note over QGIS: ✅ 主线程执行
+                    QGIS-->>Tool: 返回结果
+                    Tool-->>Proc: 工具执行结果
+                end
+                Proc->>Proc: 追加 ToolMessage 到 messages
+            else 🎯 LLM 返回最终回复
+                Note over Proc: ✅ 退出循环
+            end
+        end
+
+        Proc->>Proc: 💾 保存交互到 SQLite
+        Proc->>Proc: 🧬 归档成功案例到 Cookbook
+    end
+
+    rect rgb(227, 242, 253)
+        Note over Worker,User: 📤 返回结果
+        Worker->>Agent: finished 信号
+        Agent->>UI: updateConversation() 渲染回复
+        UI->>User: 显示 AI 回复
+    end
+```
+
+## 线程模型
+
+```mermaid
+flowchart LR
+    subgraph MT["🖥️ QGIS 主线程 (GUI Thread)"]
+        direction TB
+        MT_UI["🪟 DockWidget UI<br/><small>对话渲染 / 输入处理</small>"]
+        MT_AGENT["🧩 QGISAgent<br/><small>信号处理 / 状态管理</small>"]
+        MT_TOOLS["🗺️ QGIS API 操作<br/><small>图层 / 渲染 / Processing</small>"]
+        MT_CANVAS["🖼️ Map Canvas<br/><small>地图渲染</small>"]
+    end
+
+    subgraph WT["⚙️ QThreadPool 工作线程"]
+        direction TB
+        WT_LLM["🤖 LLM API 调用<br/><small>可能耗时数秒~数十秒</small>"]
+        WT_HISTORY["🗃️ SQLite 读写<br/><small>对话历史持久化</small>"]
+        WT_LOOP["🔄 Agent 工具调用循环<br/><small>最多 10 轮</small>"]
+    end
+
+    WT_LOOP -->|"⏱️ QTimer.singleShot(0)"| MT_TOOLS
+    WT_LOOP -->|"📡 thinking / tool_status 信号"| MT_UI
+    WT_LLM --> WT_LOOP
+```
+
+> **核心设计原则**：
+> - LLM API 调用在工作线程中执行，**不阻塞 QGIS 主线程 UI**
+> - 所有 QGIS API 操作通过 `QTimer.singleShot(0)` 调度回主线程执行，**保证线程安全**
+> - 工作线程通过信号/槽同步等待主线程执行结果，超时 60 秒
+
+## 数据流
+
+```mermaid
+flowchart TD
+    INPUT["👤 用户自然语言输入"]
+
+    subgraph CONTEXT["📦 上下文组装"]
+        direction LR
+        MEMORY["📄 MEMORY.md<br/><small>长期记忆文件</small>"]
+        COOKBOOK["🧬 Cookbook<br/><small>相似案例检索</small>"]
+        HISTORY["🗃️ SQLite 对话历史<br/><small>最近 20 条</small>"]
+        SYSTEM["📋 AGENT_SYSTEM_PROMPT<br/><small>系统提示词</small>"]
+    end
+
+    subgraph LLM["🧠 LLM 推理"]
+        direction LR
+        BIND["🔗 llm.bind_tools<br/><small>绑定 15 个工具</small>"]
+        INFER["⚡ llm.invoke<br/><small>推理 + 工具选择</small>"]
+    end
+
+    subgraph RAG["📚 RAG 检索 (代码执行前)"]
+        R1["🔍 search_pyqgis_api<br/><small>LLM 主动查询</small>"]
+        R2["📖 FTS5 全文索引<br/><small>自动检索 API 文档</small>"]
+    end
+
+    subgraph TOOLS["🔩 工具执行 (主线程调度)"]
+        T1["📊 get_qgis_info"]
+        T2["📂 add_vector_layer"]
+        T3["🗾 add_raster_layer"]
+        T4["🔍 get_layer_features"]
+        T5["🗑️ remove_layer"]
+        T6["🔎 zoom_to_layer"]
+        T7["⚙️ execute_processing"]
+        T8["🐍 execute_pyqgis"]
+        T9["🏷️ set_layer_labeling"]
+        T10["📸 render_map"]
+        T11["💾 save/load_project"]
+        TM1["🧠 save_memory"]
+        TM2["📖 load_memory"]
+    end
+
+    COOKARCHIVE["🧬 Cookbook 归档<br/><small>成功案例自动存储</small>"]
+
+    OUTPUT["🤖 AI 回复文本"]
+
+    INPUT --> CONTEXT
+    CONTEXT -->|"messages 列表"| LLM
+    LLM -->|"tool_calls"| TOOLS
+    LLM -->|"查询 API"| RAG
+    RAG -->|"文档片段"| LLM
+    TOOLS -->|"ToolMessage 结果"| LLM
+    TOOLS -->|"成功案例"| COOKARCHIVE
+    COOKARCHIVE -->|"入库"| COOKBOOK
+    LLM -->|"最终回复"| OUTPUT
+```
+
+## 功能特性
+
+| 分类 | 功能 | 说明 |
+|------|------|------|
+| 💬 交互 | 自然语言操控 QGIS | 输入中文指令，AI 自动选择工具执行 |
+| 🧰 工具 | 15 个内置 QGIS 工具 | 图层管理、空间分析、地图渲染、API 检索等 |
+| 🧠 模型 | 多 LLM 支持 | DeepSeek、OpenAI、GLM、Gemini、MiMo 等 |
+| 📚 RAG | API 文档检索 | 本地 SQLite FTS5 引擎，代码执行前自动查询 PyQGIS API 签名 |
+| 🧬 进化 | Cookbook 自我进化 | 成功案例自动归档，下次执行前检索相似案例 |
+| 🧵 架构 | 线程安全 | LLM 调用不阻塞 UI，QGIS API 通过 QTimer 调度回主线程 |
+| 💾 存储 | 对话持久化 | SQLite 存储完整对话历史，支持检索与恢复 |
+| 📝 记忆 | 长期记忆 | 跨对话记忆，AI 记住偏好和工作习惯 |
+| 🔒 安全 | 代码安全确认 | 执行 PyQGIS/Processing 前弹窗确认 |
+| 🌡️ 可控 | Temperature 控制 | UI 滑块调节 LLM 输出创造性 |
+| 🌐 国际化 | 中英文界面 | i18n 翻译文件支持 |
+
+## 📥 安装
+
+### Windows
+
+```powershell
+# 1. 复制到 QGIS 插件目录
+Copy-Item -Recurse qgis_agent\ "$env:APPDATA\QGIS\QGIS3\profiles\default\python\plugins\qgis_agent"
+
+# 2. 安装依赖（使用 QGIS 内置 Python）
+& "C:\Program Files\QGIS 3.x\bin\python-qgis.bat" -m pip install -r "$env:APPDATA\QGIS\QGIS3\profiles\default\python\plugins\qgis_agent\requirements.txt"
+
+# 3. 重启 QGIS，在 插件 → 管理和安装插件 中启用 QGIS Agent
+```
+
+### macOS / Linux
+
+```bash
+cp -r qgis_agent/ ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/
+pip install -r ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/qgis_agent/requirements.txt
+```
+
+> **推荐**：也可通过 QGIS 插件管理器 → 从 ZIP 安装，插件会自动处理依赖。
+
+## ⚙️ 配置
+
+1. 打开 QGIS，点击工具栏 **QGIS Agent** 图标
+2. 切换到「模型配置」标签页
+3. 添加 LLM 配置：
+   - **名称**：任意（如 `DeepSeek`）
+   - **API 端点**：如 `https://api.deepseek.com/v1`
+   - **API Key**：你的密钥
+4. 也可通过环境变量配置：`DEEPSEEK_API_KEY`、`OPENAI_API_KEY` 等
+
+## 🚀 快速上手
+
+在 QGIS Agent 面板输入框中输入自然语言指令：
+
+| 示例指令 | 效果 |
+|----------|------|
+| `添加图层 D:/data/roads.shp` | 加载矢量图层到当前项目 |
+| `查看当前项目有哪些图层` | 列出所有图层及属性 |
+| `对建筑图层按高度字段分级设色` | 自动设置分级符号化渲染 |
+| `以 selected_layer 为输入做 100m 缓冲区` | 执行缓冲区空间分析 |
+| `将地图渲染导出为 PNG` | 导出当前地图画布截图 |
+
+> 💡 **提示**：AI 在执行 PyQGIS 代码前会自动检索 API 文档，确保参数准确。你也可以直接说"查一下 buffer 的 API 签名"。
+
+## 🔧 内置工具
+
+| 工具 | 功能 | 分类 |
+|------|------|------|
+| `get_qgis_info` | 获取 QGIS 项目信息、图层列表 | 📊 查询 |
+| `get_layer_features` | 查询图层要素属性 | 📊 查询 |
+| `add_vector_layer` | 添加矢量图层 | 📂 图层管理 |
+| `add_raster_layer` | 添加栅格图层 | 📂 图层管理 |
+| `remove_layer` | 移除图层 | 📂 图层管理 |
+| `zoom_to_layer` | 缩放到图层范围 | 🔎 导航 |
+| `set_layer_labeling` | 设置图层标注 | 🏷️ 标注 |
+| `execute_processing` | 执行 Processing 算法 | ⚙️ 空间分析 |
+| `execute_pyqgis` | 执行任意 PyQGIS 代码 | 🐍 高级操作 |
+| `search_pyqgis_api` | 🆕 检索 PyQGIS API 文档 | 📚 RAG |
+| `render_map` | 渲染地图截图 | 📸 输出 |
+| `save_project` | 保存 QGIS 项目 | 💾 项目 |
+| `load_project` | 加载 QGIS 项目 | 💾 项目 |
+| `save_memory` | 保存长期记忆 | 🧠 记忆 |
+| `load_memory` | 加载长期记忆 | 🧠 记忆 |
+
+## 📁 项目结构
+
+```
+qgis_agent/
+├── qgis_agent.py                # 主控制器（含 RAG 初始化）
+├── processor.py                 # LLM Agent 核心（集成 RAG + Cookbook）
+├── qgis_tools.py                # 工具集 + 线程桥 + 代码确认 + API 检索
+├── conversation.py              # 对话会话管理
+├── response_worker.py           # 多线程 Worker
+├── dataloader.py                # SQLite 数据层
+├── llm_providers.py             # LLM 提供商工厂
+├── utils.py / config.py         # 工具函数 / 全局配置
+├── package_manager.py           # 依赖管理
+├── rag/                         # 📚 RAG 模块
+│   ├── doc_store.py             #   SQLite FTS5 文档存储
+│   ├── retriever.py             #   API 文档检索器
+│   ├── doc_generator.py         #   API 文档生成器
+│   └── cookbook.py              #   Cookbook 自我进化
+├── scripts/build_api_index.py   # 构建 API 索引
+├── data/pyqgis_api.db           # API 文档数据库（自动生成）
+├── resources/prompt.json        # 提示词模板
+├── help/                        # Sphinx 中文文档
+├── i18n/                        # 国际化翻译
+├── tests/                       # 单元测试
+├── metadata.txt                 # QGIS 插件元数据
+└── requirements.txt             # Python 依赖
+```
+
+## ❓ FAQ
+
+<details>
+<summary><b>Q: 首次使用需要联网吗？</b></summary>
+
+- 插件本身**完全本地运行**。首次构建 API 文档索引时会提示，约 10-30 秒
+- LLM 调用需要联网（调用你配置的 API 端点）
+</details>
+
+<details>
+<summary><b>Q: RAG 检索会增加多少延迟？</b></summary>
+
+- FTS5 全文检索耗时 **< 50ms**，对整体响应时间几乎无影响
+</details>
+
+<details>
+<summary><b>Q: Cookbook 会占用多少存储？</b></summary>
+
+- 每个案例约 2-5KB，1000 个案例约 2-5MB，存储在 `data/pyqgis_api.db` 中
+</details>
+
+<details>
+<summary><b>Q: 支持哪些 QGIS 版本？</b></summary>
+
+- QGIS 3.0+，推荐 3.28 LTR 或更新版本
+</details>
+
+<details>
+<summary><b>Q: 如何贡献 API 文档？</b></summary>
+
+- 运行 `scripts/build_api_index.py` 可重新构建索引
+- 在 `rag/doc_generator.py` 的 `MANUAL_DOCS` 中添加补充文档
+</details>
+
+## 📄 许可
+
+[MIT](LICENSE)

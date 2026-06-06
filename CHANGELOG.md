@@ -1,1 +1,54 @@
-IyDmm7TmlrDml6Xlv5cNCg0KIyMgWzEuMi4wXSAtIDIwMjYtMDYtMDYNCg0KIyMjIOaWsOWing0KLSDwn5OaICoqUkFHIEFQSSDmlofmoaPmo4DntKIqKjog5pys5ZywIFNRTGl0ZSBGVFM1IOWFqOaWh+aQnOe0ouW8leaTju+8jOWcqOaJp+ihjCBQeVFHSVMg5Luj56CB5YmN6Ieq5Yqo5qOA57Si55u45YWzIEFQSSDnrb7lkI3lkozlj4LmlbDkv6Hmga8NCi0g8J+nrCAqKkNvb2tib29rIOiHquaIkei/m+WMlioqOiDmiJDlip/ku7vliqHoh6rliqjlvZLmoaPkuLrmoYjkvovvvIzmiafooYzliY3mo4DntKLnm7jkvLzmoYjkvovmj5Dkvpvlj4LogIPvvIzotornlKjotorogarmmI4NCi0g8J+UjSAqKnNlYXJjaF9weXFnaXNfYXBpIOW3peWFtyoqOiBMTE0g5Y+v5Li75Yqo6LCD55So5q2k5bel5YW35p+l6K+iIFB5UUdJUy9HREFML1Byb2Nlc3NpbmcgQVBJIOaWh+ahow0KLSDwn5OWICoqQVBJIOaWh+aho+eUn+aIkOWZqCoqOiDku44gUUdJUyDov5DooYzml7blj43lsIQgKyBQcm9jZXNzaW5nIOazqOWGjOihqCArIOaJi+WKqOihpeWFheS4ieS4quadpea6kOaPkOWPliBBUEkg5paH5qGjDQoNCiMjIyDmlLnov5sNCi0gYFByb2Nlc3Nvci5fX2luaXRfXygpYCDpm4bmiJAgYERvY1N0b3JlYOOAgWBBUElEb2NSZXRyaWV2ZXJg44CBYENvb2tib29rYCDnu4Tku7YNCi0gYGFnZW50X2NoYXQoKWAg5Zyo5omn6KGM5Y2x6Zmp5bel5YW35YmN6Ieq5Yqo6Kem5Y+RIFJBRyDmo4DntKINCi0gYGFnZW50X2NoYXQoKWAg5byA5aeL5YmN5qOA57SiIENvb2tib29rIOebuOS8vOahiOS+i+W5tuazqOWFpSBzeXN0ZW0gcHJvbXB0DQotIGBhZ2VudF9jaGF0KClgIOe7k+adn+WQjuiHquWKqOW9kuaho+aIkOWKn+ahiOS+i+WIsCBDb29rYm9vaw0KLSBTeXN0ZW0gcHJvbXB0IOWinuWKoCBzZWFyY2hfcHlxZ2lzX2FwaSDkvb/nlKjmjIflr7zlkowgQ29va2Jvb2sg5Y+C6ICD6K+05piODQotIOW3peWFt+aVsOmHj+S7jiAxNCDlop7liqDliLAgMTXvvIjmlrDlop4gc2VhcmNoX3B5cWdpc19hcGnvvIkNCg0KIyMjIOaWsOWinuaWh+S7tg0KLSBgcmFnL2Ag4oCUIFJBRyDmqKHlnZfnm67lvZUNCiAgLSBgcmFnL19faW5pdF9fLnB5YCDigJQg5qih5Z2X5YWl5Y+jDQogIC0gYHJhZy9kb2Nfc3RvcmUucHlgIOKAlCBTUUxpdGUgRlRTNSDmlofmoaPlrZjlgqjvvIhBUEkg5paH5qGjICsgQ29va2Jvb2vvvIkNCiAgLSBgcmFnL3JldHJpZXZlci5weWAg4oCUIEFQSSDmlofmoaPmo4DntKLlmajvvIjlhbPplK7or43mj5Dlj5YgKyBGVFM1IOaQnOe0ou+8iQ0KICAtIGByYWcvZG9jX2dlbmVyYXRvci5weWAg4oCUIOaWh+aho+eUn+aIkOWZqO+8iGluc3BlY3Qg5Y+N5bCEICsgUHJvY2Vzc2luZyDnrpfms5UgKyDmiYvliqjooaXlhYXvvIkNCiAgLSBgcmFnL2Nvb2tib29rLnB5YCDigJQgQ29va2Jvb2sg6Ieq5oiR6L+b5YyW77yI6Ieq5Yqo5b2S5qGjICsg5qOA57SiICsg6LSo6YeP6K+E5YiG77yJDQotIGBzY3JpcHRzL2J1aWxkX2FwaV9pbmRleC5weWAg4oCUIOeLrOeri+iEmuacrO+8muaehOW7uiBBUEkg5paH5qGj57Si5byVDQotIGBkYXRhL3B5cWdpc19hcGkuZGJgIOKAlCBBUEkg5paH5qGjIFNRTGl0ZSDmlbDmja7lupPvvIjoh6rliqjnlJ/miJDvvIkNCg0KIyMgWzEuMS4wXSAtIDIwMjYtMDYtMDYNCg0KIyMjIOaWsOWing0KLSDwn5SSICoq5Luj56CB5a6J5YWo56Gu6K6kKio6IOaJp+ihjCBQeVFHSVMg5Luj56CB5ZKMIFByb2Nlc3Npbmcg566X5rOV5YmN5by556qX56Gu6K6k77yI5YCf6Ym0IFFHUFQgQWdlbnTvvIkNCi0g8J+Moe+4jyAqKlRlbXBlcmF0dXJlIOaOp+WItioqOiDlupXpg6jmu5HlnZfosIPoioIgTExNIOi+k+WHuuWIm+mAoOaAp++8iDAuMD3nsr7noa4sIDEuMD3liJvpgKDvvIkNCi0g8J+MkCAqKuWbvemZheWMluaUr+aMgSoqOiDkuK3mlofnv7vor5Hmlofku7YgKGBpMThuL2Ag55uu5b2VKQ0KLSDwn5OaICoqU3BoaW54IOaWh+ahoyoqOiDlrozmlbTkuK3mlofluK7liqnmlofmoaMgKGBoZWxwL2Ag55uu5b2VKe+8jOWMheWQq+WuieijheaMh+WNl+OAgeS9v+eUqOaJi+WGjOOAgeW3peWFt+WPguiAg+OAgUZBUQ0KDQojIyMg5pS56L+bDQotIGBjYWxsX3Rvb2woKWAg5paw5aKe5Y2x6Zmp5bel5YW356Gu6K6k5py65Yi277yM6YCa6L+HIGBfTWFpblRocmVhZEJyaWRnZWAg55qEIGBjb25maXJtX3JlcXVlc3RgIOS/oeWPt+WcqOS4u+e6v+eoi+W8ueeqlw0KLSBgUHJvY2Vzc29yLl9faW5pdF9fKClgIOaWsOWiniBgdGVtcGVyYXR1cmVgIOWPguaVsOWSjCBgX2NvZGVfY29uZmlybV9jYWxsYmFja2ANCi0gRG9ja1dpZGdldCDlupXpg6jmoI/mlrDlop4gVGVtcGVyYXR1cmUg5ruR5Z2XIChgc2xpZGVyVGVtcGVyYXR1cmVgKSDlkozlgLzmmL7npLogKGBsYmxUZW1wVmFsdWVgKQ0KLSDlhajlsYDku6PnoIHnoa7orqTlm57osIMgYHNldF9jb2RlX2NvbmZpcm1fY2FsbGJhY2soKWAg5ZyoIGBxZ2lzX3Rvb2xzLnB5YCDkuK3ms6jlhowNCg0KIyMgWzEuMC4wXSAtIDIwMjYtMDYtMDYNCg0KIyMjIOaWsOWing0KLSDliJ3lp4vniYjmnKzlj5HluIMNCi0gMTEg5Liq5YaF572uIFFHSVMg5bel5YW377yI5Zu+5bGC566h55CG44CB5pWw5o2u5aSE55CG44CB5Zyw5Zu+5riy5p+T562J77yJDQotIOWkmiBMTE0g5pSv5oyB77yIRGVlcFNlZWvjgIFPcGVuQUnjgIHmmbrosLEgR0xN44CBR2VtaW5p44CB5bCP57GzIE1pTW/vvIkNCi0g5a+56K+d5oyB5LmF5YyW77yIU1FMaXRlIOWtmOWCqO+8iQ0KLSDplb/mnJ/orrDlv4bmnLrliLbvvIhNRU1PUlkubWTvvIkNCi0g57q/56iL5a6J5YWo5p625p6E77yIUVRocmVhZFBvb2wgKyDkuLvnur/nqIvosIPluqbmoaXvvIkNCi0g5LiJ5qCH562+6aG15YGc6Z2g6Z2i5p2/77yI5a+56K+dIC8g5a+56K+d5YiX6KGoIC8g5qih5Z6L6YWN572u77yJDQotIOS+nei1luiHquWKqOWuieijheeuoeeQhg0KLSDlm77lsYLmoIfms6jorr7nva7lt6XlhbcNCg==
+# 更新日志
+
+## [1.2.0] - 2026-06-06
+
+### 新增
+- 📚 **RAG API 文档检索**: 本地 SQLite FTS5 全文搜索引擎，在执行 PyQGIS 代码前自动检索相关 API 签名和参数信息
+- 🧬 **Cookbook 自我进化**: 成功任务自动归档为案例，执行前检索相似案例提供参考，越用越聪明
+- 🔍 **search_pyqgis_api 工具**: LLM 可主动调用此工具查询 PyQGIS/GDAL/Processing API 文档
+- 📖 **API 文档生成器**: 从 QGIS 运行时反射 + Processing 注册表 + 手动补充三个来源提取 API 文档
+
+### 改进
+- `Processor.__init__()` 集成 `DocStore`、`APIDocRetriever`、`Cookbook` 组件
+- `agent_chat()` 在执行危险工具前自动触发 RAG 检索
+- `agent_chat()` 开始前检索 Cookbook 相似案例并注入 system prompt
+- `agent_chat()` 结束后自动归档成功案例到 Cookbook
+- System prompt 增加 search_pyqgis_api 使用指导和 Cookbook 参考说明
+- 工具数量从 14 增加到 15（新增 search_pyqgis_api）
+
+### 新增文件
+- `rag/` — RAG 模块目录
+  - `rag/__init__.py` — 模块入口
+  - `rag/doc_store.py` — SQLite FTS5 文档存储（API 文档 + Cookbook）
+  - `rag/retriever.py` — API 文档检索器（关键词提取 + FTS5 搜索）
+  - `rag/doc_generator.py` — 文档生成器（inspect 反射 + Processing 算法 + 手动补充）
+  - `rag/cookbook.py` — Cookbook 自我进化（自动归档 + 检索 + 质量评分）
+- `scripts/build_api_index.py` — 独立脚本：构建 API 文档索引
+- `data/pyqgis_api.db` — API 文档 SQLite 数据库（自动生成）
+
+## [1.1.0] - 2026-06-06
+
+### 新增
+- 🔒 **代码安全确认**: 执行 PyQGIS 代码和 Processing 算法前弹窗确认（借鉴 QGPT Agent）
+- 🌡️ **Temperature 控制**: 底部滑块调节 LLM 输出创造性（0.0=精确, 1.0=创造）
+- 🌐 **国际化支持**: 中文翻译文件 (`i18n/` 目录)
+- 📚 **Sphinx 文档**: 完整中文帮助文档 (`help/` 目录)，包含安装指南、使用手册、工具参考、FAQ
+
+### 改进
+- `call_tool()` 新增危险工具确认机制，通过 `_MainThreadBridge` 的 `confirm_request` 信号在主线程弹窗
+- `Processor.__init__()` 新增 `temperature` 参数和 `_code_confirm_callback`
+- DockWidget 底部栏新增 Temperature 滑块 (`sliderTemperature`) 和值显示 (`lblTempValue`)
+- 全局代码确认回调 `set_code_confirm_callback()` 在 `qgis_tools.py` 中注册
+
+## [1.0.0] - 2026-06-06
+
+### 新增
+- 初始版本发布
+- 11 个内置 QGIS 工具（图层管理、数据处理、地图渲染等）
+- 多 LLM 支持（DeepSeek、OpenAI、智谱 GLM、Gemini、小米 MiMo）
+- 对话持久化（SQLite 存储）
+- 长期记忆机制（MEMORY.md）
+- 线程安全架构（QThreadPool + 主线程调度桥）
+- 三标签页停靠面板（对话 / 对话列表 / 模型配置）
+- 依赖自动安装管理
+- 图层标注设置工具

@@ -1,1 +1,102 @@
-5YaF572u5bel5YW35Y+C6ICDDQo9PT09PT09PT09PT09PT09DQoNClFHSVMgQWdlbnQg5YaF572u5LqGIDE0IOS4qiBRR0lTIOW3peWFt++8jOimhuebluWbvuWxgueuoeeQhuOAgeepuumXtOWIhuaekOOAgQ0K5Zyw5Zu+5riy5p+T44CB6K6w5b+G566h55CG562J5Zy65pmv44CCDQoNCuWbvuWxgueuoeeQhg0KLS0tLS0tLS0NCg0KZ2V0X3FnaXNfaW5mbw0Kfn5+fn5+fn5+fn5+fg0K6I635Y+WIFFHSVMg5b2T5YmN54q25oCB5L+h5oGv77ya54mI5pys44CB6aG555uu6Lev5b6E44CB5Z2Q5qCH57O744CB5omA5pyJ5Zu+5bGC5YiX6KGo44CCDQoNCmdldF9sYXllcl9mZWF0dXJlcw0Kfn5+fn5+fn5+fn5+fn5+fn5+DQrojrflj5bmjIflrprnn6Lph4/lm77lsYLnmoTlsZ7mgKfooajlkozlh6DkvZXmlbDmja7vvIhXS1Qg5qC85byP77yJ44CCDQoNCmFkZF92ZWN0b3JfbGF5ZXINCn5+fn5+fn5+fn5+fn5+fn4NCua3u+WKoOefoumHj+WbvuWxgu+8iFNoYXBlZmlsZeOAgUdlb0pTT07jgIFHUEtHIOetie+8ieWIsOW9k+WJjemhueebruOAgg0KDQphZGRfcmFzdGVyX2xheWVyDQp+fn5+fn5+fn5+fn5+fn5+DQrmt7vliqDmoIXmoLzlm77lsYLvvIhHZW9USUZG44CBSU1HIOetie+8ieWIsOW9k+WJjemhueebruOAgg0KDQpyZW1vdmVfbGF5ZXINCn5+fn5+fn5+fn5+fg0K5LuO6aG555uu5Lit56e76Zmk5oyH5a6a5Zu+5bGC44CCDQoNCnpvb21fdG9fbGF5ZXINCn5+fn5+fn5+fn5+fn4NCuWwhuWcsOWbvuinhuWbvue8qeaUvuWIsOaMh+WumuWbvuWxgueahOiMg+WbtOOAgg0KDQrnqbrpl7TliIbmnpDkuI7lpITnkIYNCi0tLS0tLS0tLS0tLS0tDQoNCmV4ZWN1dGVfcHJvY2Vzc2luZw0Kfn5+fn5+fn5+fn5+fn5+fn5+DQrmiafooYwgUUdJUyBQcm9jZXNzaW5nIFRvb2xib3gg5Lit55qE5aSE55CG566X5rOV44CCDQoNCuW4uOeUqOeul+azleekuuS+i++8mg0KDQotIGBgbmF0aXZlOmJ1ZmZlcmBgIC0g57yT5Yay5Yy65YiG5p6QDQotIGBgbmF0aXZlOmNsaXBgYCAtIOijgeWJqg0KLSBgYG5hdGl2ZTppbnRlcnNlY3Rpb25gYCAtIOebuOS6pOWIhuaekA0KLSBgYHFnaXM6ZXhwb3J0dG9zcHJlYWRzaGVldGBgIC0g5a+85Ye66KGo5qC8DQotIGBgZ2RhbDpjb250b3VyYGAgLSDnlJ/miJDnrYnpq5jnur8NCi0gYGBuYXRpdmU6ZmllbGRjYWxjdWxhdG9yYGAgLSDlrZfmrrXorqHnrpflmagNCg0KZXhlY3V0ZV9weXFnaXMNCn5+fn5+fn5+fn5+fn5+DQrlnKggUUdJUyBQeXRob24g546v5aKD5Lit55u05o6l5omn6KGMIFB5UUdJUyDku6PnoIHjgIINCg0K5bey6aKE5a+85YWl55qE57G75Z6L77yaDQogIFFnc1BvaW50LCBRZ3NQb2ludFhZLCBRZ3NHZW9tZXRyeSwgUWdzRmVhdHVyZSwgUWdzRmllbGQsIFFnc0ZpZWxkcywNCiAgUWdzV2tiVHlwZXMsIFFnc0Nvb3JkaW5hdGVUcmFuc2Zvcm0sIFFnc0ZlYXR1cmVSZXF1ZXN0LCBRZ3NEaXN0YW5jZUFyZWEsDQogIFFnc1VuaXRUeXBlcywgUWdzVmVjdG9yTGF5ZXIsIFFnc1Jhc3RlckxheWVyLCBRZ3NDb29yZGluYXRlUmVmZXJlbmNlU3lzdGVtLA0KICBRZ3NQcm9qZWN0LCBRZ2lzLCBpZmFjZSwgUUNvbG9yLCBRZ3NGaWxsU3ltYm9sLCBRZ3NMaW5lU3ltYm9sLA0KICBRZ3NNYXJrZXJTeW1ib2wsIFFnc1NpbmdsZVN5bWJvbFJlbmRlcmVyIOetiQ0KDQouLiB3YXJuaW5nOjoNCiAgIOaJp+ihjOWJjeS8muW8ueWHuuehruiupOWvueivneahhu+8jOivt+S7lOe7huajgOafpeS7o+eggeWQjuWGjeehruiupOOAgg0KDQrlnLDlm77muLLmn5PkuI7moIfms6gNCi0tLS0tLS0tLS0tLS0tDQoNCnJlbmRlcl9tYXANCn5+fn5+fn5+fn4NCuWwhuW9k+WJjeWcsOWbvueUu+W4g+a4suafk+S4uiBQTkcg5Zu+54mH5paH5Lu244CCDQoNCnNldF9sYXllcl9sYWJlbGluZw0Kfn5+fn5+fn5+fn5+fn5+fn5+DQrorr7nva7nn6Lph4/lm77lsYLnmoTmoIfms6jvvIhMYWJlbGluZ++8ieOAgg0KDQrmlK/mjIHlj4LmlbDvvJoNCiAgLSDmoIfms6jlrZfmrrUgKGZpZWxkX25hbWUpDQogIC0g5a2X5L2T5aSn5bCPIChmb250X3NpemUpDQogIC0g5paH5a2X6aKc6ImyIChjb2xvcikNCiAgLSDmloflrZfnvJPlhrIv5o+P6L65IChidWZmZXJfZW5hYmxlZCwgYnVmZmVyX2NvbG9yLCBidWZmZXJfc2l6ZSkNCiAgLSDmlL7nva7mlrnlvI8gKHBsYWNlbWVudCk6IGFyb3VuZF9wb2ludCwgb3Zlcl9wb2ludCwgbGluZSwgaG9yaXpvbnRhbA0KDQrpobnnm67mk43kvZwNCi0tLS0tLS0tDQoNCnNhdmVfcHJvamVjdA0Kfn5+fn5+fn5+fn5+DQrkv53lrZjlvZPliY0gUUdJUyDpobnnm67mlofku7bjgIINCg0KbG9hZF9wcm9qZWN0DQp+fn5+fn5+fn5+fn4NCuWKoOi9vSBRR0lTIOmhueebruaWh+S7tuOAgg0KDQrplb/mnJ/orrDlv4YNCi0tLS0tLS0tDQoNCnNhdmVfbWVtb3J5DQp+fn5+fn5+fn5+fg0K5bCG6YeN6KaB5L+h5oGv5L+d5a2Y5Yiw6ZW/5pyf6K6w5b+G77yITUVNT1JZLm1k77yJ77yM6Leo5a+56K+d5oyB5LmF5YyW44CCDQoNCmxvYWRfbWVtb3J5DQp+fn5+fn5+fn5+fg0K6K+75Y+W5LmL5YmN5L+d5a2Y55qE5omA5pyJ6ZW/5pyf6K6w5b+G5YaF5a6544CCDQo=
+内置工具参考
+================
+
+QGIS Agent 内置了 14 个 QGIS 工具，覆盖图层管理、空间分析、
+地图渲染、记忆管理等场景。
+
+图层管理
+--------
+
+get_qgis_info
+~~~~~~~~~~~~~
+获取 QGIS 当前状态信息：版本、项目路径、坐标系、所有图层列表。
+
+get_layer_features
+~~~~~~~~~~~~~~~~~~
+获取指定矢量图层的属性表和几何数据（WKT 格式）。
+
+add_vector_layer
+~~~~~~~~~~~~~~~~
+添加矢量图层（Shapefile、GeoJSON、GPKG 等）到当前项目。
+
+add_raster_layer
+~~~~~~~~~~~~~~~~
+添加栅格图层（GeoTIFF、IMG 等）到当前项目。
+
+remove_layer
+~~~~~~~~~~~~
+从项目中移除指定图层。
+
+zoom_to_layer
+~~~~~~~~~~~~~
+将地图视图缩放到指定图层的范围。
+
+空间分析与处理
+--------------
+
+execute_processing
+~~~~~~~~~~~~~~~~~~
+执行 QGIS Processing Toolbox 中的处理算法。
+
+常用算法示例：
+
+- ``native:buffer`` - 缓冲区分析
+- ``native:clip`` - 裁剪
+- ``native:intersection`` - 相交分析
+- ``qgis:exporttospreadsheet`` - 导出表格
+- ``gdal:contour`` - 生成等高线
+- ``native:fieldcalculator`` - 字段计算器
+
+execute_pyqgis
+~~~~~~~~~~~~~~
+在 QGIS Python 环境中直接执行 PyQGIS 代码。
+
+已预导入的类型：
+  QgsPoint, QgsPointXY, QgsGeometry, QgsFeature, QgsField, QgsFields,
+  QgsWkbTypes, QgsCoordinateTransform, QgsFeatureRequest, QgsDistanceArea,
+  QgsUnitTypes, QgsVectorLayer, QgsRasterLayer, QgsCoordinateReferenceSystem,
+  QgsProject, Qgis, iface, QColor, QgsFillSymbol, QgsLineSymbol,
+  QgsMarkerSymbol, QgsSingleSymbolRenderer 等
+
+.. warning::
+   执行前会弹出确认对话框，请仔细检查代码后再确认。
+
+地图渲染与标注
+--------------
+
+render_map
+~~~~~~~~~~
+将当前地图画布渲染为 PNG 图片文件。
+
+set_layer_labeling
+~~~~~~~~~~~~~~~~~~
+设置矢量图层的标注（Labeling）。
+
+支持参数：
+  - 标注字段 (field_name)
+  - 字体大小 (font_size)
+  - 文字颜色 (color)
+  - 文字缓冲/描边 (buffer_enabled, buffer_color, buffer_size)
+  - 放置方式 (placement): around_point, over_point, line, horizontal
+
+项目操作
+--------
+
+save_project
+~~~~~~~~~~~~
+保存当前 QGIS 项目文件。
+
+load_project
+~~~~~~~~~~~~
+加载 QGIS 项目文件。
+
+长期记忆
+--------
+
+save_memory
+~~~~~~~~~~~
+将重要信息保存到长期记忆（MEMORY.md），跨对话持久化。
+
+load_memory
+~~~~~~~~~~~
+读取之前保存的所有长期记忆内容。

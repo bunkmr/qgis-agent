@@ -1,1 +1,41 @@
-566A5LuLDQo9PT09PT09PQ0KDQpRR0lTIEFnZW50IOaYr+S7gOS5iO+8nw0KLS0tLS0tLS0tLS0tLS0tLS0tLS0NCg0KUUdJUyBBZ2VudCDmmK/kuIDkuKogUUdJUyDmoYzpnaLmj5Lku7bvvIzlsIblpKfor63oqIDmqKHlnosgKExMTSkg55qE5pm66IO96IO95Yqb5bWM5YWl5YiwDQpRR0lTIOWcsOeQhuS/oeaBr+ezu+e7n+eOr+Wig+S4reOAgueUqOaIt+WPr+S7peeUqOiHqueEtuivreiogOS4jiBRR0lTIOS6pOS6ku+8jEFnZW50IOS8muiHquWKqA0K6LCD55SoIFFHSVMg5bel5YW35a6M5oiQ5aSN5p2C55qE56m66Ze05pWw5o2u5aSE55CG5Lu75Yqh44CCDQoNCuaguOW/g+eJueaApw0KLS0tLS0tLS0NCg0KLSAqKuiHqueEtuivreiogOS6pOS6kioqOiDml6DpnIDnvJblhpkgUHl0aG9uL1B5UUdJUyDku6PnoIHvvIznlKjkuK3mlofmj4/ov7DpnIDmsYLljbPlj68NCi0gKipBZ2VudCDoh6rkuLvlhrPnrZYqKjogTExNIOiHquS4u+mAieaLqeiwg+eUqOWTquS4qiBRR0lTIOW3peWFt++8jOaUr+aMgeWkmui9ruW3peWFt+iwg+eUqA0KLSAqKua1geW8j+aAneiAg+WxleekuioqOiDlrp7ml7bmmL7npLogTExNIOaOqOeQhui/h+eoi++8jOmAj+aYjuWPr+aOpw0KLSAqKuS7o+eggeWuieWFqOehruiupCoqOiDmiafooYwgUHlRR0lTIOS7o+eggeWJjeW8ueeql+ehruiupO+8jOmBv+WFjeivr+aTjeS9nA0KLSAqKumVv+acn+iusOW/hioqOiDoh6rliqjkv53lrZjnlKjmiLflgY/lpb3jgIHluLjnlKjot6/lvoTnrYnot6jlr7nor53kv6Hmga8NCi0gKirnur/nqIvlronlhagqKjog5omA5pyJIExMTSDosIPnlKjlnKjlkI7lj7Dnur/nqIvmiafooYzvvIzkuI3pmLvloZ4gUUdJUyDnlYzpnaINCg0K5oqA5pyv5p625p6EDQotLS0tLS0tLQ0KDQo6Og0KDQogICAg55So5oi36L6T5YWlIOKGkiBDb252ZXJzYXRpb24g4oaSIFByb2Nlc3NvciAoTGFuZ0NoYWluIEFnZW50KQ0KICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIOKUnOKUgOKUgCBMTE0gKERlZXBTZWVrL09wZW5BSS9HTE0uLi4pDQogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg4pSc4pSA4pSAIFRvb2wgRGVmaW5pdGlvbnMgKDEx5Liq5bel5YW3KQ0KICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIOKUlOKUgOKUgCBNYWluVGhyZWFkQnJpZGdlICjnur/nqIvlronlhajosIPluqYpDQogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICDilJzilIDilIAgUUdJUyBBUEkgKOS4u+e6v+eoiykNCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIOKUlOKUgOKUgCBRV2FpdENvbmRpdGlvbiAo5ZCM5q2l562J5b6FKQ0KDQrlt6XkvZzmtYHnqIsNCi0tLS0tLS0tDQoNCjEuIOeUqOaIt+i+k+WFpeiHqueEtuivreiogOivt+axgg0KMi4gUHJvY2Vzc29yIOWwhuivt+axguWPkemAgee7mSBMTE0NCjMuIExMTSDliIbmnpDpnIDmsYLvvIzlhrPlrprosIPnlKjlk6rkupvlt6XlhbcNCjQuIOW3peWFt+mAmui/hyBNYWluVGhyZWFkQnJpZGdlIOWcqOS4u+e6v+eoi+S4reWuieWFqOaJp+ihjA0KNS4g5bel5YW357uT5p6c6L+U5Zue57uZIExMTe+8jExMTSDlhrPlrprmmK/lkKbnu6fnu63osIPnlKjlt6XlhbcNCjYuIOacgOe7iCBMTE0g55Sf5oiQ5Zue5aSN5bGV56S657uZ55So5oi3DQo=
+简介
+========
+
+QGIS Agent 是什么？
+--------------------
+
+QGIS Agent 是一个 QGIS 桌面插件，将大语言模型 (LLM) 的智能能力嵌入到
+QGIS 地理信息系统环境中。用户可以用自然语言与 QGIS 交互，Agent 会自动
+调用 QGIS 工具完成复杂的空间数据处理任务。
+
+核心特性
+--------
+
+- **自然语言交互**: 无需编写 Python/PyQGIS 代码，用中文描述需求即可
+- **Agent 自主决策**: LLM 自主选择调用哪个 QGIS 工具，支持多轮工具调用
+- **流式思考展示**: 实时显示 LLM 推理过程，透明可控
+- **代码安全确认**: 执行 PyQGIS 代码前弹窗确认，避免误操作
+- **长期记忆**: 自动保存用户偏好、常用路径等跨对话信息
+- **线程安全**: 所有 LLM 调用在后台线程执行，不阻塞 QGIS 界面
+
+技术架构
+--------
+
+::
+
+    用户输入 → Conversation → Processor (LangChain Agent)
+                                  ├── LLM (DeepSeek/OpenAI/GLM...)
+                                  ├── Tool Definitions (11个工具)
+                                  └── MainThreadBridge (线程安全调度)
+                                       ├── QGIS API (主线程)
+                                       └── QWaitCondition (同步等待)
+
+工作流程
+--------
+
+1. 用户输入自然语言请求
+2. Processor 将请求发送给 LLM
+3. LLM 分析需求，决定调用哪些工具
+4. 工具通过 MainThreadBridge 在主线程中安全执行
+5. 工具结果返回给 LLM，LLM 决定是否继续调用工具
+6. 最终 LLM 生成回复展示给用户

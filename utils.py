@@ -1,1 +1,178 @@
-ZnJvbSBkYXRldGltZSBpbXBvcnQgZGF0ZXRpbWUKZnJvbSBmdW5jdG9vbHMgaW1wb3J0IHdyYXBzCmZyb20gdHlwaW5nIGltcG9ydCBMaXRlcmFsCmltcG9ydCB1dWlkCmltcG9ydCByZQppbXBvcnQgb3MKCnRyeToKICAgIGZyb20gcWdpcy5jb3JlIGltcG9ydCBRZ2lzCiAgICBmcm9tIHFnaXMuUHlRdC5RdFdpZGdldHMgaW1wb3J0IFFBcHBsaWNhdGlvbiwgUURpYWxvZywgUUxhYmVsLCBRVkJveExheW91dCwgUVNjcm9sbEFyZWEsIFFXaWRnZXQKICAgIGZyb20gcWdpcy5QeVF0LlF0R3VpIGltcG9ydCBRQ29sb3IKICAgIF9IQVNfUUdJUyA9IFRydWUKZXhjZXB0IEltcG9ydEVycm9yOgogICAgX0hBU19RR0lTID0gRmFsc2UKCgpkZWYgZ2VuZXJhdGVfdW5pcXVlX2lkKCk6CiAgICByZXR1cm4gc3RyKHV1aWQudXVpZDQoKSkucmVwbGFjZSgiLSIsICJfIikKCgpkZWYgZ2V0X2N1cnJlbnRfdGltZXN0YW1wKCk6CiAgICByZXR1cm4gZGF0ZXRpbWUubm93KCkuc3RyZnRpbWUoIiVtICVkICVZICVIOiVNOiVTIikKCgpkZWYgaGFuZGxlX25vbmVfY29udmVyc2F0aW9uKGZ1bmMpOgogICAgQHdyYXBzKGZ1bmMpCiAgICBkZWYgd3JhcHBlcihzZWxmLCBjb252ZXJzYXRpb24sICphcmdzLCAqKmt3YXJncyk6CiAgICAgICAgaWYgY29udmVyc2F0aW9uIGlzIE5vbmU6CiAgICAgICAgICAgIHJldHVybgogICAgICAgIHJldHVybiBmdW5jKHNlbGYsIGNvbnZlcnNhdGlvbiwgKmFyZ3MsICoqa3dhcmdzKQogICAgcmV0dXJuIHdyYXBwZXIKCgpkZWYgdW5wYWNrKHJvd19kaWN0OiBkaWN0LCB0YWJsZTogTGl0ZXJhbFsiY29udmVyc2F0aW9uIiwgImludGVyYWN0aW9uIiwgInByb21wdCJdKSAtPiBsaXN0OgogICAgY29sbmFtZV9tYXAgPSB7CiAgICAgICAgImNvbnZlcnNhdGlvbiI6IFsiSUQiLCAibGxtSUQiLCAidGl0bGUiLCAiZGVzY3JpcHRpb24iLCAiY3JlYXRlZCIsICJtb2RpZmllZCIsICJtZXNzYWdlQ291bnQiLCAid29ya2Zsb3dDb3VudCIsICJ1c2VySUQiXSwKICAgICAgICAiaW50ZXJhY3Rpb24iOiBbIklEIiwgImNvbnZlcnNhdGlvbklEIiwgInByb21wdElEIiwgInJlcXVlc3RUZXh0IiwgImNvbnRleHRUZXh0IiwgInJlcXVlc3RUaW1lIiwgInR5cGVNZXNzYWdlIiwgInJlc3BvbnNlVGV4dCIsICJyZXNwb25zZVRpbWUiLCAid29ya2Zsb3ciLCAiZXhlY3V0aW9uTG9nIl0sCiAgICAgICAgInByb21wdCI6IFsiSUQiLCAibGxtSUQiLCAidmVyc2lvbiIsICJ0ZW1wbGF0ZSIsICJwcm9tcHRUeXBlIl0sCiAgICB9CiAgICBpZiB0YWJsZSBub3QgaW4gY29sbmFtZV9tYXA6CiAgICAgICAgcmFpc2UgVmFsdWVFcnJvcigi5b+F6aG75oyH5a6a6KGo57G75Z6LOiBjb252ZXJzYXRpb24sIGludGVyYWN0aW9uLCBwcm9tcHQiKQogICAgY29sbmFtZXMgPSBjb2xuYW1lX21hcFt0YWJsZV0KICAgIGlmIHNldChyb3dfZGljdC5rZXlzKCkpICE9IHNldChjb2xuYW1lcyk6CiAgICAgICAgcmFpc2UgS2V5RXJyb3IoZiLlrZflhbjplK7kuI3ljLnphY06IOacn+acmyB7c2V0KGNvbG5hbWVzKX0sIOWunumZhSB7c2V0KHJvd19kaWN0LmtleXMoKSl9IikKICAgIHJldHVybiBbcm93X2RpY3RbbmFtZV0gZm9yIG5hbWUgaW4gY29sbmFtZXNdCgoKZGVmIHBhY2socm93X3R1cGxlOiB0dXBsZSwgdGFibGU6IExpdGVyYWxbImNvbnZlcnNhdGlvbiIsICJpbnRlcmFjdGlvbiIsICJwcm9tcHQiXSkgLT4gZGljdDoKICAgIGNvbG5hbWVfbWFwID0gewogICAgICAgICJjb252ZXJzYXRpb24iOiBbIklEIiwgImxsbUlEIiwgInRpdGxlIiwgImRlc2NyaXB0aW9uIiwgImNyZWF0ZWQiLCAibW9kaWZpZWQiLCAibWVzc2FnZUNvdW50IiwgIndvcmtmbG93Q291bnQiLCAidXNlcklEIl0sCiAgICAgICAgImludGVyYWN0aW9uIjogWyJJRCIsICJjb252ZXJzYXRpb25JRCIsICJwcm9tcHRJRCIsICJyZXF1ZXN0VGV4dCIsICJjb250ZXh0VGV4dCIsICJyZXF1ZXN0VGltZSIsICJ0eXBlTWVzc2FnZSIsICJyZXNwb25zZVRleHQiLCAicmVzcG9uc2VUaW1lIiwgIndvcmtmbG93IiwgImV4ZWN1dGlvbkxvZyJdLAogICAgICAgICJwcm9tcHQiOiBbIklEIiwgImxsbUlEIiwgInZlcnNpb24iLCAidGVtcGxhdGUiLCAicHJvbXB0VHlwZSJdLAogICAgfQogICAgaWYgdGFibGUgbm90IGluIGNvbG5hbWVfbWFwOgogICAgICAgIHJhaXNlIFZhbHVlRXJyb3IoIuW/hemhu+aMh+WumuihqOexu+WeizogY29udmVyc2F0aW9uLCBpbnRlcmFjdGlvbiwgcHJvbXB0IikKICAgIGNvbG5hbWVzID0gY29sbmFtZV9tYXBbdGFibGVdCiAgICByZXR1cm4ge25hbWU6IHJvd190dXBsZVtpXSBmb3IgaSwgbmFtZSBpbiBlbnVtZXJhdGUoY29sbmFtZXMpfQoKCmRlZiBnZXRfcWdpc192ZXJzaW9uKCk6CiAgICBpZiBub3QgX0hBU19RR0lTOgogICAgICAgIHJldHVybiAiMC4wIgogICAgZnVsbFZlcnNpb24gPSBRZ2lzLlFHSVNfVkVSU0lPTgogICAgcmV0dXJuICIuIi5qb2luKGZ1bGxWZXJzaW9uLnNwbGl0KCIuIilbOjJdKQoKCmRlZiB0dXBsZV90b19kaWN0KGFsbF9yb3dfbGlzdDogbGlzdFt0dXBsZV0sIHRhYmxlOiBMaXRlcmFsWyJjb252ZXJzYXRpb24iLCAiaW50ZXJhY3Rpb24iLCAicHJvbXB0Il0pIC0+IGxpc3RbZGljdF06CiAgICByZXR1cm4gW3BhY2socm93LCB0YWJsZSkgZm9yIHJvdyBpbiBhbGxfcm93X2xpc3RdCgoKZGVmIG5lc3RlZF9kaWN0X3RvX2xpc3QoZnVsbF9kaWN0OiBkaWN0KSAtPiBsaXN0OgogICAgYW5zID0gW10KICAgIGZvciBrZXksIHN1Yl9saXN0IGluIGZ1bGxfZGljdC5pdGVtcygpOgogICAgICAgIGZvciBpdGVtIGluIHN1Yl9saXN0OgogICAgICAgICAgICBhbnMuYXBwZW5kKGYie2tleX06OntpdGVtfSIpCiAgICByZXR1cm4gYW5zCgoKZGVmIGV4dHJhY3RfY29kZShyZXNwb25zZTogc3RyKSAtPiBzdHI6CiAgICBwYXR0ZXJuID0gciJgYGBweXRob24oLio/KWBgYCIKICAgIG1hdGNoID0gcmUuc2VhcmNoKHBhdHRlcm4sIHJlc3BvbnNlLCByZS5ET1RBTEwpCiAgICBpZiBtYXRjaDoKICAgICAgICByZXR1cm4gbWF0Y2guZ3JvdXAoMSkuc3RyaXAoKQogICAgcmV0dXJuICIiCgoKZGVmIGdldF9zeXN0ZW1faW5mbygpOgogICAgaW1wb3J0IHBzdXRpbAogICAgbWFjX2FkZHJlc3NlcyA9IFtdCiAgICBmb3IgaW50ZXJmYWNlLCBhZGRycyBpbiBwc3V0aWwubmV0X2lmX2FkZHJzKCkuaXRlbXMoKToKICAgICAgICBmb3IgYWRkciBpbiBhZGRyczoKICAgICAgICAgICAgaWYgYWRkci5mYW1pbHkgPT0gcHN1dGlsLkFGX0xJTks6CiAgICAgICAgICAgICAgICBtYWNfYWRkcmVzc2VzLmFwcGVuZChhZGRyLmFkZHJlc3MpCiAgICBldGhfaW50ZXJmYWNlcyA9IFsKICAgICAgICBpZmFjZQogICAgICAgIGZvciBpZmFjZSwgYWRkcnMgaW4gcHN1dGlsLm5ldF9pZl9hZGRycygpLml0ZW1zKCkKICAgICAgICBpZiBhbnkoYWRkci5mYW1pbHkgPT0gcHN1dGlsLkFGX0xJTksgZm9yIGFkZHIgaW4gYWRkcnMpCiAgICBdCiAgICByZXR1cm4gewogICAgICAgICJtYWNJRCI6IG1hY19hZGRyZXNzZXNbMF0gaWYgbWFjX2FkZHJlc3NlcyBlbHNlICJOL0EiLAogICAgICAgICJldGhJbnRlcmZhY2VzIjogIiwgIi5qb2luKGV0aF9pbnRlcmZhY2VzKSwKICAgICAgICAicWdpc1ZlcnNpb24iOiBnZXRfcWdpc192ZXJzaW9uKCksCiAgICB9CgoKZGVmIHNldF9mb250X2NvbG9yKGJnX2NvbG9yKToKICAgIGlmIG5vdCBfSEFTX1FHSVM6CiAgICAgICAgcmV0dXJuICIjMTgxQzE0IgogICAgbHVtaW5hbmNlID0gKDAuMjk5ICogYmdfY29sb3IucmVkKCkgKyAwLjU4NyAqIGJnX2NvbG9yLmdyZWVuKCkgKyAwLjExNCAqIGJnX2NvbG9yLmJsdWUoKSkgLyAyNTUKICAgIHJldHVybiAiI0YxRjBFOSIgaWYgbHVtaW5hbmNlIDwgMC41IGVsc2UgIiMxODFDMTQiCgoKZGVmIGNyZWF0ZV9tYXJrZG93bihtYXJrZG93bl90ZXh0OiBzdHIpIC0+IHN0cjoKICAgICIiIuWwhiBNYXJrZG93biDmlofmnKzovazmjaLkuLogSFRNTO+8jOaUr+aMgSBRVGV4dEJyb3dzZXIg5riy5p+TIiIiCiAgICBpbXBvcnQgaHRtbCBhcyBodG1sX21vZHVsZQoKICAgIHRleHQgPSBtYXJrZG93bl90ZXh0CgogICAgIyAwLiDlhYjmj5Dlj5bku6PnoIHlnZflubbkv53miqTotbfmnaXvvIjpgb/lhY3ooqvlkI7nu63op4TliJnor6/lpITnkIbvvIkKICAgIGNvZGVfYmxvY2tzID0ge30KICAgIGNvZGVfY291bnRlciA9IFswXQoKICAgIGRlZiBfcHJvdGVjdF9jb2RlKG0pOgogICAgICAgIHBsYWNlaG9sZGVyID0gZiI8IS0tQ09ERUJMT0NLX3tjb2RlX2NvdW50ZXJbMF19LS0+IgogICAgICAgIGxhbmcgPSBtLmdyb3VwKDEpIG9yICIiCiAgICAgICAgY29kZSA9IG0uZ3JvdXAoMikKICAgICAgICBjb2RlX2Jsb2Nrc1twbGFjZWhvbGRlcl0gPSBmJzxwcmUgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6IzFlMWUxZTtjb2xvcjojZDRkNGQ0O3BhZGRpbmc6MTBweDtib3JkZXItcmFkaXVzOjZweDtvdmVyZmxvdy14OmF1dG87Zm9udC1mYW1pbHk6Q29uc29sYXMsbW9ub3NwYWNlO2ZvbnQtc2l6ZToxMnB4O2xpbmUtaGVpZ2h0OjEuNTsiPjxjb2RlPntodG1sX21vZHVsZS5lc2NhcGUoY29kZSl9PC9jb2RlPjwvcHJlPicKICAgICAgICBjb2RlX2NvdW50ZXJbMF0gKz0gMQogICAgICAgIHJldHVybiBwbGFjZWhvbGRlcgoKICAgIHRleHQgPSByZS5zdWIociJgYGAoXHcqKVxuKC4qPylgYGAiLCBfcHJvdGVjdF9jb2RlLCB0ZXh0LCBmbGFncz1yZS5ET1RBTEwpCgogICAgIyAxLiDovazkuYkgSFRNTCDnibnmrorlrZfnrKbvvIjkv53miqTlt7LovazkuYnnmoTlhoXlrrnvvIkKICAgIHRleHQgPSBodG1sX21vZHVsZS5lc2NhcGUodGV4dCwgcXVvdGU9RmFsc2UpCgogICAgIyAyLiDmoIfpopggKCMgIyMgIyMjIOetiSkKICAgIHRleHQgPSByZS5zdWIociJeIyMjIyAoLispJCIsIHIiPGg1IHN0eWxlPSdtYXJnaW46NHB4IDA7Zm9udC1zaXplOjEzcHg7Jz5cMTwvaDU+IiwgdGV4dCwgZmxhZ3M9cmUuTVVMVElMSU5FKQogICAgdGV4dCA9IHJlLnN1YihyIl4jIyMgKC4rKSQiLCByIjxoNCBzdHlsZT0nbWFyZ2luOjRweCAwO2ZvbnQtc2l6ZToxNHB4Oyc+XDE8L2g0PiIsIHRleHQsIGZsYWdzPXJlLk1VTFRJTElORSkKICAgIHRleHQgPSByZS5zdWIociJeIyMgKC4rKSQiLCByIjxoMyBzdHlsZT0nbWFyZ2luOjZweCAwO2ZvbnQtc2l6ZToxNXB4Oyc+XDE8L2gzPiIsIHRleHQsIGZsYWdzPXJlLk1VTFRJTElORSkKICAgIHRleHQgPSByZS5zdWIociJeIyAoLispJCIsIHIiPGgyIHN0eWxlPSdtYXJnaW46OHB4IDA7Zm9udC1zaXplOjE2cHg7Jz5cMTwvaDI+IiwgdGV4dCwgZmxhZ3M9cmUuTVVMVElMSU5FKQoKICAgICMgMy4g5Yqg57KXICoqdGV4dCoqIOWSjCBfX3RleHRfXwogICAgdGV4dCA9IHJlLnN1YihyIlwqXCooLis/KVwqXCoiLCByIjxiPlwxPC9iPiIsIHRleHQpCiAgICB0ZXh0ID0gcmUuc3ViKHIiX18oLis/KV9fIiwgciI8Yj5cMTwvYj4iLCB0ZXh0KQoKICAgICMgNC4g5pac5L2TICp0ZXh0KiDlkowgX3RleHRf77yI6YG/5YWN5Yy56YWN5Yiw5Yqg57KX55qEICoq77yJCiAgICB0ZXh0ID0gcmUuc3ViKHIiKD88IVwqKVwqKD8hXCopKC4rPykoPzwhXCopXCooPyFcKikiLCByIjxpPlwxPC9pPiIsIHRleHQpCiAgICB0ZXh0ID0gcmUuc3ViKHIiKD88IV8pXyg/IV8pKC4rPykoPzwhXylfKD8hXykiLCByIjxpPlwxPC9pPiIsIHRleHQpCgogICAgIyA1LiDooYzlhoXku6PnoIEgYGNvZGVgCiAgICB0ZXh0ID0gcmUuc3ViKAogICAgICAgIHIiYChbXmBdKylgIiwKICAgICAgICByJzxjb2RlIHN0eWxlPSJiYWNrZ3JvdW5kLWNvbG9yOiMyZDJkMmQ7Y29sb3I6I2U2ZGI3NDtwYWRkaW5nOjJweCA1cHg7Ym9yZGVyLXJhZGl1czozcHg7Zm9udC1mYW1pbHk6Q29uc29sYXMsbW9ub3NwYWNlO2ZvbnQtc2l6ZToxMnB4OyI+XDE8L2NvZGU+JywKICAgICAgICB0ZXh0CiAgICApCgogICAgIyA2LiDml6Dluo/liJfooaggLSBpdGVtIOaIliAqIGl0ZW0KICAgIHRleHQgPSByZS5zdWIociJeW1wtKl0gKC4rKSQiLCByIjxsaSBzdHlsZT0nbWFyZ2luLWxlZnQ6MjBweDsnPlwxPC9saT4iLCB0ZXh0LCBmbGFncz1yZS5NVUxUSUxJTkUpCgogICAgIyA3LiDmnInluo/liJfooaggMS4gaXRlbQogICAgdGV4dCA9IHJlLnN1YihyIl5cZCtcLiAoLispJCIsIHIiPGxpIHN0eWxlPSdtYXJnaW4tbGVmdDoyMHB4Oyc+XDE8L2xpPiIsIHRleHQsIGZsYWdzPXJlLk1VTFRJTElORSkKCiAgICAjIDguIOawtOW5s+e6vyAtLS0g5oiWICoqKgogICAgdGV4dCA9IHJlLnN1YihyIl4oLS0tfFwqXCpcKikkIiwgciI8aHIgc3R5bGU9J2JvcmRlcjpub25lO2JvcmRlci10b3A6MXB4IHNvbGlkICM1NTU7bWFyZ2luOjhweCAwOyc+IiwgdGV4dCwgZmxhZ3M9cmUuTVVMVElMSU5FKQoKICAgICMgOS4g5q616JC977ya5bCG6L+e57ut55qE5o2i6KGM6L2s5Li65q616JC95YiG6ZqUCiAgICB0ZXh0ID0gcmUuc3ViKHIiXG5cbisiLCAiPGJyPjxicj4iLCB0ZXh0KQogICAgdGV4dCA9IHJlLnN1YihyIlxuIiwgIjxicj4iLCB0ZXh0KQoKICAgICMgMTAuIOaBouWkjeS7o+eggeWdlwogICAgZm9yIHBsYWNlaG9sZGVyLCBodG1sX2NvZGUgaW4gY29kZV9ibG9ja3MuaXRlbXMoKToKICAgICAgICB0ZXh0ID0gdGV4dC5yZXBsYWNlKHBsYWNlaG9sZGVyLCBodG1sX2NvZGUpCgogICAgcmV0dXJuIHRleHQKCgpkZWYgZm9ybWF0X2Rlc2NyaXB0aW9uKGRlc2NyaXB0aW9uOiBzdHIpIC0+IHN0cjoKICAgIHJldHVybiBkZXNjcmlwdGlvbiArICJcbiIK
+from datetime import datetime
+from functools import wraps
+from typing import Literal
+import uuid
+import re
+import os
+
+try:
+    from qgis.core import Qgis
+    from qgis.PyQt.QtWidgets import QApplication, QDialog, QLabel, QVBoxLayout, QScrollArea, QWidget
+    from qgis.PyQt.QtGui import QColor
+    _HAS_QGIS = True
+except ImportError:
+    _HAS_QGIS = False
+
+
+def generate_unique_id():
+    return str(uuid.uuid4()).replace("-", "_")
+
+
+def get_current_timestamp():
+    return datetime.now().strftime("%m %d %Y %H:%M:%S")
+
+
+def handle_none_conversation(func):
+    @wraps(func)
+    def wrapper(self, conversation, *args, **kwargs):
+        if conversation is None:
+            return
+        return func(self, conversation, *args, **kwargs)
+    return wrapper
+
+
+def unpack(row_dict: dict, table: Literal["conversation", "interaction", "prompt"]) -> list:
+    colname_map = {
+        "conversation": ["ID", "llmID", "title", "description", "created", "modified", "messageCount", "workflowCount", "userID"],
+        "interaction": ["ID", "conversationID", "promptID", "requestText", "contextText", "requestTime", "typeMessage", "responseText", "responseTime", "workflow", "executionLog"],
+        "prompt": ["ID", "llmID", "version", "template", "promptType"],
+    }
+    if table not in colname_map:
+        raise ValueError("必须指定表类型: conversation, interaction, prompt")
+    colnames = colname_map[table]
+    if set(row_dict.keys()) != set(colnames):
+        raise KeyError(f"字典键不匹配: 期望 {set(colnames)}, 实际 {set(row_dict.keys())}")
+    return [row_dict[name] for name in colnames]
+
+
+def pack(row_tuple: tuple, table: Literal["conversation", "interaction", "prompt"]) -> dict:
+    colname_map = {
+        "conversation": ["ID", "llmID", "title", "description", "created", "modified", "messageCount", "workflowCount", "userID"],
+        "interaction": ["ID", "conversationID", "promptID", "requestText", "contextText", "requestTime", "typeMessage", "responseText", "responseTime", "workflow", "executionLog"],
+        "prompt": ["ID", "llmID", "version", "template", "promptType"],
+    }
+    if table not in colname_map:
+        raise ValueError("必须指定表类型: conversation, interaction, prompt")
+    colnames = colname_map[table]
+    return {name: row_tuple[i] for i, name in enumerate(colnames)}
+
+
+def get_qgis_version():
+    if not _HAS_QGIS:
+        return "0.0"
+    fullVersion = Qgis.QGIS_VERSION
+    return ".".join(fullVersion.split(".")[:2])
+
+
+def tuple_to_dict(all_row_list: list[tuple], table: Literal["conversation", "interaction", "prompt"]) -> list[dict]:
+    return [pack(row, table) for row in all_row_list]
+
+
+def nested_dict_to_list(full_dict: dict) -> list:
+    ans = []
+    for key, sub_list in full_dict.items():
+        for item in sub_list:
+            ans.append(f"{key}::{item}")
+    return ans
+
+
+def extract_code(response: str) -> str:
+    pattern = r"```python(.*?)```"
+    match = re.search(pattern, response, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    return ""
+
+
+def get_system_info():
+    import psutil
+    mac_addresses = []
+    for interface, addrs in psutil.net_if_addrs().items():
+        for addr in addrs:
+            if addr.family == psutil.AF_LINK:
+                mac_addresses.append(addr.address)
+    eth_interfaces = [
+        iface
+        for iface, addrs in psutil.net_if_addrs().items()
+        if any(addr.family == psutil.AF_LINK for addr in addrs)
+    ]
+    return {
+        "macID": mac_addresses[0] if mac_addresses else "N/A",
+        "ethInterfaces": ", ".join(eth_interfaces),
+        "qgisVersion": get_qgis_version(),
+    }
+
+
+def set_font_color(bg_color):
+    if not _HAS_QGIS:
+        return "#181C14"
+    luminance = (0.299 * bg_color.red() + 0.587 * bg_color.green() + 0.114 * bg_color.blue()) / 255
+    return "#F1F0E9" if luminance < 0.5 else "#181C14"
+
+
+def create_markdown(markdown_text: str) -> str:
+    """将 Markdown 文本转换为 HTML，支持 QTextBrowser 渲染"""
+    import html as html_module
+
+    text = markdown_text
+
+    # 0. 先提取代码块并保护起来（避免被后续规则误处理）
+    code_blocks = {}
+    code_counter = [0]
+
+    def _protect_code(m):
+        placeholder = f"<!--CODEBLOCK_{code_counter[0]}-->"
+        lang = m.group(1) or ""
+        code = m.group(2)
+        code_blocks[placeholder] = f'<pre style="background-color:#1e1e1e;color:#d4d4d4;padding:10px;border-radius:6px;overflow-x:auto;font-family:Consolas,monospace;font-size:12px;line-height:1.5;"><code>{html_module.escape(code)}</code></pre>'
+        code_counter[0] += 1
+        return placeholder
+
+    text = re.sub(r"```(\w*)\n(.*?)```", _protect_code, text, flags=re.DOTALL)
+
+    # 1. 转义 HTML 特殊字符（保护已转义的内容）
+    text = html_module.escape(text, quote=False)
+
+    # 2. 标题 (# ## ### 等)
+    text = re.sub(r"^#### (.+)$", r"<h5 style='margin:4px 0;font-size:13px;'>\1</h5>", text, flags=re.MULTILINE)
+    text = re.sub(r"^### (.+)$", r"<h4 style='margin:4px 0;font-size:14px;'>\1</h4>", text, flags=re.MULTILINE)
+    text = re.sub(r"^## (.+)$", r"<h3 style='margin:6px 0;font-size:15px;'>\1</h3>", text, flags=re.MULTILINE)
+    text = re.sub(r"^# (.+)$", r"<h2 style='margin:8px 0;font-size:16px;'>\1</h2>", text, flags=re.MULTILINE)
+
+    # 3. 加粗 **text** 和 __text__
+    text = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", text)
+    text = re.sub(r"__(.+?)__", r"<b>\1</b>", text)
+
+    # 4. 斜体 *text* 和 _text_（避免匹配到加粗的 **）
+    text = re.sub(r"(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)", r"<i>\1</i>", text)
+    text = re.sub(r"(?<!_)_(?!_)(.+?)(?<!_)_(?!_)", r"<i>\1</i>", text)
+
+    # 5. 行内代码 `code`
+    text = re.sub(
+        r"`([^`]+)`",
+        r'<code style="background-color:#2d2d2d;color:#e6db74;padding:2px 5px;border-radius:3px;font-family:Consolas,monospace;font-size:12px;">\1</code>',
+        text
+    )
+
+    # 6. 无序列表 - item 或 * item
+    text = re.sub(r"^[\-*] (.+)$", r"<li style='margin-left:20px;'>\1</li>", text, flags=re.MULTILINE)
+
+    # 7. 有序列表 1. item
+    text = re.sub(r"^\d+\. (.+)$", r"<li style='margin-left:20px;'>\1</li>", text, flags=re.MULTILINE)
+
+    # 8. 水平线 --- 或 ***
+    text = re.sub(r"^(---|\*\*\*)$", r"<hr style='border:none;border-top:1px solid #555;margin:8px 0;'>", text, flags=re.MULTILINE)
+
+    # 9. 段落：将连续的换行转为段落分隔
+    text = re.sub(r"\n\n+", "<br><br>", text)
+    text = re.sub(r"\n", "<br>", text)
+
+    # 10. 恢复代码块
+    for placeholder, html_code in code_blocks.items():
+        text = text.replace(placeholder, html_code)
+
+    return text
+
+
+def format_description(description: str) -> str:
+    return description + "\n"

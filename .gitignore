@@ -1,1 +1,42 @@
-IyBRR0lTIEFnZW50IC0gUHl0aG9uIHBsdWdpbiBmb3IgUUdJUwoKIyBQeXRob24KX19weWNhY2hlX18vCioucHlbY29kXQoqLnNvCiouZWdnLWluZm8vCmRpc3QvCmJ1aWxkLwoqLmVnZwouZWdncy8KCiMgVmlydHVhbCBlbnZpcm9ubWVudAp2ZW52LwoudmVudi8KZW52LwoKIyBJREUKLmlkZWEvCi52c2NvZGUvCiouc3dwCiouc3dvCip+CgojIE9TCi5EU19TdG9yZQpUaHVtYnMuZGIKCiMgRW52aXJvbm1lbnQKLmVudgoqLmRiCgojIFJ1bnRpbWUgYXJ0aWZhY3RzCk1FTU9SWS5tZApleHRsaWJzLwoKIyBCdWlsZCBvdXRwdXQKKi56aXAKCiMgRGV2IHRvb2xzCi5jb2RlYnVkZHkvCi5jb2RlYnVkZHkvCg==
+# QGIS Agent - Python plugin for QGIS
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+*.db
+
+# Runtime artifacts
+MEMORY.md
+extlibs/
+
+# Build output
+*.zip
+
+# Dev tools
+.codebuddy/
+.codebuddy/

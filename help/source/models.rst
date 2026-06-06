@@ -1,1 +1,55 @@
-5qih5Z6L6YWN572uDQo9PT09PT09PT09PT0NCg0K5pSv5oyB55qE5qih5Z6LDQotLS0tLS0tLS0tDQoNClFHSVMgQWdlbnQg5pSv5oyB5Lul5LiLIExMTSDmnI3liqHllYbvvJoNCg0KKy0tLS0tLS0tLS0tLS0tLS0rLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tKy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLSsNCnwg5pyN5Yqh5ZWGICAgICAgICAgfCDmqKHlnosgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB8IEFQSSDnq6/ngrkgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB8DQorPT09PT09PT09PT09PT09PSs9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0rPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Kw0KfCBEZWVwU2VlayAgICAgICB8IGRlZXBzZWVrLWNoYXQsIGRlZXBzZWVrLXJlYXNvbmVyICAgfCBodHRwczovL2FwaS5kZWVwc2Vlay5jb20vdjEgICAgICAgICAgIHwNCistLS0tLS0tLS0tLS0tLS0tKy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLSstLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0rDQp8IE9wZW5BSSAgICAgICAgIHwgZ3B0LTRvLCBncHQtNG8tbWluaSwgZ3B0LTQtdHVyYm8gICB8IGh0dHBzOi8vYXBpLm9wZW5haS5jb20vdjEgICAgICAgICAgICAgfA0KKy0tLS0tLS0tLS0tLS0tLS0rLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tKy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLSsNCnwg5pm66LCxIEdMTSAgICAgICB8IGdsbS00LCBnbG0tNC1wbHVzLCBnbG0tNC1mbGFzaCAgICAgfCBodHRwczovL29wZW4uYmlnbW9kZWwuY24vYXBpL3BhYXMvdjQvIHwNCistLS0tLS0tLS0tLS0tLS0tKy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLSstLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0rDQp8IEdlbWluaSAgICAgICAgIHwgZ2VtaW5pLTIuMC1mbGFzaCwgZ2VtaW5pLTEuNS1wcm8gICB8IC4uLmdvb2dsZWFwaXMuY29tL3YxYmV0YS9vcGVuYWkvICAgICAgfA0KKy0tLS0tLS0tLS0tLS0tLS0rLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tKy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLSsNCnwg5bCP57GzIE1pTW8gICAgICB8IG1pbW8tdjIuNSwgbWltby12Mi1mbGFzaCAgICAgICAgICAgfCBodHRwczovL2FwaS54aWFvbWltaW1vLmNvbS92MS8uLi4gICAgIHwNCistLS0tLS0tLS0tLS0tLS0tKy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLSstLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0rDQp8IOiHquWumuS5iSAgICAgICAgIHwg5Lu75oSPIE9wZW5BSSDlhbzlrrnmqKHlnosgICAgICAgICAgICAgICB8IOiHquWumuS5ieerr+eCuSAgICAgICAgICAgICAgICAgICAgICAgICAgICB8DQorLS0tLS0tLS0tLS0tLS0tLSstLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0rLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tKw0KDQrmt7vliqDmqKHlnosNCi0tLS0tLS0tDQoNCjEuIOWIh+aNouWIsOOAjOaooeWei+mFjee9ruOAjeagh+etvumhtQ0KMi4g54K55Ye744CMKyDmt7vliqDmqKHlnovjgI0NCjMuIOmAieaLqeWPguiAg+aooeadv++8iOS8muiHquWKqOmihOWhq+err+eCueS/oeaBr++8iQ0KNC4g5aGr5YaZ5qih5Z6L5ZCN56ew77yI5aaCIGBgZ3B0LTRvYGDvvIkNCjUuIOehruiupCBBUEkg56uv54K5DQo2LiDovpPlhaUgQVBJIEtleQ0KNy4g54K55Ye744CM5re75Yqg44CNDQoNCuiOt+WPliBBUEkgS2V5DQotLS0tLS0tLS0tLS0NCg0KLSAqKkRlZXBTZWVrKio6IGh0dHBzOi8vcGxhdGZvcm0uZGVlcHNlZWsuY29tLw0KLSAqKk9wZW5BSSoqOiBodHRwczovL3BsYXRmb3JtLm9wZW5haS5jb20vYXBpLWtleXMNCi0gKirmmbrosLEgR0xNKio6IGh0dHBzOi8vb3Blbi5iaWdtb2RlbC5jbi8NCi0gKipHZW1pbmkqKjogaHR0cHM6Ly9haXN0dWRpby5nb29nbGUuY29tLw0KLSAqKuWwj+exsyBNaU1vKio6IOWwj+exsyBBSSDlvIDmlL7lubPlj7ANCg0KVGVtcGVyYXR1cmUg6K+05piODQotLS0tLS0tLS0tLS0tLS0tLQ0KDQpUZW1wZXJhdHVyZSDmjqfliLYgTExNIOi+k+WHuueahOmaj+acuuaAp++8mg0KDQotICoqMC4wKio6IOehruWumuaAp+acgOW8uu+8jOebuOWQjOi+k+WFpeaAu+aYr+S6p+eUn+ebuOWQjOi+k+WHuu+8iOmAguWQiOS7o+eggeeUn+aIkOOAgeaVsOaNruWIhuaekO+8iQ0KLSAqKjAuMy0wLjUqKjog6YCC5bqm55qE5Yib6YCg5oCn77yI6YCC5ZCI5LiA6Iis5a+56K+d77yJDQotICoqMC43LTEuMCoqOiDpq5jluqbliJvpgKDmgKfvvIjpgILlkIjlpLTohJHpo47mmrTjgIHliJvmhI/nlJ/miJDvvIkNCg0KLi4gbm90ZTo6DQogICDpg6jliIbmqKHlnovvvIjlpoIgZGVlcHNlZWstcmVhc29uZXLvvInlj6/og73kuI3mlK/mjIEgdGVtcGVyYXR1cmUg5Y+C5pWw77yM5q2k5pe26K6+572u5peg5pWI44CCDQo=
+模型配置
+============
+
+支持的模型
+----------
+
+QGIS Agent 支持以下 LLM 服务商：
+
++----------------+------------------------------------+---------------------------------------+
+| 服务商         | 模型                              | API 端点                              |
++================+====================================+=======================================+
+| DeepSeek       | deepseek-chat, deepseek-reasoner   | https://api.deepseek.com/v1           |
++----------------+------------------------------------+---------------------------------------+
+| OpenAI         | gpt-4o, gpt-4o-mini, gpt-4-turbo   | https://api.openai.com/v1             |
++----------------+------------------------------------+---------------------------------------+
+| 智谱 GLM       | glm-4, glm-4-plus, glm-4-flash     | https://open.bigmodel.cn/api/paas/v4/ |
++----------------+------------------------------------+---------------------------------------+
+| Gemini         | gemini-2.0-flash, gemini-1.5-pro   | ...googleapis.com/v1beta/openai/      |
++----------------+------------------------------------+---------------------------------------+
+| 小米 MiMo      | mimo-v2.5, mimo-v2-flash           | https://api.xiaomimimo.com/v1/...     |
++----------------+------------------------------------+---------------------------------------+
+| 自定义         | 任意 OpenAI 兼容模型               | 自定义端点                            |
++----------------+------------------------------------+---------------------------------------+
+
+添加模型
+--------
+
+1. 切换到「模型配置」标签页
+2. 点击「+ 添加模型」
+3. 选择参考模板（会自动预填端点信息）
+4. 填写模型名称（如 ``gpt-4o``）
+5. 确认 API 端点
+6. 输入 API Key
+7. 点击「添加」
+
+获取 API Key
+------------
+
+- **DeepSeek**: https://platform.deepseek.com/
+- **OpenAI**: https://platform.openai.com/api-keys
+- **智谱 GLM**: https://open.bigmodel.cn/
+- **Gemini**: https://aistudio.google.com/
+- **小米 MiMo**: 小米 AI 开放平台
+
+Temperature 说明
+-----------------
+
+Temperature 控制 LLM 输出的随机性：
+
+- **0.0**: 确定性最强，相同输入总是产生相同输出（适合代码生成、数据分析）
+- **0.3-0.5**: 适度的创造性（适合一般对话）
+- **0.7-1.0**: 高度创造性（适合头脑风暴、创意生成）
+
+.. note::
+   部分模型（如 deepseek-reasoner）可能不支持 temperature 参数，此时设置无效。

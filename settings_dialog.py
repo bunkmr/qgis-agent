@@ -1,1 +1,103 @@
-aW1wb3J0IHV1aWQKCmZyb20gcWdpcy5QeVF0IGltcG9ydCBRdFdpZGdldHMKZnJvbSBxZ2lzLlB5UXQuUXRDb3JlIGltcG9ydCBRdAoKZnJvbSAuc2V0dGluZ3NfZGlhbG9nX3VpIGltcG9ydCBVaV9TZXR0aW5nc0RpYWxvZwoKCmNsYXNzIFNldHRpbmdzRGlhbG9nKFF0V2lkZ2V0cy5RRGlhbG9nLCBVaV9TZXR0aW5nc0RpYWxvZyk6CiAgICBkZWYgX19pbml0X18oc2VsZiwgZGF0YWxvYWRlciwgcGFyZW50PU5vbmUpOgogICAgICAgIHN1cGVyKCkuX19pbml0X18ocGFyZW50KQogICAgICAgIHNlbGYuZGF0YWxvYWRlciA9IGRhdGFsb2FkZXIKICAgICAgICBzZWxmLl9yb3dfZGF0YSA9IHt9ICAjIHJvd19pZHggLT4geyJsbG1faWQiOiBzdHIsICJuYW1lIjogc3RyfQogICAgICAgIHNlbGYuc2V0dXBVaShzZWxmKQoKICAgICAgICBzZWxmLl9sb2FkX2NvbmZpZygpCgogICAgICAgIHNlbGYuYnRuQWRkLmNsaWNrZWQuY29ubmVjdChzZWxmLl9hZGRfcm93KQogICAgICAgIHNlbGYucGJTYXZlLmNsaWNrZWQuY29ubmVjdChzZWxmLl9zYXZlKQogICAgICAgIHNlbGYucGJDYW5jZWwuY2xpY2tlZC5jb25uZWN0KHNlbGYuY2xvc2UpCgogICAgZGVmIF9sb2FkX2NvbmZpZyhzZWxmKToKICAgICAgICByb3dzID0gc2VsZi5kYXRhbG9hZGVyLmZldGNoX2FsbF9jb25maWcoKQogICAgICAgIHNlbGYudGFibGUuc2V0Um93Q291bnQobGVuKHJvd3MpKQogICAgICAgIGZvciBpLCByb3cgaW4gZW51bWVyYXRlKHJvd3MpOgogICAgICAgICAgICBsbG1faWQsIG5hbWUsIGVuZHBvaW50LCBhcGlfa2V5ID0gcm93CiAgICAgICAgICAgIHNlbGYuX3NldF9yb3coaSwgbmFtZSwgZW5kcG9pbnQsIGFwaV9rZXksIGxsbV9pZCkKCiAgICBkZWYgX3NldF9yb3coc2VsZiwgcm93X2lkeCwgbmFtZSwgZW5kcG9pbnQsIGFwaV9rZXksIGxsbV9pZD1Ob25lKToKICAgICAgICBpZiBsbG1faWQgaXMgTm9uZToKICAgICAgICAgICAgbGxtX2lkID0gZiJDdXN0b206Ont1dWlkLnV1aWQ0KCkuaGV4Wzo4XX0iCgogICAgICAgIHNlbGYuX3Jvd19kYXRhW3Jvd19pZHhdID0geyJsbG1faWQiOiBsbG1faWQsICJuYW1lIjogbmFtZX0KCiAgICAgICAgIyDnrKww5YiX77ya5Y+v57yW6L6R55qE5qih5Z6L5ZCN56ew77yI5pi+56S65ZCN77yM5aaCICJncHQtNG8i77yJCiAgICAgICAgbmFtZV9pdGVtID0gUXRXaWRnZXRzLlFUYWJsZVdpZGdldEl0ZW0obmFtZSkKICAgICAgICBzZWxmLnRhYmxlLnNldEl0ZW0ocm93X2lkeCwgMCwgbmFtZV9pdGVtKQoKICAgICAgICAjIOesrDHliJfvvJpBUEkg56uv54K577yI5Y+v57yW6L6R77yJCiAgICAgICAgZW5kcG9pbnRfaXRlbSA9IFF0V2lkZ2V0cy5RVGFibGVXaWRnZXRJdGVtKGVuZHBvaW50KQogICAgICAgIHNlbGYudGFibGUuc2V0SXRlbShyb3dfaWR4LCAxLCBlbmRwb2ludF9pdGVtKQoKICAgICAgICAjIOesrDLliJfvvJpBUEkgS2V577yI5Y+v57yW6L6R77yJCiAgICAgICAga2V5X2l0ZW0gPSBRdFdpZGdldHMuUVRhYmxlV2lkZ2V0SXRlbShhcGlfa2V5KQogICAgICAgIHNlbGYudGFibGUuc2V0SXRlbShyb3dfaWR4LCAyLCBrZXlfaXRlbSkKCiAgICAgICAgIyDnrKwz5YiX77ya5Yig6Zmk5oyJ6ZKuCiAgICAgICAgZGVsX2J0biA9IFF0V2lkZ2V0cy5RUHVzaEJ1dHRvbigi5Yig6ZmkIikKICAgICAgICBkZWxfYnRuLnNldFN0eWxlU2hlZXQoCiAgICAgICAgICAgICJRUHVzaEJ1dHRvbiB7IGJhY2tncm91bmQtY29sb3I6ICNGQTcwNzA7IGNvbG9yOiB3aGl0ZTsgYm9yZGVyLXJhZGl1czogM3B4OyBwYWRkaW5nOiAycHggOHB4OyB9IgogICAgICAgICAgICAiIFFQdXNoQnV0dG9uOmhvdmVyIHsgYmFja2dyb3VuZC1jb2xvcjogI0UwNTA1MDsgfSIKICAgICAgICApCiAgICAgICAgZGVsX2J0bi5jbGlja2VkLmNvbm5lY3QobGFtYmRhIF8sIHI9cm93X2lkeDogc2VsZi5fZGVsZXRlX3JvdyhyKSkKICAgICAgICBzZWxmLnRhYmxlLnNldENlbGxXaWRnZXQocm93X2lkeCwgMywgZGVsX2J0bikKCiAgICBkZWYgX2FkZF9yb3coc2VsZik6CiAgICAgICAgcm93X2lkeCA9IHNlbGYudGFibGUucm93Q291bnQoKQogICAgICAgIHNlbGYudGFibGUuaW5zZXJ0Um93KHJvd19pZHgpCiAgICAgICAgc2VsZi5fc2V0X3Jvdyhyb3dfaWR4LCAi5paw5qih5Z6LIiwgIiIsICIiKQoKICAgIGRlZiBfZGVsZXRlX3JvdyhzZWxmLCByb3dfaWR4KToKICAgICAgICBpZiByb3dfaWR4IGluIHNlbGYuX3Jvd19kYXRhOgogICAgICAgICAgICBsbG1faWQgPSBzZWxmLl9yb3dfZGF0YVtyb3dfaWR4XVsibGxtX2lkIl0KICAgICAgICAgICAgaWYgbGxtX2lkOgogICAgICAgICAgICAgICAgc2VsZi5kYXRhbG9hZGVyLmRlbGV0ZV9sbG1fY29uZmlnKGxsbV9pZCkKICAgICAgICBzZWxmLnRhYmxlLnJlbW92ZVJvdyhyb3dfaWR4KQogICAgICAgICMg6YeN5bu6IHJvd19kYXRhIOaYoOWwhAogICAgICAgIG5ld19kYXRhID0ge30KICAgICAgICBmb3IgaSBpbiByYW5nZShzZWxmLnRhYmxlLnJvd0NvdW50KCkpOgogICAgICAgICAgICBpZiBpIDwgcm93X2lkeCBhbmQgaSBpbiBzZWxmLl9yb3dfZGF0YToKICAgICAgICAgICAgICAgIG5ld19kYXRhW2ldID0gc2VsZi5fcm93X2RhdGFbaV0KICAgICAgICAgICAgZWxpZiBpID49IHJvd19pZHg6CiAgICAgICAgICAgICAgICBvbGRfaWR4ID0gaSArIDEKICAgICAgICAgICAgICAgIGlmIG9sZF9pZHggaW4gc2VsZi5fcm93X2RhdGE6CiAgICAgICAgICAgICAgICAgICAgbmV3X2RhdGFbaV0gPSBzZWxmLl9yb3dfZGF0YVtvbGRfaWR4XQogICAgICAgIHNlbGYuX3Jvd19kYXRhID0gbmV3X2RhdGEKCiAgICBkZWYgX3NhdmUoc2VsZik6CiAgICAgICAgZm9yIGkgaW4gcmFuZ2Uoc2VsZi50YWJsZS5yb3dDb3VudCgpKToKICAgICAgICAgICAgbmFtZV9pdGVtID0gc2VsZi50YWJsZS5pdGVtKGksIDApCiAgICAgICAgICAgIGVuZHBvaW50X2l0ZW0gPSBzZWxmLnRhYmxlLml0ZW0oaSwgMSkKICAgICAgICAgICAga2V5X2l0ZW0gPSBzZWxmLnRhYmxlLml0ZW0oaSwgMikKCiAgICAgICAgICAgIGlmIG5vdCBuYW1lX2l0ZW0gb3Igbm90IGVuZHBvaW50X2l0ZW06CiAgICAgICAgICAgICAgICBjb250aW51ZQoKICAgICAgICAgICAgbmFtZSA9IG5hbWVfaXRlbS50ZXh0KCkuc3RyaXAoKQogICAgICAgICAgICBlbmRwb2ludCA9IGVuZHBvaW50X2l0ZW0udGV4dCgpLnN0cmlwKCkKICAgICAgICAgICAgYXBpX2tleSA9IGtleV9pdGVtLnRleHQoKS5zdHJpcCgpIGlmIGtleV9pdGVtIGVsc2UgIiIKCiAgICAgICAgICAgIGlmIG5vdCBuYW1lIG9yIG5vdCBlbmRwb2ludDoKICAgICAgICAgICAgICAgIGNvbnRpbnVlCgogICAgICAgICAgICAjIOS9v+eUqOW3suacieeahCBsbG1faWTvvIzmiJbnlJ/miJDmlrDnmoQKICAgICAgICAgICAgaWYgaSBpbiBzZWxmLl9yb3dfZGF0YToKICAgICAgICAgICAgICAgIGxsbV9pZCA9IHNlbGYuX3Jvd19kYXRhW2ldWyJsbG1faWQiXQogICAgICAgICAgICBlbHNlOgogICAgICAgICAgICAgICAgbGxtX2lkID0gZiJDdXN0b206Ont1dWlkLnV1aWQ0KCkuaGV4Wzo4XX0iCgogICAgICAgICAgICBzZWxmLmRhdGFsb2FkZXIuaW5zZXJ0X2xsbV9jb25maWcobGxtX2lkLCBuYW1lLCBlbmRwb2ludCwgYXBpX2tleSkKCiAgICAgICAgc2VsZi5kYXRhbG9hZGVyLnJlbG9hZF9sbG1fY29uZmlnKCkKICAgICAgICBzZWxmLmFjY2VwdCgpCg==
+import uuid
+
+from qgis.PyQt import QtWidgets
+from qgis.PyQt.QtCore import Qt
+
+from .settings_dialog_ui import Ui_SettingsDialog
+
+
+class SettingsDialog(QtWidgets.QDialog, Ui_SettingsDialog):
+    def __init__(self, dataloader, parent=None):
+        super().__init__(parent)
+        self.dataloader = dataloader
+        self._row_data = {}  # row_idx -> {"llm_id": str, "name": str}
+        self.setupUi(self)
+
+        self._load_config()
+
+        self.btnAdd.clicked.connect(self._add_row)
+        self.pbSave.clicked.connect(self._save)
+        self.pbCancel.clicked.connect(self.close)
+
+    def _load_config(self):
+        rows = self.dataloader.fetch_all_config()
+        self.table.setRowCount(len(rows))
+        for i, row in enumerate(rows):
+            llm_id, name, endpoint, api_key = row
+            self._set_row(i, name, endpoint, api_key, llm_id)
+
+    def _set_row(self, row_idx, name, endpoint, api_key, llm_id=None):
+        if llm_id is None:
+            llm_id = f"Custom::{uuid.uuid4().hex[:8]}"
+
+        self._row_data[row_idx] = {"llm_id": llm_id, "name": name}
+
+        # 第0列：可编辑的模型名称（显示名，如 "gpt-4o"）
+        name_item = QtWidgets.QTableWidgetItem(name)
+        self.table.setItem(row_idx, 0, name_item)
+
+        # 第1列：API 端点（可编辑）
+        endpoint_item = QtWidgets.QTableWidgetItem(endpoint)
+        self.table.setItem(row_idx, 1, endpoint_item)
+
+        # 第2列：API Key（可编辑）
+        key_item = QtWidgets.QTableWidgetItem(api_key)
+        self.table.setItem(row_idx, 2, key_item)
+
+        # 第3列：删除按钮
+        del_btn = QtWidgets.QPushButton("删除")
+        del_btn.setStyleSheet(
+            "QPushButton { background-color: #FA7070; color: white; border-radius: 3px; padding: 2px 8px; }"
+            " QPushButton:hover { background-color: #E05050; }"
+        )
+        del_btn.clicked.connect(lambda _, r=row_idx: self._delete_row(r))
+        self.table.setCellWidget(row_idx, 3, del_btn)
+
+    def _add_row(self):
+        row_idx = self.table.rowCount()
+        self.table.insertRow(row_idx)
+        self._set_row(row_idx, "新模型", "", "")
+
+    def _delete_row(self, row_idx):
+        if row_idx in self._row_data:
+            llm_id = self._row_data[row_idx]["llm_id"]
+            if llm_id:
+                self.dataloader.delete_llm_config(llm_id)
+        self.table.removeRow(row_idx)
+        # 重建 row_data 映射
+        new_data = {}
+        for i in range(self.table.rowCount()):
+            if i < row_idx and i in self._row_data:
+                new_data[i] = self._row_data[i]
+            elif i >= row_idx:
+                old_idx = i + 1
+                if old_idx in self._row_data:
+                    new_data[i] = self._row_data[old_idx]
+        self._row_data = new_data
+
+    def _save(self):
+        for i in range(self.table.rowCount()):
+            name_item = self.table.item(i, 0)
+            endpoint_item = self.table.item(i, 1)
+            key_item = self.table.item(i, 2)
+
+            if not name_item or not endpoint_item:
+                continue
+
+            name = name_item.text().strip()
+            endpoint = endpoint_item.text().strip()
+            api_key = key_item.text().strip() if key_item else ""
+
+            if not name or not endpoint:
+                continue
+
+            # 使用已有的 llm_id，或生成新的
+            if i in self._row_data:
+                llm_id = self._row_data[i]["llm_id"]
+            else:
+                llm_id = f"Custom::{uuid.uuid4().hex[:8]}"
+
+            self.dataloader.insert_llm_config(llm_id, name, endpoint, api_key)
+
+        self.dataloader.reload_llm_config()
+        self.accept()

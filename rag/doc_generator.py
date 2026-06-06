@@ -1,1 +1,409 @@
-IyAtKi0gY29kaW5nOiB1dGYtOCAtKi0NCiIiIg0KQVBJIOaWh+aho+eUn+aIkOWZqCDigJQg5LuOIFFHSVMg6L+Q6KGM5pe25o+Q5Y+WIFB5UUdJUy9HREFMIEFQSSDmlofmoaPjgIINCg0K5Zyo5o+S5Lu26aaW5qyh5a6J6KOF5oiW55So5oi36Kem5Y+R5pe26L+Q6KGM77yM5bCG5qC45b+DIEFQSSDnmoTnrb7lkI3lkozmlofmoaMNCuWGmeWFpSBTUUxpdGUgRlRTNSDmlbDmja7lupPvvIzkvpvlkI7nu63mo4DntKLkvb/nlKjjgIINCg0K5pWw5o2u5p2l5rqQOg0KMS4gUHl0aG9uIGluc3BlY3Qg5Y+N5bCEIOKAlCDku44gUUdJUyDmoLjlv4Pnsbvmj5Dlj5bmlrnms5Xnrb7lkI0NCjIuIFFHSVMgUHJvY2Vzc2luZyDms6jlhozooagg4oCUIOaPkOWPluaJgOacieWPr+eUqOeul+azlQ0KMy4g56Gs57yW56CB55qE5omL5Yqo6KGl5YWFIOKAlCDluLjop4HkvYblj43lsITkuI3liLDnmoQgQVBJIOS/oeaBrw0KIiIiDQoNCmltcG9ydCBpbnNwZWN0DQppbXBvcnQganNvbg0KaW1wb3J0IG9zDQpmcm9tIHR5cGluZyBpbXBvcnQgT3B0aW9uYWwNCg0KZnJvbSAuZG9jX3N0b3JlIGltcG9ydCBEb2NTdG9yZQ0KDQoNCiMg4pSA4pSAIOaguOW/gyBRR0lTIOexu+WIl+ihqO+8iOmcgOimgeaPkOWPluaWh+aho+eahOexu++8iSDilIDilIANCg0KX0NPUkVfUUdJU19DTEFTU0VTID0gWw0KICAgICMg5Zu+5bGCDQogICAgKCJxZ2lzLmNvcmUiLCAiUWdzVmVjdG9yTGF5ZXIiKSwNCiAgICAoInFnaXMuY29yZSIsICJRZ3NSYXN0ZXJMYXllciIpLA0KICAgICgicWdpcy5jb3JlIiwgIlFnc01hcExheWVyIiksDQogICAgIyDlh6DkvZUNCiAgICAoInFnaXMuY29yZSIsICJRZ3NHZW9tZXRyeSIpLA0KICAgICgicWdpcy5jb3JlIiwgIlFnc1BvaW50IiksDQogICAgKCJxZ2lzLmNvcmUiLCAiUWdzUG9pbnRYWSIpLA0KICAgICgicWdpcy5jb3JlIiwgIlFnc1JlY3RhbmdsZSIpLA0KICAgICMg6KaB57SgDQogICAgKCJxZ2lzLmNvcmUiLCAiUWdzRmVhdHVyZSIpLA0KICAgICgicWdpcy5jb3JlIiwgIlFnc0ZpZWxkcyIpLA0KICAgICgicWdpcy5jb3JlIiwgIlFnc0ZpZWxkIiksDQogICAgIyDpobnnm64NCiAgICAoInFnaXMuY29yZSIsICJRZ3NQcm9qZWN0IiksDQogICAgKCJxZ2lzLmNvcmUiLCAiUWdzQXBwbGljYXRpb24iKSwNCiAgICAjIOWdkOagh+ezuw0KICAgICgicWdpcy5jb3JlIiwgIlFnc0Nvb3JkaW5hdGVSZWZlcmVuY2VTeXN0ZW0iKSwNCiAgICAoInFnaXMuY29yZSIsICJRZ3NDb29yZGluYXRlVHJhbnNmb3JtIiksDQogICAgIyDmuLLmn5MNCiAgICAoInFnaXMuY29yZSIsICJRZ3NNYXBTZXR0aW5ncyIpLA0KICAgICgicWdpcy5jb3JlIiwgIlFnc01hcFJlbmRlcmVyUGFyYWxsZWxKb2IiKSwNCiAgICAjIOespuWPtw0KICAgICgicWdpcy5jb3JlIiwgIlFnc0ZpbGxTeW1ib2wiKSwNCiAgICAoInFnaXMuY29yZSIsICJRZ3NMaW5lU3ltYm9sIiksDQogICAgKCJxZ2lzLmNvcmUiLCAiUWdzTWFya2VyU3ltYm9sIiksDQogICAgKCJxZ2lzLmNvcmUiLCAiUWdzU2luZ2xlU3ltYm9sUmVuZGVyZXIiKSwNCiAgICAoInFnaXMuY29yZSIsICJRZ3NDYXRlZ29yaXplZFN5bWJvbFJlbmRlcmVyIiksDQogICAgKCJxZ2lzLmNvcmUiLCAiUWdzR3JhZHVhdGVkU3ltYm9sUmVuZGVyZXIiKSwNCiAgICAoInFnaXMuY29yZSIsICJRZ3NQYWxMYXllclNldHRpbmdzIiksDQogICAgKCJxZ2lzLmNvcmUiLCAiUWdzVmVjdG9yTGF5ZXJTaW1wbGVMYWJlbGluZyIpLA0KICAgICgicWdpcy5jb3JlIiwgIlFnc1RleHRGb3JtYXQiKSwNCiAgICAjIOepuumXtOe0ouW8lQ0KICAgICgicWdpcy5jb3JlIiwgIlFnc1NwYXRpYWxJbmRleCIpLA0KICAgICgicWdpcy5jb3JlIiwgIlFnc0ZlYXR1cmVSZXF1ZXN0IiksDQogICAgIyDot53nprsv5Y2V5L2NDQogICAgKCJxZ2lzLmNvcmUiLCAiUWdzRGlzdGFuY2VBcmVhIiksDQogICAgKCJxZ2lzLmNvcmUiLCAiUWdzVW5pdFR5cGVzIiksDQogICAgIyBXS0INCiAgICAoInFnaXMuY29yZSIsICJRZ3NXa2JUeXBlcyIpLA0KICAgICMg5p6a5Li+DQogICAgKCJxZ2lzLmNvcmUiLCAiUWdpcyIpLA0KICAgICMg5bel5YW3DQogICAgKCJxZ2lzLmd1aSIsICJRZ3NNYXBDYW52YXMiKSwNCl0NCg0KDQpkZWYgX3NhZmVfaW1wb3J0X2NsYXNzKG1vZHVsZV9uYW1lOiBzdHIsIGNsYXNzX25hbWU6IHN0cik6DQogICAgIiIi5a6J5YWo5a+85YWl5LiA5Liq57G777yM5aSx6LSl6L+U5ZueIE5vbmUiIiINCiAgICB0cnk6DQogICAgICAgIG1vZHVsZSA9IF9faW1wb3J0X18obW9kdWxlX25hbWUsIGZyb21saXN0PVtjbGFzc19uYW1lXSkNCiAgICAgICAgcmV0dXJuIGdldGF0dHIobW9kdWxlLCBjbGFzc19uYW1lLCBOb25lKQ0KICAgIGV4Y2VwdCBFeGNlcHRpb246DQogICAgICAgIHJldHVybiBOb25lDQoNCg0KZGVmIF9pbnNwZWN0X2NsYXNzKGNscywgY2xhc3NfbmFtZTogc3RyLCBzb3VyY2U6IHN0ciA9ICJydW50aW1lIikgLT4gbGlzdFtkaWN0XToNCiAgICAiIiLpgJrov4cgaW5zcGVjdCDlj43lsITmj5Dlj5bkuIDkuKrnsbvnmoTmiYDmnInlhazlvIDmlrnms5XmlofmoaPjgIINCg0KICAgIFJldHVybnM6DQogICAgICAgIFt7ImNsYXNzX25hbWUiOiAuLi4sICJtZXRob2RfbmFtZSI6IC4uLiwgImZ1bGxfc2lnbmF0dXJlIjogLi4uLCAuLi59LCAuLi5dDQogICAgIiIiDQogICAgZG9jcyA9IFtdDQogICAgdHJ5Og0KICAgICAgICBmb3IgbmFtZSwgbWV0aG9kIGluIGluc3BlY3QuZ2V0bWVtYmVycyhjbHMsIGluc3BlY3QuaXNtZXRob2QpOg0KICAgICAgICAgICAgaWYgbmFtZS5zdGFydHN3aXRoKCJfIik6DQogICAgICAgICAgICAgICAgY29udGludWUNCiAgICAgICAgICAgIHRyeToNCiAgICAgICAgICAgICAgICBzaWcgPSBzdHIoaW5zcGVjdC5zaWduYXR1cmUobWV0aG9kKSkNCiAgICAgICAgICAgIGV4Y2VwdCAoVmFsdWVFcnJvciwgVHlwZUVycm9yKToNCiAgICAgICAgICAgICAgICBzaWcgPSAiKC4uLikiDQoNCiAgICAgICAgICAgICMg5o+Q5Y+WIGRvY3N0cmluZyDnrKzkuIDmrrUNCiAgICAgICAgICAgIGRlc2MgPSAiIg0KICAgICAgICAgICAgaWYgbWV0aG9kLl9fZG9jX186DQogICAgICAgICAgICAgICAgZGVzYyA9IG1ldGhvZC5fX2RvY19fLnN0cmlwKCkuc3BsaXQoIlxuXG4iKVswXVs6NTAwXQ0KDQogICAgICAgICAgICAjIOaPkOWPluWPguaVsOS/oeaBrw0KICAgICAgICAgICAgcGFyYW1zID0gW10NCiAgICAgICAgICAgIHRyeToNCiAgICAgICAgICAgICAgICBmb3IgcG5hbWUsIHBhcmFtIGluIGluc3BlY3Quc2lnbmF0dXJlKG1ldGhvZCkucGFyYW1ldGVycy5pdGVtcygpOg0KICAgICAgICAgICAgICAgICAgICBpZiBwbmFtZSA9PSAic2VsZiI6DQogICAgICAgICAgICAgICAgICAgICAgICBjb250aW51ZQ0KICAgICAgICAgICAgICAgICAgICBwYXJhbV90eXBlID0gIiINCiAgICAgICAgICAgICAgICAgICAgaWYgcGFyYW0uYW5ub3RhdGlvbiAhPSBpbnNwZWN0LlBhcmFtZXRlci5lbXB0eToNCiAgICAgICAgICAgICAgICAgICAgICAgIHBhcmFtX3R5cGUgPSBzdHIocGFyYW0uYW5ub3RhdGlvbikNCiAgICAgICAgICAgICAgICAgICAgcGFyYW1zLmFwcGVuZCh7DQogICAgICAgICAgICAgICAgICAgICAgICAibmFtZSI6IHBuYW1lLA0KICAgICAgICAgICAgICAgICAgICAgICAgInR5cGUiOiBwYXJhbV90eXBlLA0KICAgICAgICAgICAgICAgICAgICAgICAgImRlZmF1bHQiOiBzdHIocGFyYW0uZGVmYXVsdCkgaWYgcGFyYW0uZGVmYXVsdCAhPSBpbnNwZWN0LlBhcmFtZXRlci5lbXB0eSBlbHNlICIiLA0KICAgICAgICAgICAgICAgICAgICB9KQ0KICAgICAgICAgICAgZXhjZXB0IChWYWx1ZUVycm9yLCBUeXBlRXJyb3IpOg0KICAgICAgICAgICAgICAgIHBhc3MNCg0KICAgICAgICAgICAgZG9jcy5hcHBlbmQoew0KICAgICAgICAgICAgICAgICJjbGFzc19uYW1lIjogY2xhc3NfbmFtZSwNCiAgICAgICAgICAgICAgICAibWV0aG9kX25hbWUiOiBuYW1lLA0KICAgICAgICAgICAgICAgICJmdWxsX3NpZ25hdHVyZSI6IGYie2NsYXNzX25hbWV9LntuYW1lfXtzaWd9IiwNCiAgICAgICAgICAgICAgICAiZGVzY3JpcHRpb24iOiBkZXNjLA0KICAgICAgICAgICAgICAgICJwYXJhbWV0ZXJzIjogcGFyYW1zLA0KICAgICAgICAgICAgICAgICJyZXR1cm5fdHlwZSI6ICIiLA0KICAgICAgICAgICAgICAgICJzb3VyY2UiOiBzb3VyY2UsDQogICAgICAgICAgICB9KQ0KICAgIGV4Y2VwdCBFeGNlcHRpb246DQogICAgICAgIHBhc3MNCiAgICByZXR1cm4gZG9jcw0KDQoNCmRlZiBfZXh0cmFjdF9wcm9jZXNzaW5nX2FsZ29yaXRobXMoKSAtPiBsaXN0W2RpY3RdOg0KICAgICIiIuS7jiBRR0lTIFByb2Nlc3Npbmcg5rOo5YaM6KGo5o+Q5Y+W5omA5pyJ566X5rOV562+5ZCNIiIiDQogICAgZG9jcyA9IFtdDQogICAgdHJ5Og0KICAgICAgICBmcm9tIHFnaXMuY29yZSBpbXBvcnQgUWdzQXBwbGljYXRpb24NCiAgICAgICAgcmVnaXN0cnkgPSBRZ3NBcHBsaWNhdGlvbi5wcm9jZXNzaW5nUmVnaXN0cnkoKQ0KICAgICAgICBpZiByZWdpc3RyeSBpcyBOb25lOg0KICAgICAgICAgICAgcmV0dXJuIGRvY3MNCg0KICAgICAgICBmb3IgYWxnIGluIHJlZ2lzdHJ5LmFsZ29yaXRobXMoKToNCiAgICAgICAgICAgIHRyeToNCiAgICAgICAgICAgICAgICBhbGdfaWQgPSBhbGcuaWQoKQ0KICAgICAgICAgICAgICAgIGFsZ19uYW1lID0gYWxnLmRpc3BsYXlOYW1lKCkNCiAgICAgICAgICAgICAgICBwYXJhbXMgPSBbXQ0KICAgICAgICAgICAgICAgIGZvciBwIGluIGFsZy5wYXJhbWV0ZXJEZWZpbml0aW9ucygpOg0KICAgICAgICAgICAgICAgICAgICBwYXJhbXMuYXBwZW5kKHsNCiAgICAgICAgICAgICAgICAgICAgICAgICJuYW1lIjogcC5uYW1lKCksDQogICAgICAgICAgICAgICAgICAgICAgICAidHlwZSI6IHAudHlwZSgpLA0KICAgICAgICAgICAgICAgICAgICAgICAgImRlc2NyaXB0aW9uIjogcC5kZXNjcmlwdGlvbigpIGlmIGhhc2F0dHIocCwgJ2Rlc2NyaXB0aW9uJykgZWxzZSAiIiwNCiAgICAgICAgICAgICAgICAgICAgfSkNCg0KICAgICAgICAgICAgICAgIGRvY3MuYXBwZW5kKHsNCiAgICAgICAgICAgICAgICAgICAgImNsYXNzX25hbWUiOiAicHJvY2Vzc2luZyIsDQogICAgICAgICAgICAgICAgICAgICJtZXRob2RfbmFtZSI6IGFsZ19pZCwNCiAgICAgICAgICAgICAgICAgICAgImZ1bGxfc2lnbmF0dXJlIjogZiJwcm9jZXNzaW5nLnJ1bigne2FsZ19pZH0nLCB7ey4uLn19KSIsDQogICAgICAgICAgICAgICAgICAgICJkZXNjcmlwdGlvbiI6IGYie2FsZ19uYW1lfSDigJQge2FsZy5zaG9ydERlc2NyaXB0aW9uKCkgaWYgaGFzYXR0cihhbGcsICdzaG9ydERlc2NyaXB0aW9uJykgZWxzZSAnJ30iLA0KICAgICAgICAgICAgICAgICAgICAicGFyYW1ldGVycyI6IHBhcmFtcywNCiAgICAgICAgICAgICAgICAgICAgInJldHVybl90eXBlIjogImRpY3QiLA0KICAgICAgICAgICAgICAgICAgICAic291cmNlIjogInByb2Nlc3NpbmdfcmVnaXN0cnkiLA0KICAgICAgICAgICAgICAgIH0pDQogICAgICAgICAgICBleGNlcHQgRXhjZXB0aW9uOg0KICAgICAgICAgICAgICAgIGNvbnRpbnVlDQogICAgZXhjZXB0IEV4Y2VwdGlvbjoNCiAgICAgICAgcGFzcw0KICAgIHJldHVybiBkb2NzDQoNCg0KIyDilIDilIAg5omL5Yqo6KGl5YWF55qEIEFQSSDmlofmoaPvvIhpbnNwZWN0IOmavuS7peiOt+WPlueahO+8iSDilIDilIANCg0KX01BTlVBTF9BUElfRE9DUyA9IFsNCiAgICAjIOW4uOeUqOaTjeS9nOmAn+afpQ0KICAgIHsNCiAgICAgICAgImNsYXNzX25hbWUiOiAiUWdzVmVjdG9yTGF5ZXIiLA0KICAgICAgICAibWV0aG9kX25hbWUiOiAi5bi455So5pON5L2c6YCf5p+lIiwNCiAgICAgICAgImZ1bGxfc2lnbmF0dXJlIjogIlFnc1ZlY3RvckxheWVyIOW4uOeUqOaTjeS9nCIsDQogICAgICAgICJkZXNjcmlwdGlvbiI6ICgNCiAgICAgICAgICAgICJmZWF0dXJlQ291bnQoKSDihpIgaW50OiDov5Tlm57opoHntKDmlbDph4/jgIIiDQogICAgICAgICAgICAiZmllbGRzKCkg4oaSIFFnc0ZpZWxkczog6L+U5Zue5a2X5q615YiX6KGo77yM6YGN5Y6GOiBmb3IgZmllbGQgaW4gbGF5ZXIuZmllbGRzKCnjgIIiDQogICAgICAgICAgICAiZ2V0RmVhdHVyZXMoKSDihpIgUWdzRmVhdHVyZUl0ZXJhdG9yOiDov63ku6PopoHntKDjgIIiDQogICAgICAgICAgICAic3RhcnRFZGl0aW5nKCkgLyBjb21taXRDaGFuZ2VzKCkgLyByb2xsQmFjaygpOiDnvJbovpHkvJror53nrqHnkIbjgIIiDQogICAgICAgICAgICAiYWRkRmVhdHVyZShmZWF0dXJlKSAvIHVwZGF0ZUZlYXR1cmUoZmVhdHVyZSkgLyBkZWxldGVGZWF0dXJlKGZpZCk6IOimgee0oENSVUTjgIIiDQogICAgICAgICAgICAic2VsZWN0QnlFeHByZXNzaW9uKGV4cHIpIOKGkiBRZ3NGZWF0dXJlSXRlcmF0b3I6IOaMieihqOi+vuW8j+mAieaLqeOAgiINCiAgICAgICAgICAgICJzZXRSZW5kZXJlcihyZW5kZXJlcik6IOiuvue9rua4suafk+WZqOOAgiINCiAgICAgICAgICAgICJzZXRMYWJlbGluZyhsYWJlbGluZykgLyBzZXRMYWJlbHNFbmFibGVkKGJvb2wpOiDmoIfms6jorr7nva7jgIIiDQogICAgICAgICAgICAic2V0Q3JzKGNycyk6IOiuvue9ruWdkOagh+ezu+OAgiINCiAgICAgICAgICAgICJtYXRlcmlhbGl6ZShRZ3NGZWF0dXJlUmVxdWVzdCk6IOeJqeWMlui/h+a7pOWQjueahOimgee0oOOAgiINCiAgICAgICAgKSwNCiAgICAgICAgInNvdXJjZSI6ICJtYW51YWwiLA0KICAgIH0sDQogICAgew0KICAgICAgICAiY2xhc3NfbmFtZSI6ICJRZ3NHZW9tZXRyeSIsDQogICAgICAgICJtZXRob2RfbmFtZSI6ICLluLjnlKjmk43kvZzpgJ/mn6UiLA0KICAgICAgICAiZnVsbF9zaWduYXR1cmUiOiAiUWdzR2VvbWV0cnkg5bi455So5pON5L2cIiwNCiAgICAgICAgImRlc2NyaXB0aW9uIjogKA0KICAgICAgICAgICAgImJ1ZmZlcihkaXN0YW5jZSwgc2VnbWVudHMpIOKGkiBRZ3NHZW9tZXRyeTog57yT5Yay5Yy644CCIg0KICAgICAgICAgICAgInNpbXBsaWZ5KHRvbGVyYW5jZSkg4oaSIFFnc0dlb21ldHJ5OiDnroDljJbjgIIiDQogICAgICAgICAgICAiaW50ZXJzZWN0aW9uKGdlb20pIOKGkiBRZ3NHZW9tZXRyeTog55u45Lqk44CCIg0KICAgICAgICAgICAgImNvbWJpbmUoZ2VvbSkg4oaSIFFnc0dlb21ldHJ5OiDlkIjlubbjgIIiDQogICAgICAgICAgICAiZGlmZmVyZW5jZShnZW9tKSDihpIgUWdzR2VvbWV0cnk6IOW3rumbhuOAgiINCiAgICAgICAgICAgICJhc1BvaW50KCkg4oaSIFFnc1BvaW50WFk6IOi9rOS4uueCueOAgiINCiAgICAgICAgICAgICJhc1drdChwcmVjaXNpb24pIOKGkiBzdHI6IOi9rOS4uldLVOOAgiINCiAgICAgICAgICAgICJhc0pzb24ocHJlY2lzaW9uKSDihpIgc3RyOiDovazkuLpHZW9KU09O44CCIg0KICAgICAgICAgICAgImdldCgpIOKGkiBRZ3NBYnN0cmFjdEdlb21ldHJ5OiDojrflj5blupXlsYLlh6DkvZXlr7nosaHjgIIiDQogICAgICAgICAgICAidmVydGV4QXQoaSkg4oaSIFFnc1BvaW50OiDojrflj5bnrKxp5Liq6aG254K544CCIg0KICAgICAgICAgICAgImlzR2Vvc1ZhbGlkKCkg4oaSIGJvb2w6IEdFT1PmnInmlYjmgKfmo4Dmn6XvvIjms6jmhI86IOS4jeaYryBpc1ZhbGlkKCnvvInjgIIiDQogICAgICAgICAgICAiaXNFbXB0eSgpIOKGkiBib29sOiDmmK/lkKbkuLrnqbrjgIIiDQogICAgICAgICAgICAidHlwZSgpIOKGkiBRZ3NXa2JUeXBlcy5HZW9tZXRyeVR5cGU6IOWHoOS9leexu+Wei+OAgiINCiAgICAgICAgKSwNCiAgICAgICAgInNvdXJjZSI6ICJtYW51YWwiLA0KICAgIH0sDQogICAgew0KICAgICAgICAiY2xhc3NfbmFtZSI6ICJRZ3NGZWF0dXJlUmVxdWVzdCIsDQogICAgICAgICJtZXRob2RfbmFtZSI6ICLluLjnlKjmk43kvZzpgJ/mn6UiLA0KICAgICAgICAiZnVsbF9zaWduYXR1cmUiOiAiUWdzRmVhdHVyZVJlcXVlc3Qg5bi455So5pON5L2cIiwNCiAgICAgICAgImRlc2NyaXB0aW9uIjogKA0KICAgICAgICAgICAgInNldEZpbHRlckV4cHJlc3Npb24oZXhwcikgLyBzZXRGaWx0ZXJGaWRzKFsuLi5dKSAvIHNldEZpbHRlclJlY3QocmVjdCk6IOiuvue9rui/h+a7pOOAgiINCiAgICAgICAgICAgICJzZXRMaW1pdChuKTog6ZmQ5Yi26L+U5Zue5pWw6YeP44CCIg0KICAgICAgICAgICAgIk5vRmxhZ3MgLyBFeGFjdEludGVyc2VjdDog56m66Ze06L+H5ruk5qCH5b+X44CCIg0KICAgICAgICApLA0KICAgICAgICAic291cmNlIjogIm1hbnVhbCIsDQogICAgfSwNCiAgICB7DQogICAgICAgICJjbGFzc19uYW1lIjogIlFnc0Nvb3JkaW5hdGVUcmFuc2Zvcm0iLA0KICAgICAgICAibWV0aG9kX25hbWUiOiAi5p6E6YCg5ZKM5Y+Y5o2iIiwNCiAgICAgICAgImZ1bGxfc2lnbmF0dXJlIjogIlFnc0Nvb3JkaW5hdGVUcmFuc2Zvcm0oc3JjX2NycywgZHN0X2NycywgUWdzUHJvamVjdC5pbnN0YW5jZSgpKSIsDQogICAgICAgICJkZXNjcmlwdGlvbiI6ICgNCiAgICAgICAgICAgICLmnoTpgKDlh73mlbDpnIDopoHkuInkuKrlj4LmlbA6IOa6kENSUywg55uu5qCHQ1JTLCBRZ3NDb29yZGluYXRlVHJhbnNmb3JtQ29udGV4dOOAgiINCiAgICAgICAgICAgICLpgJrluLjnrKzkuInkuKrlj4LmlbDkvKAgUWdzUHJvamVjdC5pbnN0YW5jZSgp44CCIg0KICAgICAgICAgICAgInRyYW5zZm9ybShRZ3NHZW9tZXRyeSkg4oaSIFFnc0dlb21ldHJ5OiDlj5jmjaLlh6DkvZXjgIIiDQogICAgICAgICAgICAidHJhbnNmb3JtKHBvaW50KSDihpIgUWdzUG9pbnRYWTog5Y+Y5o2i54K544CCIg0KICAgICAgICAgICAgInRyYW5zZm9ybUJvdW5kaW5nQm94KHJlY3QpIOKGkiBRZ3NSZWN0YW5nbGU6IOWPmOaNouiMg+WbtOOAgiINCiAgICAgICAgKSwNCiAgICAgICAgInNvdXJjZSI6ICJtYW51YWwiLA0KICAgIH0sDQogICAgew0KICAgICAgICAiY2xhc3NfbmFtZSI6ICJRZ3NQcm9qZWN0IiwNCiAgICAgICAgIm1ldGhvZF9uYW1lIjogIuW4uOeUqOaTjeS9nOmAn+afpSIsDQogICAgICAgICJmdWxsX3NpZ25hdHVyZSI6ICJRZ3NQcm9qZWN0Lmluc3RhbmNlKCkg5bi455So5pON5L2cIiwNCiAgICAgICAgImRlc2NyaXB0aW9uIjogKA0KICAgICAgICAgICAgIm1hcExheWVycygpIOKGkiBkaWN0OiDov5Tlm54ge2xheWVyX2lkOiBRZ3NNYXBMYXllcn3jgIIiDQogICAgICAgICAgICAiYWRkTWFwTGF5ZXIobGF5ZXIpIC8gcmVtb3ZlTWFwTGF5ZXIoaWQpOiDlm77lsYLnrqHnkIbjgIIiDQogICAgICAgICAgICAiY3JzKCkg4oaSIFFnc0Nvb3JkaW5hdGVSZWZlcmVuY2VTeXN0ZW06IOmhueebruWdkOagh+ezu+OAgiINCiAgICAgICAgICAgICJmaWxlTmFtZSgpIOKGkiBzdHI6IOmhueebruaWh+S7tui3r+W+hOOAgiINCiAgICAgICAgICAgICJ3cml0ZShwYXRoKSDihpIgYm9vbCAvIHJlYWQocGF0aCkg4oaSIGJvb2w6IOS/neWtmC/liqDovb3pobnnm67jgIIiDQogICAgICAgICAgICAibGF5ZXJUcmVlUm9vdCgpIOKGkiBRZ3NMYXllclRyZWVHcm91cDog5Zu+5bGC5qCR44CCIg0KICAgICAgICApLA0KICAgICAgICAic291cmNlIjogIm1hbnVhbCIsDQogICAgfSwNCiAgICB7DQogICAgICAgICJjbGFzc19uYW1lIjogIlFnc1BhbExheWVyU2V0dGluZ3MiLA0KICAgICAgICAibWV0aG9kX25hbWUiOiAi5qCH5rOo6K6+572u6YCf5p+lIiwNCiAgICAgICAgImZ1bGxfc2lnbmF0dXJlIjogIlFnc1BhbExheWVyU2V0dGluZ3Mg5qCH5rOo6YWN572uIiwNCiAgICAgICAgImRlc2NyaXB0aW9uIjogKA0KICAgICAgICAgICAgImZpZWxkTmFtZSA9ICflrZfmrrXlkI0nOiDorr7nva7moIfms6jlrZfmrrXjgIIiDQogICAgICAgICAgICAic2V0Rm9ybWF0KFFnc1RleHRGb3JtYXQpOiDorr7nva7mlofmnKzmoLzlvI/jgIIiDQogICAgICAgICAgICAicGxhY2VtZW50U2V0dGluZ3M6IFFHSVMgMy4zMCsg5L2/55SoIFFnc0xhYmVsUGxhY2VtZW50U2V0dGluZ3PjgIIiDQogICAgICAgICAgICAicGxhY2VtZW50OiDml6fniYhRR0lT55u05o6l6K6+572u5pW05pWw5YC8ICgwPUFyb3VuZFBvaW50LCAxPU92ZXJQb2ludCwgMj1MaW5lLCAzPUN1cnZlZCwgND1Ib3Jpem9udGFsKeOAgiINCiAgICAgICAgKSwNCiAgICAgICAgInNvdXJjZSI6ICJtYW51YWwiLA0KICAgIH0sDQogICAgew0KICAgICAgICAiY2xhc3NfbmFtZSI6ICJRZ3NNYXBDYW52YXMiLA0KICAgICAgICAibWV0aG9kX25hbWUiOiAi5Zyw5Zu+55S75biD5pON5L2cIiwNCiAgICAgICAgImZ1bGxfc2lnbmF0dXJlIjogImlmYWNlLm1hcENhbnZhcygpIOW4uOeUqOaTjeS9nCIsDQogICAgICAgICJkZXNjcmlwdGlvbiI6ICgNCiAgICAgICAgICAgICJleHRlbnQoKSDihpIgUWdzUmVjdGFuZ2xlOiDlvZPliY3op4blm77ojIPlm7TjgIIiDQogICAgICAgICAgICAic2V0RXh0ZW50KHJlY3QpIC8gem9vbVRvRnVsbEV4dGVudCgpIC8gcmVmcmVzaCgpOiDop4blm77mjqfliLbjgIIiDQogICAgICAgICAgICAic2NhbGUoKSDihpIgZmxvYXQ6IOW9k+WJjeavlOS+i+WwuuWIhuavjeOAgiINCiAgICAgICAgICAgICJzZXREZXN0aW5hdGlvbkNycyhjcnMpOiDorr7nva7nm67moIflnZDmoIfns7vjgIIiDQogICAgICAgICksDQogICAgICAgICJzb3VyY2UiOiAibWFudWFsIiwNCiAgICB9LA0KICAgIHsNCiAgICAgICAgImNsYXNzX25hbWUiOiAicHJvY2Vzc2luZyIsDQogICAgICAgICJtZXRob2RfbmFtZSI6ICLluLjnlKjnrpfms5XpgJ/mn6UiLA0KICAgICAgICAiZnVsbF9zaWduYXR1cmUiOiAicHJvY2Vzc2luZy5ydW4oKSDluLjnlKjnrpfms5UiLA0KICAgICAgICAiZGVzY3JpcHRpb24iOiAoDQogICAgICAgICAgICAibmF0aXZlOmJ1ZmZlciDigJQg57yT5Yay5Yy6OiBJTlBVVCwgRElTVEFOQ0UsIFNFR01FTlRTLCBPVVRQVVTjgIIiDQogICAgICAgICAgICAibmF0aXZlOmNsaXAg4oCUIOijgeWJqjogSU5QVVQsIE9WRVJMQVksIE9VVFBVVOOAgiINCiAgICAgICAgICAgICJuYXRpdmU6aW50ZXJzZWN0aW9uIOKAlCDnm7jkuqQ6IElOUFVULCBPVkVSTEFZLCBPVVRQVVTjgIIiDQogICAgICAgICAgICAibmF0aXZlOmRpc3NvbHZlIOKAlCDono3lkIg6IElOUFVULCBGSUVMRCwgT1VUUFVU44CCIg0KICAgICAgICAgICAgIm5hdGl2ZTpmaWVsZGNhbGN1bGF0b3Ig4oCUIOWtl+auteiuoeeulzogSU5QVVQsIEZJRUxEX05BTUUsIEZJRUxEX1RZUEUsIEZPUk1VTEEsIE9VVFBVVOOAgiINCiAgICAgICAgICAgICJuYXRpdmU6cmVwcm9qZWN0bGF5ZXIg4oCUIOmHjeaKleW9sTogSU5QVVQsIFRBUkdFVF9DUlMsIE9VVFBVVOOAgiINCiAgICAgICAgICAgICJuYXRpdmU6c2VsZWN0YnlleHByZXNzaW9uIOKAlCDooajovr7lvI/pgInmi6k6IElOUFVULCBFWFBSRVNTSU9O44CCIg0KICAgICAgICAgICAgIm5hdGl2ZTpleHRyYWN0YnlleHByZXNzaW9uIOKAlCDooajovr7lvI/mj5Dlj5Y6IElOUFVULCBFWFBSRVNTSU9OLCBPVVRQVVTjgIIiDQogICAgICAgICAgICAibmF0aXZlOmZpeGdlb21ldHJpZXMg4oCUIOS/ruWkjeWHoOS9lTogSU5QVVQsIE9VVFBVVOOAgiINCiAgICAgICAgICAgICJuYXRpdmU6ZXhwb3J0dG9zcHJlYWRzaGVldCDigJQg5a+85Ye66KGo5qC8OiBMQVlFUlMsIE9VVFBVVOOAgiINCiAgICAgICAgICAgICJnZGFsOmNvbnRvdXIg4oCUIOetiemrmOe6vzogSU5QVVQsIEJBTkQsIElOVEVSVkFMLCBPVVRQVVTjgIIiDQogICAgICAgICAgICAiZ2RhbDpjbGlwcmFzdGVyYnlleHRlbnQg4oCUIOagheagvOijgeWJqjogSU5QVVQsIFBST0pXSU4sIE9VVFBVVOOAgiINCiAgICAgICAgICAgICJnZGFsOndhcnByZXByb2plY3Qg4oCUIOagheagvOmHjeaKleW9sTogSU5QVVQsIFNPVVJDRV9DUlMsIFRBUkdFVF9DUlMsIE9VVFBVVOOAgiINCiAgICAgICAgICAgICJxZ2lzOmV4cG9ydHRvc3ByZWFkc2hlZXQg4oCUIOWvvOWHuuihqOagvDogTEFZRVJTLCBPVVRQVVTjgIIiDQogICAgICAgICksDQogICAgICAgICJzb3VyY2UiOiAibWFudWFsIiwNCiAgICB9LA0KICAgIHsNCiAgICAgICAgImNsYXNzX25hbWUiOiAiUWdzUmVuZGVyZXJDYXRlZ29yeSIsDQogICAgICAgICJtZXRob2RfbmFtZSI6ICLliIbnsbvmuLLmn5MiLA0KICAgICAgICAiZnVsbF9zaWduYXR1cmUiOiAiUWdzUmVuZGVyZXJDYXRlZ29yeSh2YWx1ZSwgc3ltYm9sLCBsYWJlbCkiLA0KICAgICAgICAiZGVzY3JpcHRpb24iOiAoDQogICAgICAgICAgICAi5p6E6YCg5Ye95pWwOiBRZ3NSZW5kZXJlckNhdGVnb3J5KHZhbHVlLCBRZ3NGaWxsU3ltYm9sKCksIGxhYmVsKeOAgiINCiAgICAgICAgICAgICJzZXRWYWx1ZSh2YWx1ZSkgLyB2YWx1ZSgpIOKGkiBRVmFyaWFudOOAgiINCiAgICAgICAgICAgICJzZXRMYWJlbChsYWJlbCkgLyBsYWJlbCgpIOKGkiBzdHLjgIIiDQogICAgICAgICAgICAic2V0U3ltYm9sKHN5bWJvbCkgLyBzeW1ib2woKSDihpIgUWdzU3ltYm9s44CCIg0KICAgICAgICApLA0KICAgICAgICAic291cmNlIjogIm1hbnVhbCIsDQogICAgfSwNCiAgICB7DQogICAgICAgICJjbGFzc19uYW1lIjogIlFnc1JlbmRlcmVyUmFuZ2UiLA0KICAgICAgICAibWV0aG9kX25hbWUiOiAi5YiG57qn5riy5p+TIiwNCiAgICAgICAgImZ1bGxfc2lnbmF0dXJlIjogIlFnc1JlbmRlcmVyUmFuZ2UobG93ZXIsIHVwcGVyLCBzeW1ib2wsIGxhYmVsKSIsDQogICAgICAgICJkZXNjcmlwdGlvbiI6ICgNCiAgICAgICAgICAgICLmnoTpgKDlh73mlbA6IFFnc1JlbmRlcmVyUmFuZ2UobG93ZXIsIHVwcGVyLCBRZ3NGaWxsU3ltYm9sKCksIGxhYmVsKeOAgiINCiAgICAgICAgICAgICJzZXRMb3dlclZhbHVlKHYpIC8gbG93ZXJWYWx1ZSgpIOKGkiBmbG9hdOOAgiINCiAgICAgICAgICAgICJzZXRVcHBlclZhbHVlKHYpIC8gdXBwZXJWYWx1ZSgpIOKGkiBmbG9hdOOAgiINCiAgICAgICAgICAgICJzZXRTeW1ib2wocykgLyBzeW1ib2woKSDihpIgUWdzU3ltYm9s44CCIg0KICAgICAgICAgICAgInNldExhYmVsKGwpIC8gbGFiZWwoKSDihpIgc3Ry44CCIg0KICAgICAgICApLA0KICAgICAgICAic291cmNlIjogIm1hbnVhbCIsDQogICAgfSwNCiAgICB7DQogICAgICAgICJjbGFzc19uYW1lIjogIlFnc1N5bWJvbCIsDQogICAgICAgICJtZXRob2RfbmFtZSI6ICLnrKblj7forr7nva4iLA0KICAgICAgICAiZnVsbF9zaWduYXR1cmUiOiAiUWdzRmlsbFN5bWJvbCAvIFFnc0xpbmVTeW1ib2wgLyBRZ3NNYXJrZXJTeW1ib2wiLA0KICAgICAgICAiZGVzY3JpcHRpb24iOiAoDQogICAgICAgICAgICAic2V0Q29sb3IoUUNvbG9yKSAvIGNvbG9yKCkg4oaSIFFDb2xvcjog6K6+572uL+iOt+WPluminOiJsuOAgiINCiAgICAgICAgICAgICJzZXRPcGFjaXR5KG9wYWNpdHkpIC8gb3BhY2l0eSgpIOKGkiBmbG9hdDog6K6+572u6YCP5piO5bqmKDAtMSnjgIIiDQogICAgICAgICAgICAiUWdzRmlsbFN5bWJvbC5jcmVhdGVTaW1wbGUocHJvcHMpIOKGkiBRZ3NGaWxsU3ltYm9sOiDku47lsZ7mgKfliJvlu7rjgIIiDQogICAgICAgICAgICAicHJvcHPnpLrkvos6IHsnY29sb3InOiAncmVkJywgJ3N0eWxlJzogJ3NvbGlkJ33jgIIiDQogICAgICAgICksDQogICAgICAgICJzb3VyY2UiOiAibWFudWFsIiwNCiAgICB9LA0KXQ0KDQoNCiMg4pSA4pSAIOS4u+eUn+aIkOWHveaVsCDilIDilIANCg0KZGVmIGdlbmVyYXRlX3B5cWdpc19kb2NzKA0KICAgIHN0b3JlOiBEb2NTdG9yZSA9IE5vbmUsDQogICAgaW5jbHVkZV9ydW50aW1lOiBib29sID0gVHJ1ZSwNCiAgICBpbmNsdWRlX3Byb2Nlc3Npbmc6IGJvb2wgPSBUcnVlLA0KICAgIGluY2x1ZGVfbWFudWFsOiBib29sID0gVHJ1ZSwNCiAgICBwcm9ncmVzc19jYWxsYmFjaz1Ob25lLA0KKSAtPiBkaWN0Og0KICAgICIiIueUn+aIkCBQeVFHSVMgQVBJIOaWh+aho+e0ouW8leOAgg0KDQogICAg5LuO5aSa5Liq5p2l5rqQ5o+Q5Y+WIEFQSSDmlofmoaPlubblhpnlhaUgU1FMaXRlIEZUUzUg5pWw5o2u5bqT44CCDQoNCiAgICBBcmdzOg0KICAgICAgICBzdG9yZTogRG9jU3RvcmUg5a6e5L6L77yM5LiN5Lyg5YiZ6Ieq5Yqo5Yib5bu6DQogICAgICAgIGluY2x1ZGVfcnVudGltZTog5piv5ZCm6YCa6L+HIGluc3BlY3Qg5o+Q5Y+W6L+Q6KGM5pe2IEFQSQ0KICAgICAgICBpbmNsdWRlX3Byb2Nlc3Npbmc6IOaYr+WQpuaPkOWPliBQcm9jZXNzaW5nIOeul+azleWIl+ihqA0KICAgICAgICBpbmNsdWRlX21hbnVhbDog5piv5ZCm5a+85YWl5omL5Yqo6KGl5YWF55qE5paH5qGjDQogICAgICAgIHByb2dyZXNzX2NhbGxiYWNrOiDov5vluqblm57osIMgY2FsbGJhY2socGhhc2UsIGNvdW50LCB0b3RhbCkNCg0KICAgIFJldHVybnM6DQogICAgICAgIHsiYXBpX2NvdW50IjogMTIzLCAicHJvY2Vzc2luZ19jb3VudCI6IDQ1LCAibWFudWFsX2NvdW50IjogMTAsICJ0b3RhbCI6IDE3OH0NCiAgICAiIiINCiAgICBpZiBzdG9yZSBpcyBOb25lOg0KICAgICAgICBzdG9yZSA9IERvY1N0b3JlKCkNCg0KICAgIHN0YXRzID0geyJhcGlfY291bnQiOiAwLCAicHJvY2Vzc2luZ19jb3VudCI6IDAsICJtYW51YWxfY291bnQiOiAwLCAidG90YWwiOiAwfQ0KDQogICAgIyDilIDilIAgMS4gUnVudGltZSBpbnNwZWN0IOKUgOKUgA0KICAgIGlmIGluY2x1ZGVfcnVudGltZToNCiAgICAgICAgaWYgcHJvZ3Jlc3NfY2FsbGJhY2s6DQogICAgICAgICAgICBwcm9ncmVzc19jYWxsYmFjaygiaW5zcGVjdCIsIDAsIGxlbihfQ09SRV9RR0lTX0NMQVNTRVMpKQ0KDQogICAgICAgIGFsbF9kb2NzID0gW10NCiAgICAgICAgZm9yIGksIChtb2RfbmFtZSwgY2xzX25hbWUpIGluIGVudW1lcmF0ZShfQ09SRV9RR0lTX0NMQVNTRVMpOg0KICAgICAgICAgICAgY2xzID0gX3NhZmVfaW1wb3J0X2NsYXNzKG1vZF9uYW1lLCBjbHNfbmFtZSkNCiAgICAgICAgICAgIGlmIGNscyBpcyBOb25lOg0KICAgICAgICAgICAgICAgIGNvbnRpbnVlDQogICAgICAgICAgICBkb2NzID0gX2luc3BlY3RfY2xhc3MoY2xzLCBjbHNfbmFtZSwgc291cmNlPSJydW50aW1lIikNCiAgICAgICAgICAgIGFsbF9kb2NzLmV4dGVuZChkb2NzKQ0KICAgICAgICAgICAgaWYgcHJvZ3Jlc3NfY2FsbGJhY2s6DQogICAgICAgICAgICAgICAgcHJvZ3Jlc3NfY2FsbGJhY2soImluc3BlY3QiLCBpICsgMSwgbGVuKF9DT1JFX1FHSVNfQ0xBU1NFUykpDQoNCiAgICAgICAgc3RvcmUuaW5zZXJ0X2JhdGNoKGFsbF9kb2NzKQ0KICAgICAgICBzdGF0c1siYXBpX2NvdW50Il0gPSBsZW4oYWxsX2RvY3MpDQoNCiAgICAjIOKUgOKUgCAyLiBQcm9jZXNzaW5nIOeul+azlSDilIDilIANCiAgICBpZiBpbmNsdWRlX3Byb2Nlc3Npbmc6DQogICAgICAgIGlmIHByb2dyZXNzX2NhbGxiYWNrOg0KICAgICAgICAgICAgcHJvZ3Jlc3NfY2FsbGJhY2soInByb2Nlc3NpbmciLCAwLCAxKQ0KDQogICAgICAgIGFsZ29fZG9jcyA9IF9leHRyYWN0X3Byb2Nlc3NpbmdfYWxnb3JpdGhtcygpDQogICAgICAgIHN0b3JlLmluc2VydF9iYXRjaChhbGdvX2RvY3MpDQogICAgICAgIHN0YXRzWyJwcm9jZXNzaW5nX2NvdW50Il0gPSBsZW4oYWxnb19kb2NzKQ0KDQogICAgICAgIGlmIHByb2dyZXNzX2NhbGxiYWNrOg0KICAgICAgICAgICAgcHJvZ3Jlc3NfY2FsbGJhY2soInByb2Nlc3NpbmciLCAxLCAxKQ0KDQogICAgIyDilIDilIAgMy4g5omL5Yqo6KGl5YWFIOKUgOKUgA0KICAgIGlmIGluY2x1ZGVfbWFudWFsOg0KICAgICAgICBzdG9yZS5pbnNlcnRfYmF0Y2goX01BTlVBTF9BUElfRE9DUykNCiAgICAgICAgc3RhdHNbIm1hbnVhbF9jb3VudCJdID0gbGVuKF9NQU5VQUxfQVBJX0RPQ1MpDQoNCiAgICBzdGF0c1sidG90YWwiXSA9IHN0YXRzWyJhcGlfY291bnQiXSArIHN0YXRzWyJwcm9jZXNzaW5nX2NvdW50Il0gKyBzdGF0c1sibWFudWFsX2NvdW50Il0NCiAgICByZXR1cm4gc3RhdHMNCg0KDQpkZWYgcmVidWlsZF9pbmRleChzdG9yZTogRG9jU3RvcmUgPSBOb25lLCBwcm9ncmVzc19jYWxsYmFjaz1Ob25lKSAtPiBkaWN0Og0KICAgICIiIumHjeW7uuaVtOS4qiBBUEkg5paH5qGj57Si5byV77yI5riF56m65ZCO6YeN5paw55Sf5oiQ77yJIiIiDQogICAgaWYgc3RvcmUgaXMgTm9uZToNCiAgICAgICAgc3RvcmUgPSBEb2NTdG9yZSgpDQogICAgc3RvcmUuY2xlYXJfYWxsKCkNCiAgICByZXR1cm4gZ2VuZXJhdGVfcHlxZ2lzX2RvY3Moc3RvcmUsIHByb2dyZXNzX2NhbGxiYWNrPXByb2dyZXNzX2NhbGxiYWNrKQ0K
+# -*- coding: utf-8 -*-
+"""
+API 文档生成器 — 从 QGIS 运行时提取 PyQGIS/GDAL API 文档。
+
+在插件首次安装或用户触发时运行，将核心 API 的签名和文档
+写入 SQLite FTS5 数据库，供后续检索使用。
+
+数据来源:
+1. Python inspect 反射 — 从 QGIS 核心类提取方法签名
+2. QGIS Processing 注册表 — 提取所有可用算法
+3. 硬编码的手动补充 — 常见但反射不到的 API 信息
+"""
+
+import inspect
+import json
+import os
+from typing import Optional
+
+from .doc_store import DocStore
+
+
+# ── 核心 QGIS 类列表（需要提取文档的类） ──
+
+_CORE_QGIS_CLASSES = [
+    # 图层
+    ("qgis.core", "QgsVectorLayer"),
+    ("qgis.core", "QgsRasterLayer"),
+    ("qgis.core", "QgsMapLayer"),
+    # 几何
+    ("qgis.core", "QgsGeometry"),
+    ("qgis.core", "QgsPoint"),
+    ("qgis.core", "QgsPointXY"),
+    ("qgis.core", "QgsRectangle"),
+    # 要素
+    ("qgis.core", "QgsFeature"),
+    ("qgis.core", "QgsFields"),
+    ("qgis.core", "QgsField"),
+    # 项目
+    ("qgis.core", "QgsProject"),
+    ("qgis.core", "QgsApplication"),
+    # 坐标系
+    ("qgis.core", "QgsCoordinateReferenceSystem"),
+    ("qgis.core", "QgsCoordinateTransform"),
+    # 渲染
+    ("qgis.core", "QgsMapSettings"),
+    ("qgis.core", "QgsMapRendererParallelJob"),
+    # 符号
+    ("qgis.core", "QgsFillSymbol"),
+    ("qgis.core", "QgsLineSymbol"),
+    ("qgis.core", "QgsMarkerSymbol"),
+    ("qgis.core", "QgsSingleSymbolRenderer"),
+    ("qgis.core", "QgsCategorizedSymbolRenderer"),
+    ("qgis.core", "QgsGraduatedSymbolRenderer"),
+    ("qgis.core", "QgsPalLayerSettings"),
+    ("qgis.core", "QgsVectorLayerSimpleLabeling"),
+    ("qgis.core", "QgsTextFormat"),
+    # 空间索引
+    ("qgis.core", "QgsSpatialIndex"),
+    ("qgis.core", "QgsFeatureRequest"),
+    # 距离/单位
+    ("qgis.core", "QgsDistanceArea"),
+    ("qgis.core", "QgsUnitTypes"),
+    # WKB
+    ("qgis.core", "QgsWkbTypes"),
+    # 枚举
+    ("qgis.core", "Qgis"),
+    # 工具
+    ("qgis.gui", "QgsMapCanvas"),
+]
+
+
+def _safe_import_class(module_name: str, class_name: str):
+    """安全导入一个类，失败返回 None"""
+    try:
+        module = __import__(module_name, fromlist=[class_name])
+        return getattr(module, class_name, None)
+    except Exception:
+        return None
+
+
+def _inspect_class(cls, class_name: str, source: str = "runtime") -> list[dict]:
+    """通过 inspect 反射提取一个类的所有公开方法文档。
+
+    Returns:
+        [{"class_name": ..., "method_name": ..., "full_signature": ..., ...}, ...]
+    """
+    docs = []
+    try:
+        for name, method in inspect.getmembers(cls, inspect.ismethod):
+            if name.startswith("_"):
+                continue
+            try:
+                sig = str(inspect.signature(method))
+            except (ValueError, TypeError):
+                sig = "(...)"
+
+            # 提取 docstring 第一段
+            desc = ""
+            if method.__doc__:
+                desc = method.__doc__.strip().split("\n\n")[0][:500]
+
+            # 提取参数信息
+            params = []
+            try:
+                for pname, param in inspect.signature(method).parameters.items():
+                    if pname == "self":
+                        continue
+                    param_type = ""
+                    if param.annotation != inspect.Parameter.empty:
+                        param_type = str(param.annotation)
+                    params.append({
+                        "name": pname,
+                        "type": param_type,
+                        "default": str(param.default) if param.default != inspect.Parameter.empty else "",
+                    })
+            except (ValueError, TypeError):
+                pass
+
+            docs.append({
+                "class_name": class_name,
+                "method_name": name,
+                "full_signature": f"{class_name}.{name}{sig}",
+                "description": desc,
+                "parameters": params,
+                "return_type": "",
+                "source": source,
+            })
+    except Exception:
+        pass
+    return docs
+
+
+def _extract_processing_algorithms() -> list[dict]:
+    """从 QGIS Processing 注册表提取所有算法签名"""
+    docs = []
+    try:
+        from qgis.core import QgsApplication
+        registry = QgsApplication.processingRegistry()
+        if registry is None:
+            return docs
+
+        for alg in registry.algorithms():
+            try:
+                alg_id = alg.id()
+                alg_name = alg.displayName()
+                params = []
+                for p in alg.parameterDefinitions():
+                    params.append({
+                        "name": p.name(),
+                        "type": p.type(),
+                        "description": p.description() if hasattr(p, 'description') else "",
+                    })
+
+                docs.append({
+                    "class_name": "processing",
+                    "method_name": alg_id,
+                    "full_signature": f"processing.run('{alg_id}', {{...}})",
+                    "description": f"{alg_name} — {alg.shortDescription() if hasattr(alg, 'shortDescription') else ''}",
+                    "parameters": params,
+                    "return_type": "dict",
+                    "source": "processing_registry",
+                })
+            except Exception:
+                continue
+    except Exception:
+        pass
+    return docs
+
+
+# ── 手动补充的 API 文档（inspect 难以获取的） ──
+
+_MANUAL_API_DOCS = [
+    # 常用操作速查
+    {
+        "class_name": "QgsVectorLayer",
+        "method_name": "常用操作速查",
+        "full_signature": "QgsVectorLayer 常用操作",
+        "description": (
+            "featureCount() → int: 返回要素数量。"
+            "fields() → QgsFields: 返回字段列表，遍历: for field in layer.fields()。"
+            "getFeatures() → QgsFeatureIterator: 迭代要素。"
+            "startEditing() / commitChanges() / rollBack(): 编辑会话管理。"
+            "addFeature(feature) / updateFeature(feature) / deleteFeature(fid): 要素CRUD。"
+            "selectByExpression(expr) → QgsFeatureIterator: 按表达式选择。"
+            "setRenderer(renderer): 设置渲染器。"
+            "setLabeling(labeling) / setLabelsEnabled(bool): 标注设置。"
+            "setCrs(crs): 设置坐标系。"
+            "materialize(QgsFeatureRequest): 物化过滤后的要素。"
+        ),
+        "source": "manual",
+    },
+    {
+        "class_name": "QgsGeometry",
+        "method_name": "常用操作速查",
+        "full_signature": "QgsGeometry 常用操作",
+        "description": (
+            "buffer(distance, segments) → QgsGeometry: 缓冲区。"
+            "simplify(tolerance) → QgsGeometry: 简化。"
+            "intersection(geom) → QgsGeometry: 相交。"
+            "combine(geom) → QgsGeometry: 合并。"
+            "difference(geom) → QgsGeometry: 差集。"
+            "asPoint() → QgsPointXY: 转为点。"
+            "asWkt(precision) → str: 转为WKT。"
+            "asJson(precision) → str: 转为GeoJSON。"
+            "get() → QgsAbstractGeometry: 获取底层几何对象。"
+            "vertexAt(i) → QgsPoint: 获取第i个顶点。"
+            "isGeosValid() → bool: GEOS有效性检查（注意: 不是 isValid()）。"
+            "isEmpty() → bool: 是否为空。"
+            "type() → QgsWkbTypes.GeometryType: 几何类型。"
+        ),
+        "source": "manual",
+    },
+    {
+        "class_name": "QgsFeatureRequest",
+        "method_name": "常用操作速查",
+        "full_signature": "QgsFeatureRequest 常用操作",
+        "description": (
+            "setFilterExpression(expr) / setFilterFids([...]) / setFilterRect(rect): 设置过滤。"
+            "setLimit(n): 限制返回数量。"
+            "NoFlags / ExactIntersect: 空间过滤标志。"
+        ),
+        "source": "manual",
+    },
+    {
+        "class_name": "QgsCoordinateTransform",
+        "method_name": "构造和变换",
+        "full_signature": "QgsCoordinateTransform(src_crs, dst_crs, QgsProject.instance())",
+        "description": (
+            "构造函数需要三个参数: 源CRS, 目标CRS, QgsCoordinateTransformContext。"
+            "通常第三个参数传 QgsProject.instance()。"
+            "transform(QgsGeometry) → QgsGeometry: 变换几何。"
+            "transform(point) → QgsPointXY: 变换点。"
+            "transformBoundingBox(rect) → QgsRectangle: 变换范围。"
+        ),
+        "source": "manual",
+    },
+    {
+        "class_name": "QgsProject",
+        "method_name": "常用操作速查",
+        "full_signature": "QgsProject.instance() 常用操作",
+        "description": (
+            "mapLayers() → dict: 返回 {layer_id: QgsMapLayer}。"
+            "addMapLayer(layer) / removeMapLayer(id): 图层管理。"
+            "crs() → QgsCoordinateReferenceSystem: 项目坐标系。"
+            "fileName() → str: 项目文件路径。"
+            "write(path) → bool / read(path) → bool: 保存/加载项目。"
+            "layerTreeRoot() → QgsLayerTreeGroup: 图层树。"
+        ),
+        "source": "manual",
+    },
+    {
+        "class_name": "QgsPalLayerSettings",
+        "method_name": "标注设置速查",
+        "full_signature": "QgsPalLayerSettings 标注配置",
+        "description": (
+            "fieldName = '字段名': 设置标注字段。"
+            "setFormat(QgsTextFormat): 设置文本格式。"
+            "placementSettings: QGIS 3.30+ 使用 QgsLabelPlacementSettings。"
+            "placement: 旧版QGIS直接设置整数值 (0=AroundPoint, 1=OverPoint, 2=Line, 3=Curved, 4=Horizontal)。"
+        ),
+        "source": "manual",
+    },
+    {
+        "class_name": "QgsMapCanvas",
+        "method_name": "地图画布操作",
+        "full_signature": "iface.mapCanvas() 常用操作",
+        "description": (
+            "extent() → QgsRectangle: 当前视图范围。"
+            "setExtent(rect) / zoomToFullExtent() / refresh(): 视图控制。"
+            "scale() → float: 当前比例尺分母。"
+            "setDestinationCrs(crs): 设置目标坐标系。"
+        ),
+        "source": "manual",
+    },
+    {
+        "class_name": "processing",
+        "method_name": "常用算法速查",
+        "full_signature": "processing.run() 常用算法",
+        "description": (
+            "native:buffer — 缓冲区: INPUT, DISTANCE, SEGMENTS, OUTPUT。"
+            "native:clip — 裁剪: INPUT, OVERLAY, OUTPUT。"
+            "native:intersection — 相交: INPUT, OVERLAY, OUTPUT。"
+            "native:dissolve — 融合: INPUT, FIELD, OUTPUT。"
+            "native:fieldcalculator — 字段计算: INPUT, FIELD_NAME, FIELD_TYPE, FORMULA, OUTPUT。"
+            "native:reprojectlayer — 重投影: INPUT, TARGET_CRS, OUTPUT。"
+            "native:selectbyexpression — 表达式选择: INPUT, EXPRESSION。"
+            "native:extractbyexpression — 表达式提取: INPUT, EXPRESSION, OUTPUT。"
+            "native:fixgeometries — 修复几何: INPUT, OUTPUT。"
+            "native:exporttospreadsheet — 导出表格: LAYERS, OUTPUT。"
+            "gdal:contour — 等高线: INPUT, BAND, INTERVAL, OUTPUT。"
+            "gdal:cliprasterbyextent — 栅格裁剪: INPUT, PROJWIN, OUTPUT。"
+            "gdal:warpreproject — 栅格重投影: INPUT, SOURCE_CRS, TARGET_CRS, OUTPUT。"
+            "qgis:exporttospreadsheet — 导出表格: LAYERS, OUTPUT。"
+        ),
+        "source": "manual",
+    },
+    {
+        "class_name": "QgsRendererCategory",
+        "method_name": "分类渲染",
+        "full_signature": "QgsRendererCategory(value, symbol, label)",
+        "description": (
+            "构造函数: QgsRendererCategory(value, QgsFillSymbol(), label)。"
+            "setValue(value) / value() → QVariant。"
+            "setLabel(label) / label() → str。"
+            "setSymbol(symbol) / symbol() → QgsSymbol。"
+        ),
+        "source": "manual",
+    },
+    {
+        "class_name": "QgsRendererRange",
+        "method_name": "分级渲染",
+        "full_signature": "QgsRendererRange(lower, upper, symbol, label)",
+        "description": (
+            "构造函数: QgsRendererRange(lower, upper, QgsFillSymbol(), label)。"
+            "setLowerValue(v) / lowerValue() → float。"
+            "setUpperValue(v) / upperValue() → float。"
+            "setSymbol(s) / symbol() → QgsSymbol。"
+            "setLabel(l) / label() → str。"
+        ),
+        "source": "manual",
+    },
+    {
+        "class_name": "QgsSymbol",
+        "method_name": "符号设置",
+        "full_signature": "QgsFillSymbol / QgsLineSymbol / QgsMarkerSymbol",
+        "description": (
+            "setColor(QColor) / color() → QColor: 设置/获取颜色。"
+            "setOpacity(opacity) / opacity() → float: 设置透明度(0-1)。"
+            "QgsFillSymbol.createSimple(props) → QgsFillSymbol: 从属性创建。"
+            "props示例: {'color': 'red', 'style': 'solid'}。"
+        ),
+        "source": "manual",
+    },
+]
+
+
+# ── 主生成函数 ──
+
+def generate_pyqgis_docs(
+    store: DocStore = None,
+    include_runtime: bool = True,
+    include_processing: bool = True,
+    include_manual: bool = True,
+    progress_callback=None,
+) -> dict:
+    """生成 PyQGIS API 文档索引。
+
+    从多个来源提取 API 文档并写入 SQLite FTS5 数据库。
+
+    Args:
+        store: DocStore 实例，不传则自动创建
+        include_runtime: 是否通过 inspect 提取运行时 API
+        include_processing: 是否提取 Processing 算法列表
+        include_manual: 是否导入手动补充的文档
+        progress_callback: 进度回调 callback(phase, count, total)
+
+    Returns:
+        {"api_count": 123, "processing_count": 45, "manual_count": 10, "total": 178}
+    """
+    if store is None:
+        store = DocStore()
+
+    stats = {"api_count": 0, "processing_count": 0, "manual_count": 0, "total": 0}
+
+    # ── 1. Runtime inspect ──
+    if include_runtime:
+        if progress_callback:
+            progress_callback("inspect", 0, len(_CORE_QGIS_CLASSES))
+
+        all_docs = []
+        for i, (mod_name, cls_name) in enumerate(_CORE_QGIS_CLASSES):
+            cls = _safe_import_class(mod_name, cls_name)
+            if cls is None:
+                continue
+            docs = _inspect_class(cls, cls_name, source="runtime")
+            all_docs.extend(docs)
+            if progress_callback:
+                progress_callback("inspect", i + 1, len(_CORE_QGIS_CLASSES))
+
+        store.insert_batch(all_docs)
+        stats["api_count"] = len(all_docs)
+
+    # ── 2. Processing 算法 ──
+    if include_processing:
+        if progress_callback:
+            progress_callback("processing", 0, 1)
+
+        algo_docs = _extract_processing_algorithms()
+        store.insert_batch(algo_docs)
+        stats["processing_count"] = len(algo_docs)
+
+        if progress_callback:
+            progress_callback("processing", 1, 1)
+
+    # ── 3. 手动补充 ──
+    if include_manual:
+        store.insert_batch(_MANUAL_API_DOCS)
+        stats["manual_count"] = len(_MANUAL_API_DOCS)
+
+    stats["total"] = stats["api_count"] + stats["processing_count"] + stats["manual_count"]
+    return stats
+
+
+def rebuild_index(store: DocStore = None, progress_callback=None) -> dict:
+    """重建整个 API 文档索引（清空后重新生成）"""
+    if store is None:
+        store = DocStore()
+    store.clear_all()
+    return generate_pyqgis_docs(store, progress_callback=progress_callback)

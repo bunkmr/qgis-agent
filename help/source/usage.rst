@@ -1,1 +1,51 @@
-5L2/55So5oyH5Y2XDQo9PT09PT09PT09PT0NCg0K5Z+65pys5pON5L2cDQotLS0tLS0tLQ0KDQrmj5Lku7bkuLvnlYzpnaLliIbkuLrkuInkuKrmoIfnrb7pobXvvJoNCg0KMS4gKirlr7nor50qKjog5LiOIExMTSDkuqTkupLnmoTkuLvnlYzpnaINCjIuICoq5a+56K+d5YiX6KGoKio6IOeuoeeQhuaJgOacieWvueivneS8muivnQ0KMy4gKirmqKHlnovphY3nva4qKjog5re75Yqg5ZKM566h55CGIExMTSDphY3nva4NCg0K5Y+R6YCB5raI5oGvDQotLS0tLS0tLQ0KDQoxLiDlnKjlupXpg6jovpPlhaXmoYbovpPlhaXpl67popjvvIjlpoIgIuW9k+WJjeacieWTquS6m+WbvuWxgu+8nyLvvIkNCjIuIOeCueWHu+OAjOWPkemAgeOAjeaIluaMiSBFbnRlciDplK4NCjMuIEFnZW50IOW8gOWni+WkhOeQhu+8jOWunuaXtuaYvuekuuaAneiAg+i/h+eoiw0KNC4g5aSE55CG5a6M5oiQ5ZCO5pi+56S657uT5p6cDQoNCuaooeWei+mAieaLqeS4jiBUZW1wZXJhdHVyZSDmjqfliLYNCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tDQoNCi0gKirmqKHlnovpgInmi6nlmagqKjog5bqV6YOo5LiL5ouJ5qGG5YiH5o2i5L2/55So55qEIExMTSDmqKHlnosNCi0gKipUZW1wZXJhdHVyZSDmu5HlnZcqKjog6LCD5pW0IExMTSDovpPlh7rpo47moLwNCiAgLSAqKjAuMCoqOiDnsr7noa7jgIHnoa7lrprmgKfovpPlh7rvvIjpgILlkIjku6PnoIHnlJ/miJDjgIHmlbDmja7liIbmnpDvvIkNCiAgLSAqKjAuNSoqOiDlubPooaHmqKHlvI8NCiAgLSAqKjEuMCoqOiDliJvpgKDmgKfovpPlh7rvvIjpgILlkIjlpLTohJHpo47mmrTjgIHmlofmnKznlJ/miJDvvIkNCg0K5Luj56CB5omn6KGM56Gu6K6kDQotLS0tLS0tLS0tLS0NCg0K5b2TIEFnZW50IOmcgOimgeaJp+ihjCBQeVFHSVMg5Luj56CB5oiWIFByb2Nlc3Npbmcg566X5rOV5pe277yM5Lya5by55Ye656Gu6K6k5a+56K+d5qGG77yaDQoNCi0g5p+l55yL5Luj56CB6aKE6KeIDQotIOeCueWHu+OAjOaJp+ihjOOAjeehruiupA0KLSDngrnlh7vjgIzlj5bmtojjgI3mlL7lvIPmnKzmrKHmk43kvZwNCg0K5a+56K+d566h55CGDQotLS0tLS0tLQ0KDQotICoq5paw5bu65a+56K+dKio6IOeCueWHu+OAjCsg5paw5bu65a+56K+d44CN77yM6L6T5YWl5qCH6aKY5ZKM5o+P6L+wDQotICoq5omT5byA5a+56K+dKio6IOWcqOWvueivneWIl+ihqOS4reeCueWHu+OAjOaJk+W8gOOAjQ0KLSAqKue8lui+keWvueivnSoqOiDngrnlh7vjgIznvJbovpHjgI3kv67mlLnmoIfpopjlkozmj4/ov7ANCi0gKirliKDpmaTlr7nor50qKjog54K55Ye744CM5Yig6Zmk44CN56e76Zmk5a+56K+dDQotICoq5pCc57Si5a+56K+dKio6IOWcqOaQnOe0ouahhui+k+WFpeWFs+mUruivjeaQnOe0og0KDQrlgZzmraLnlJ/miJANCi0tLS0tLS0tDQoNCuWmguaenCBBZ2VudCDnmoTlm57nrZTml7bpl7Tov4fplb/miJbmlrnlkJHkuI3lr7nvvIzngrnlh7vjgIzij7kg5YGc5q2i44CN5oyJ6ZKu5Lit5pat55Sf5oiQ44CCDQo=
+使用指南
+============
+
+基本操作
+--------
+
+插件主界面分为三个标签页：
+
+1. **对话**: 与 LLM 交互的主界面
+2. **对话列表**: 管理所有对话会话
+3. **模型配置**: 添加和管理 LLM 配置
+
+发送消息
+--------
+
+1. 在底部输入框输入问题（如 "当前有哪些图层？"）
+2. 点击「发送」或按 Enter 键
+3. Agent 开始处理，实时显示思考过程
+4. 处理完成后显示结果
+
+模型选择与 Temperature 控制
+-----------------------------
+
+- **模型选择器**: 底部下拉框切换使用的 LLM 模型
+- **Temperature 滑块**: 调整 LLM 输出风格
+  - **0.0**: 精确、确定性输出（适合代码生成、数据分析）
+  - **0.5**: 平衡模式
+  - **1.0**: 创造性输出（适合头脑风暴、文本生成）
+
+代码执行确认
+------------
+
+当 Agent 需要执行 PyQGIS 代码或 Processing 算法时，会弹出确认对话框：
+
+- 查看代码预览
+- 点击「执行」确认
+- 点击「取消」放弃本次操作
+
+对话管理
+--------
+
+- **新建对话**: 点击「+ 新建对话」，输入标题和描述
+- **打开对话**: 在对话列表中点击「打开」
+- **编辑对话**: 点击「编辑」修改标题和描述
+- **删除对话**: 点击「删除」移除对话
+- **搜索对话**: 在搜索框输入关键词搜索
+
+停止生成
+--------
+
+如果 Agent 的回答时间过长或方向不对，点击「⏹ 停止」按钮中断生成。
