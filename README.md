@@ -243,10 +243,20 @@ flowchart TD
 
 ## 📥 安装
 
-### Windows
+### 方式一：QGIS ZIP 安装（推荐）
+
+1. 从 [Releases](https://github.com/bunkmr/qgis-agent/releases) 下载最新版 `qgis_agent_vX.X.X.zip`
+2. 打开 QGIS → 菜单栏 **插件** → **管理和安装插件**
+3. 点击左侧 **从 ZIP 安装**，选择下载的 ZIP 文件
+4. 点击 **安装插件**，插件会自动处理依赖
+5. 在已安装列表中勾选启用 **QGIS Agent**
+
+### 方式二：手动安装
+
+#### Windows
 
 ```powershell
-# 1. 复制到 QGIS 插件目录
+# 1. 下载源码并复制到 QGIS 插件目录
 Copy-Item -Recurse qgis_agent\ "$env:APPDATA\QGIS\QGIS3\profiles\default\python\plugins\qgis_agent"
 
 # 2. 安装依赖（使用 QGIS 内置 Python）
@@ -255,14 +265,12 @@ Copy-Item -Recurse qgis_agent\ "$env:APPDATA\QGIS\QGIS3\profiles\default\python\
 # 3. 重启 QGIS，在 插件 → 管理和安装插件 中启用 QGIS Agent
 ```
 
-### macOS / Linux
+#### macOS / Linux
 
 ```bash
 cp -r qgis_agent/ ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/
 pip install -r ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/qgis_agent/requirements.txt
 ```
-
-> **推荐**：也可通过 QGIS 插件管理器 → 从 ZIP 安装，插件会自动处理依赖。
 
 ## ⚙️ 配置
 
