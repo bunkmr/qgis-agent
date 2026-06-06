@@ -497,6 +497,36 @@ def render_map(output_path: str, width: int = 800, height: int = 600):
 
 from qgis.PyQt.QtCore import QObject, pyqtSignal, pyqtSlot, QMutex, QWaitCondition, QThread
 
+# 全局代码确认回调（由 qgis_agent.py 设置）
+_code_confirm_callback = None
+
+# 全局"跳过所有代码确认"开关（由 UI 开关控制）
+_skip_all_confirms = False
+
+# 需要确认才能执行的危险工具列表
+_DANGEROUS_TOOLS = {"execute_pyqgis", "execute_processing"}
+
+
+def set_code_confirm_callback(callback):
+    """设置代码执行确认回调。
+    callback(tool_name, code_preview) -> bool (True=确认, False=取消)
+    """
+    global _code_confirm_callback
+    _code_confirm_callback = callback
+
+
+def set_skip_all_confirms(skip: bool):
+    """设置是否跳过所有代码执行确认。
+    True=直接执行不弹窗, False=每次弹窗确认（默认）
+    """
+    global _skip_all_confirms
+    _skip_all_confirms = skip
+
+
+def get_skip_all_confirms() -> bool:
+    """获取当前跳过确认开关状态"""
+    return _skip_all_confirms
+
 
 class _MainThreadBridge(QObject):
     """驻留在主线程的桥接器。
@@ -508,6 +538,7 @@ class _MainThreadBridge(QObject):
     可以安全传递 Python dict/function 等任意对象。
     """
     execute_request = pyqtSignal(object, str, object, object)  # (func, tool_name, args, result_holder)
+    confirm_request = pyqtSignal(str, str, object)  # (tool_name, code_preview, confirm_holder)
 
     _instance = None
     _mutex = QMutex()
@@ -539,13 +570,65 @@ class _MainThreadBridge(QObject):
             result_holder["wait_cond"].wakeAll()
             result_holder["mutex"].unlock()
 
+    @pyqtSlot(str, str, object)
+    def _on_confirm(self, tool_name, code_preview, confirm_holder):
+        """在主线程中弹出确认对话框"""
+        if _code_confirm_callback:
+            confirmed = _code_confirm_callback(tool_name, code_preview)
+            confirm_holder["confirmed"] = confirmed
+        else:
+            confirm_holder["confirmed"] = True  # 无回调时默认确认
+        confirm_holder["done"] = True
+
+        # 唤醒等待的工作线程
+        if "wait_cond" in confirm_holder and "mutex" in confirm_holder:
+            confirm_holder["mutex"].lock()
+            confirm_holder["wait_cond"].wakeAll()
+            confirm_holder["mutex"].unlock()
+
 
 def _init_main_thread_bridge():
     """在主线程中初始化桥接器。由插件入口 qgis_agent.py 调用。"""
     bridge = _MainThreadBridge.get()
     # 连接信号到槽（自动跨线程安全）
     bridge.execute_request.connect(bridge._on_execute)
+    bridge.confirm_request.connect(bridge._on_confirm)
     return bridge
+
+
+# ──────────────────────────────────────────────
+# RAG API 文档检索工具
+# ──────────────────────────────────────────────
+
+def search_pyqgis_api(query: str):
+    """检索 PyQGIS API 文档，返回精确的方法签名和用法。
+
+    在编写 execute_pyqgis 代码之前使用此工具查询 API，
+    可以避免参数名/类型错误。
+    """
+    try:
+        from .rag import get_retriever
+        retriever = get_retriever()
+        results = retriever.search(query, top_k=5)
+        if not results:
+            return {"query": query, "results": [], "hint": "未找到匹配的 API 文档。请尝试更具体的关键词，如 'buffer geometry' 或 'QgsVectorLayer fields'。"}
+
+        formatted = retriever.format_as_context(results)
+        return {
+            "query": query,
+            "count": len(results),
+            "results": [
+                {
+                    "signature": r.get("full_signature", ""),
+                    "description": r.get("description", "")[:200],
+                    "class": r.get("class_name", ""),
+                }
+                for r in results
+            ],
+            "formatted": formatted,
+        }
+    except Exception as e:
+        return {"error": f"API 文档检索失败: {str(e)}", "hint": "请确认已初始化 RAG 索引（首次使用需在 QGIS 中运行 rag_init）"}
 
 
 # ──────────────────────────────────────────────
@@ -716,8 +799,19 @@ TOOL_DEFINITIONS = [
         },
     },
     {
+        "name": "search_pyqgis_api",
+        "description": "检索 PyQGIS/GDAL/Processing API 文档，获取准确的方法签名和参数信息。在编写 execute_pyqgis 代码之前应优先使用此工具查询相关 API，避免参数名/类型错误。支持中英文关键词搜索。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "搜索关键词，如 'buffer geometry', 'QgsVectorLayer addFeature', 'processing run dissolve', '字段计算'"},
+            },
+            "required": ["query"],
+        },
+    },
+    {
         "name": "execute_pyqgis",
-        "description": "在 QGIS Python 环境中直接执行 PyQGIS 代码。可用于复杂操作或处理算法无法完成的定制任务。会捕获 print() 输出和错误信息。",
+        "description": "在 QGIS Python 环境中直接执行 PyQGIS 代码。可用于复杂操作或处理算法无法完成的定制任务。会捕获 print() 输出和错误信息。执行前建议先使用 search_pyqgis_api 查询 API 文档。",
         "parameters": {
             "type": "object",
             "properties": {
@@ -786,6 +880,7 @@ TOOL_DEFINITIONS = [
 TOOL_MAP = {
     "save_memory": save_memory,
     "load_memory": load_memory,
+    "search_pyqgis_api": search_pyqgis_api,
     "get_qgis_info": get_qgis_info,
     "get_layer_features": get_layer_features,
     "add_vector_layer": add_vector_layer,
@@ -806,10 +901,55 @@ def call_tool(tool_name: str, arguments: dict) -> dict:
 
     关键：QGIS API 不是线程安全的，所有工具必须在主线程中执行。
     如果当前不在主线程，通过信号/槽 + QWaitCondition 调度到主线程同步执行。
+    
+    危险工具（execute_pyqgis, execute_processing）在执行前会通过
+    _code_confirm_callback 弹出确认对话框。
     """
     func = TOOL_MAP.get(tool_name)
     if not func:
         return {"error": f"未知工具: {tool_name}"}
+
+    # ── 危险工具确认 ──
+    if tool_name in _DANGEROUS_TOOLS and not _skip_all_confirms and _code_confirm_callback is not None:
+        code_preview = ""
+        if tool_name == "execute_pyqgis":
+            code_preview = arguments.get("code", "")
+        elif tool_name == "execute_processing":
+            code_preview = f"algorithm: {arguments.get('algorithm', '')}\n"
+            code_preview += f"parameters: {json.dumps(arguments.get('parameters', {}), indent=2, ensure_ascii=False)}"
+        
+        # 确认回调必须在主线程中调用（会弹对话框）
+        current_thread = QThread.currentThread()
+        try:
+            app = QApplication.instance()
+            main_thread = app.thread() if app else None
+        except Exception:
+            main_thread = None
+        
+        if main_thread is not None and current_thread != main_thread:
+            # 工作线程中，需要通过信号/槽调度确认
+            bridge = _MainThreadBridge._instance
+            if bridge is None:
+                return {"error": "QGIS Agent 插件未初始化，请先打开插件面板。"}
+            
+            wait_cond = QWaitCondition()
+            mutex = QMutex()
+            confirm_holder = {"confirmed": False, "done": False, "wait_cond": wait_cond, "mutex": mutex}
+            
+            bridge.confirm_request.emit(tool_name, code_preview, confirm_holder)
+            
+            mutex.lock()
+            timeout_sec = 60
+            if not confirm_holder["done"]:
+                wait_cond.wait(mutex, timeout_sec * 1000)
+            mutex.unlock()
+            
+            if not confirm_holder.get("confirmed", False):
+                return {"error": f"用户取消了 {tool_name} 操作。"}
+        else:
+            # 已在主线程，直接调用确认
+            if not _code_confirm_callback(tool_name, code_preview):
+                return {"error": f"用户取消了 {tool_name} 操作。"}
 
     # 检查当前是否在主线程
     current_thread = QThread.currentThread()

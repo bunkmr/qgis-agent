@@ -146,8 +146,24 @@ class QGISAgent:
         from .config import DB_NAME, PLUGIN_NAME
 
         # 在主线程中初始化工具调度桥接器（必须在任何工具调用前完成）
-        from .qgis_tools import _init_main_thread_bridge
+        from .qgis_tools import _init_main_thread_bridge, set_code_confirm_callback, set_skip_all_confirms
         _init_main_thread_bridge()
+        # 设置全局代码确认回调
+        set_code_confirm_callback(self._on_code_confirm_sync)
+
+        # 连接"跳过确认"开关（底部栏和配置页两个 checkbox 保持同步）
+        self.dockwidget.cbSkipConfirm.stateChanged.connect(self._on_skip_confirm_changed)
+        self.dockwidget.cbSkipConfirmSettings.stateChanged.connect(self._on_skip_confirm_changed)
+        # 互相联动
+        self.dockwidget.cbSkipConfirm.stateChanged.connect(
+            lambda state: self.dockwidget.cbSkipConfirmSettings.setChecked(state == Qt.Checked)
+        )
+        self.dockwidget.cbSkipConfirmSettings.stateChanged.connect(
+            lambda state: self.dockwidget.cbSkipConfirm.setChecked(state == Qt.Checked)
+        )
+
+        # ── 初始化 RAG 索引（首次自动构建） ──
+        self._init_rag_index()
 
         if self.dockwidget is None:
             self.dockwidget = QGISAgentDockWidget()
@@ -219,6 +235,10 @@ class QGISAgent:
         display = self.dockwidget.cbModelSelector.currentText()
         return self._model_selector_map.get(display, "")
 
+    def _get_temperature(self):
+        """获取当前 temperature 滑块的值"""
+        return self.dockwidget.sliderTemperature.value() / 100.0
+
 
     def _on_new_message_send(self):
         message = self.dockwidget.ptMessage.toPlainText()
@@ -234,14 +254,25 @@ class QGISAgent:
 
         # 如果用户切换了模型选择器中的模型，更新对话的 llmID
         selected_llm = self._get_selected_llm_id()
-        if selected_llm and selected_llm != self.live_conversation.llmID:
-            self.live_conversation.meta_info["llmID"] = selected_llm
-            # 重新创建 processor 以使用新模型
-            self.live_conversation.provider, self.live_conversation.model_name = \
-                self.dataloader.get_llm_info(selected_llm)
-            self.live_conversation.processor = self._Processor(selected_llm, self.live_conversation.ID, self.dataloader)
+        temperature = self._get_temperature()
+        need_recreate = (
+            (selected_llm and selected_llm != self.live_conversation.llmID)
+            or (temperature != getattr(self.live_conversation.processor, 'temperature', 0.0))
+        )
+        if need_recreate:
+            if selected_llm:
+                self.live_conversation.meta_info["llmID"] = selected_llm
+                self.live_conversation.provider, self.live_conversation.model_name = \
+                    self.dataloader.get_llm_info(selected_llm)
+            else:
+                selected_llm = self.live_conversation.llmID
+            # 重新创建 processor 以使用新模型/温度
+            self.live_conversation.processor = self._Processor(
+                selected_llm, self.live_conversation.ID, self.dataloader, temperature=temperature
+            )
             self.live_conversation.processor.thinking.connect(self.live_conversation.llm_thinking.emit)
             self.live_conversation.processor.tool_status.connect(self.live_conversation.llm_tool_status.emit)
+            self.live_conversation.processor._code_confirm_callback = self._on_code_confirm
             self.dataloader.update_conversation_info(self.live_conversation.meta_info)
 
         response_type = "Agent"
@@ -329,6 +360,82 @@ class QGISAgent:
         self.dockwidget.finalizeThinking()
         self.dockwidget.txHistory.append(f"<p style='color:red'>错误: {html_module.escape(error_message)}</p>")
 
+    def _on_code_confirm(self, tool_name, code_preview, callback):
+        """代码执行确认对话框 — 借鉴 QGPT Agent 的安全确认机制。
+        
+        在 execute_pyqgis 或 execute_processing 执行前弹窗，
+        让用户确认或取消代码执行。
+        
+        Args:
+            tool_name: 工具名称 (execute_pyqgis / execute_processing)
+            code_preview: 代码预览文本
+            callback: 确认后调用的回调函数，传入 bool (True=确认, False=取消)
+        """
+        msg = QMessageBox()
+        msg.setWindowTitle("代码执行确认")
+        msg.setIcon(QMessageBox.Warning)
+        msg.setText(f"即将执行 {tool_name}，是否继续？")
+        msg.setInformativeText("请检查代码是否正确，确认无误后点击「执行」。")
+        msg.setDetailedText(code_preview)
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msg.setDefaultButton(QMessageBox.No)
+        msg.button(QMessageBox.Yes).setText("执行")
+        msg.button(QMessageBox.No).setText("取消")
+        
+        result = msg.exec_()
+        callback(result == QMessageBox.Yes)
+
+    def _on_code_confirm_sync(self, tool_name, code_preview):
+        """同步版本的代码确认（用于全局回调，返回 bool）"""
+        msg = QMessageBox()
+        msg.setWindowTitle("代码执行确认")
+        msg.setIcon(QMessageBox.Warning)
+        msg.setText(f"即将执行 {tool_name}，是否继续？")
+        msg.setInformativeText("请检查代码是否正确，确认无误后点击「执行」。")
+        msg.setDetailedText(code_preview)
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msg.setDefaultButton(QMessageBox.No)
+        msg.button(QMessageBox.Yes).setText("执行")
+        msg.button(QMessageBox.No).setText("取消")
+        
+        result = msg.exec_()
+        return result == QMessageBox.Yes
+
+    def _on_skip_confirm_changed(self, state):
+        """当"跳过确认"checkbox 状态变化时更新全局开关"""
+        from .qgis_tools import set_skip_all_confirms
+        set_skip_all_confirms(state == Qt.Checked)
+
+    def _init_rag_index(self):
+        """初始化 RAG API 文档索引（首次使用时自动构建）"""
+        try:
+            from .rag import DocStore, init_retriever, generate_pyqgis_docs
+            store = DocStore()
+            init_retriever(store)
+            stats = store.get_stats()
+            # 如果索引为空，自动构建
+            if stats["api_docs"] == 0:
+                try:
+                    from qgis.PyQt.QtWidgets import QMessageBox
+                    reply = QMessageBox.question(
+                        None, "QGIS Agent",
+                        "首次使用需要构建 PyQGIS API 文档索引（约 10-30 秒），\n"
+                        "这将显著提升代码生成的准确性。是否立即构建？",
+                        QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
+                    )
+                    if reply == QMessageBox.Yes:
+                        generate_pyqgis_docs(store)
+                        new_stats = store.get_stats()
+                        QMessageBox.information(
+                            None, "QGIS Agent",
+                            f"API 文档索引构建完成！\n"
+                            f"共索引 {new_stats['api_docs']} 个 API 条目。"
+                        )
+                except Exception:
+                    pass  # 构建失败静默跳过，不影响插件使用
+        except Exception:
+            pass  # RAG 初始化失败不阻塞插件
+
     def _on_stop_requested(self):
         """用户点击停止按钮"""
         if self.live_conversation:
@@ -378,6 +485,9 @@ class QGISAgent:
                 self.live_conversation = self._Conversation(
                     self.live_conversation_id, self.dataloader
                 )
+                # 设置 temperature
+                self.live_conversation.processor.temperature = self._get_temperature()
+                self.live_conversation.processor._code_confirm_callback = self._on_code_confirm
 
                 self.dockwidget.twTabs.setCurrentWidget(self.dockwidget.tbMessages)
                 self.dockwidget.updateConversation(self.live_conversation)
@@ -397,6 +507,8 @@ class QGISAgent:
             self.dataloader.connect()
         self.live_conversation = self._Conversation(conversation_id, self.dataloader)
         self.live_conversation.lastEdit = self._get_current_timestamp()
+        self.live_conversation.processor.temperature = self._get_temperature()
+        self.live_conversation.processor._code_confirm_callback = self._on_code_confirm
         self.dataloader.update_conversation_info(self.live_conversation.meta_info)
 
         # 同步模型选择器

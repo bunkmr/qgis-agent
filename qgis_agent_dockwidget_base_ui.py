@@ -67,7 +67,7 @@ class Ui_QGISAgentDockWidget(object):
         self.messageLayout.addWidget(self.ptMessage)
         self.messageLayout.addWidget(self.pbSend)
 
-        # 底部栏：模型选择 + 停止按钮
+        # 底部栏：模型选择 + Temperature + 停止按钮
         self.bottomBarLayout = QtWidgets.QHBoxLayout()
         self.bottomBarLayout.setContentsMargins(0, 2, 0, 0)
         self.bottomBarLayout.setSpacing(6)
@@ -78,6 +78,19 @@ class Ui_QGISAgentDockWidget(object):
         self.cbModelSelector.setMinimumWidth(120)
         self.cbModelSelector.setStyleSheet("QComboBox { font-size: 12px; padding: 2px 4px; }")
 
+        self.lblTemperature = QtWidgets.QLabel("温度:")
+        self.lblTemperature.setStyleSheet("font-size: 12px; color: #888;")
+        self.sliderTemperature = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.sliderTemperature.setRange(0, 100)
+        self.sliderTemperature.setValue(0)
+        self.sliderTemperature.setFixedWidth(80)
+        self.sliderTemperature.setToolTip("LLM 温度 (0=精确, 1=创造)")
+        self.lblTempValue = QtWidgets.QLabel("0.0")
+        self.lblTempValue.setStyleSheet("font-size: 11px; color: #888; min-width: 24px;")
+        self.sliderTemperature.valueChanged.connect(
+            lambda v: self.lblTempValue.setText(f"{v/100:.1f}")
+        )
+
         self.pbStop = QtWidgets.QPushButton("⏹ 停止")
         self.pbStop.setFixedSize(70, 26)
         self.pbStop.setVisible(False)
@@ -86,8 +99,17 @@ class Ui_QGISAgentDockWidget(object):
             QPushButton:hover { background-color: #E05050; }
         """)
 
+        # 跳过代码确认的开关
+        self.cbSkipConfirm = QtWidgets.QCheckBox("跳过确认")
+        self.cbSkipConfirm.setToolTip("勾选后直接执行所有 PyQGIS/Processing 代码，不再弹窗确认")
+        self.cbSkipConfirm.setStyleSheet("QCheckBox { font-size: 11px; color: #888; }")
+
         self.bottomBarLayout.addWidget(self.lblModel)
         self.bottomBarLayout.addWidget(self.cbModelSelector, 1)
+        self.bottomBarLayout.addWidget(self.lblTemperature)
+        self.bottomBarLayout.addWidget(self.sliderTemperature)
+        self.bottomBarLayout.addWidget(self.lblTempValue)
+        self.bottomBarLayout.addWidget(self.cbSkipConfirm)
         self.bottomBarLayout.addWidget(self.pbStop)
 
         self.messagesLayout.addLayout(self.titleLayout)
@@ -164,10 +186,16 @@ class Ui_QGISAgentDockWidget(object):
             QPushButton:hover { background-color: #4CAE4C; }
         """)
 
+        # 模型配置页的"跳过确认"开关（与底部栏的 cbSkipConfirm 保持同步）
+        self.cbSkipConfirmSettings = QtWidgets.QCheckBox("跳过代码执行确认（直接执行 PyQGIS/Processing，不再弹窗）")
+        self.cbSkipConfirmSettings.setStyleSheet("QCheckBox { font-size: 12px; color: #888; margin-top: 8px; }")
+
         self.settingsLayout.addWidget(self.lblSettingsTitle)
         self.settingsLayout.addWidget(self.lblSettingsHint)
         self.settingsLayout.addWidget(self.settingsTable)
         self.settingsLayout.addWidget(self.btnAddModel)
+        self.settingsLayout.addWidget(self.cbSkipConfirmSettings)
+        self.settingsLayout.addStretch()
 
         self.twTabs.addTab(self.tbMessages, "对话")
         self.twTabs.addTab(self.tbConversations, "对话列表")

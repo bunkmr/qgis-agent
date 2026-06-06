@@ -16,4 +16,4 @@ load_env_file()
 DEBUG_MODE = os.environ.get("QGIS_AGENT_DEBUG", "False") == "True"
 DB_NAME = "QGIS_Agent.db"
 PLUGIN_NAME = "QGIS Agent"
-PLUGIN_VERSION = "1.0.0"
+PLUGIN_VERSION = "1.2.0"

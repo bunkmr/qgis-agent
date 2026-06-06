@@ -1,22 +1,22 @@
 [general]
 name=QGIS Agent
 qgisMinimumVersion=3.0
-description=将大语言模型 (LLM) 嵌入 QGIS 的智能助手插件。用自然语言操控 QGIS，支持 DeepSeek、OpenAI、GLM、Gemini、MiMo 等模型，内置 11 个 QGIS 工具，支持图层管理、空间分析、地图渲染等。
-version=1.0.0
+description=将大语言模型 (LLM) 嵌入 QGIS 的智能助手插件。用自然语言操控 QGIS，支持 DeepSeek、OpenAI、GLM、Gemini、MiMo 等模型，内置 15 个 QGIS 工具，集成 RAG API 文档检索和 Cookbook 自我进化，支持图层管理、空间分析、地图渲染等。
+version=1.2.0
 author=QGIS Agent Contributors
 email=
 
-about=QGIS Agent 是一个基于大语言模型（LLM）的 QGIS 智能助手插件。\n\n主要功能：\n- 自然语言操控 QGIS，无需编写代码\n- 支持多种 LLM（DeepSeek、OpenAI、GLM、Gemini、MiMo 等）\n- 11 个内置 QGIS 工具：图层管理、空间分析、地图渲染\n- 对话持久化（SQLite）与长期记忆\n- 线程安全架构，不阻塞 UI
+about=QGIS Agent 是一个基于大语言模型（LLM）的 QGIS 智能助手插件。\n\n主要功能：\n- 自然语言操控 QGIS，无需编写代码\n- 支持多种 LLM（DeepSeek、OpenAI、GLM、Gemini、MiMo 等）\n- 15 个内置 QGIS 工具：图层管理、空间分析、地图渲染\n- RAG API 文档检索：执行代码前自动查询 PyQGIS API 签名\n- Cookbook 自我进化：成功案例自动归档，越用越聪明\n- 对话持久化（SQLite）与长期记忆\n- 线程安全架构，不阻塞 UI
 
-tracker=https://github.com/your-username/qgis-agent/issues
-repository=https://github.com/your-username/qgis-agent
+tracker=https://github.com/bunkmr/qgis-agent/issues
+repository=https://github.com/bunkmr/qgis-agent
 
 hasProcessingProvider=no
-changelog=1.0.0 初始版本
+changelog=1.2.0 新增RAG API文档检索、Cookbook自我进化、15个QGIS工具
 
 tags=AI, LLM, Agent, PyQGIS, 地理处理, 智能助手, DeepSeek, OpenAI
 
-homepage=https://github.com/your-username/qgis-agent
+homepage=https://github.com/bunkmr/qgis-agent
 category=Plugins
 icon=icon.png
 experimental=True
