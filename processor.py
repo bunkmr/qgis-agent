@@ -297,8 +297,9 @@ class Processor(QObject):
                     "tool": tool_name,
                     "args": tool_args
                 })
-                # 发送工作流更新信号
-                self.workflow_update.emit(workflow_data)
+                # 延迟发送工作流更新信号，避免频繁更新导致卡顿
+                from qgis.PyQt.QtCore import QTimer
+                QTimer.singleShot(50, lambda: self.workflow_update.emit(workflow_data.copy()))
 
                 # ── RAG 检索增强：对危险工具，先查 API 文档 ──
                 if tool_name in ("execute_pyqgis", "execute_processing"):
@@ -314,10 +315,14 @@ class Processor(QObject):
                 # ── 发送代码到报告页签 ──
                 if tool_name == "execute_pyqgis" and "code" in tool_args:
                     self.code_update.emit(tool_args["code"])
-                    self.execution_log.emit(f"▶ 执行 PyQGIS 代码...")
+                    # 延迟发送执行日志，避免频繁更新导致卡顿
+                    from qgis.PyQt.QtCore import QTimer
+                    QTimer.singleShot(50, lambda: self.execution_log.emit(f"▶ 执行 PyQGIS 代码..."))
                 elif tool_name == "execute_processing":
                     code_snippet = f"processing.run('{tool_name}', {json.dumps(tool_args, indent=2)})"
-                    self.execution_log.emit(f"▶ 执行 Processing 算法: {tool_name}")
+                    # 延迟发送执行日志，避免频繁更新导致卡顿
+                    from qgis.PyQt.QtCore import QTimer
+                    QTimer.singleShot(50, lambda: self.execution_log.emit(f"▶ 执行 Processing 算法: {tool_name}"))
 
                 # 执行工具
                 try:
@@ -333,26 +338,32 @@ class Processor(QObject):
                     # ── 发送执行日志 ──
                     if "error" in result:
                         error_msg = result.get("error", "未知错误")
-                        self.execution_log.emit(f"❌ {tool_name} 执行失败: {error_msg}")
+                        # 延迟发送执行日志，避免频繁更新导致卡顿
+                        from qgis.PyQt.QtCore import QTimer
+                        QTimer.singleShot(50, lambda: self.execution_log.emit(f"❌ {tool_name} 执行失败: {error_msg}"))
                         # 更新工作流步骤状态为失败
                         if workflow_data["steps"]:
                             workflow_data["steps"][-1]["status"] = "failed"
                             workflow_data["steps"][-1]["error"] = error_msg
-                            self.workflow_update.emit(workflow_data)
+                            QTimer.singleShot(50, lambda: self.workflow_update.emit(workflow_data.copy()))
                     elif result.get("executed") is False:
                         error_msg = result.get("error", "未知错误")
-                        self.execution_log.emit(f"❌ {tool_name} 执行失败: {error_msg}")
+                        # 延迟发送执行日志，避免频繁更新导致卡顿
+                        from qgis.PyQt.QtCore import QTimer
+                        QTimer.singleShot(50, lambda: self.execution_log.emit(f"❌ {tool_name} 执行失败: {error_msg}"))
                         # 更新工作流步骤状态为失败
                         if workflow_data["steps"]:
                             workflow_data["steps"][-1]["status"] = "failed"
                             workflow_data["steps"][-1]["error"] = error_msg
-                            self.workflow_update.emit(workflow_data)
+                            QTimer.singleShot(50, lambda: self.workflow_update.emit(workflow_data.copy()))
                     else:
-                        self.execution_log.emit(f"✅ {tool_name} 执行成功")
+                        # 延迟发送执行日志，避免频繁更新导致卡顿
+                        from qgis.PyQt.QtCore import QTimer
+                        QTimer.singleShot(50, lambda: self.execution_log.emit(f"✅ {tool_name} 执行成功"))
                         # 更新工作流步骤状态为完成
                         if workflow_data["steps"]:
                             workflow_data["steps"][-1]["status"] = "completed"
-                            self.workflow_update.emit(workflow_data)
+                            QTimer.singleShot(50, lambda: self.workflow_update.emit(workflow_data.copy()))
                 except Exception as e:
                     error_msg = f"{str(e)}\n{tb.format_exc()}"
                     result_str = json.dumps({"error": error_msg}, ensure_ascii=False)
@@ -397,8 +408,9 @@ class Processor(QObject):
         # ── 更新工作流状态 ──
         workflow_data["status"] = "completed" if workflow == "withTool" else "completed"
         workflow_data["summary"] = f"任务执行完成，共 {len(workflow_data['steps'])} 个步骤"
-        # 发送工作流更新信号
-        self.workflow_update.emit(workflow_data)
+        # 延迟发送工作流更新信号，避免频繁更新导致卡顿
+        from qgis.PyQt.QtCore import QTimer
+        QTimer.singleShot(50, lambda: self.workflow_update.emit(workflow_data.copy()))
 
         # ── Cookbook 自动归档 ──
         try:

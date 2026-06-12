@@ -131,8 +131,11 @@ def add_vector_layer(path: str, name: str = None, provider: str = "ogr"):
         return {"error": f"无法加载矢量图层: {path}"}
 
     QgsProject.instance().addMapLayer(layer)
-    # 刷新地图画布，确保新图层立即显示
-    iface.mapCanvas().refresh()
+
+    # 延迟刷新地图画布，避免频繁刷新导致卡顿
+    from qgis.PyQt.QtCore import QTimer
+    QTimer.singleShot(100, lambda: iface.mapCanvas().refresh())
+
     return {
         "id": layer.id(),
         "name": layer.name(),
@@ -154,8 +157,11 @@ def add_raster_layer(path: str, name: str = None, provider: str = "gdal"):
         return {"error": f"无法加载栅格图层: {path}"}
 
     QgsProject.instance().addMapLayer(layer)
-    # 刷新地图画布，确保新图层立即显示
-    iface.mapCanvas().refresh()
+
+    # 延迟刷新地图画布，避免频繁刷新导致卡顿
+    from qgis.PyQt.QtCore import QTimer
+    QTimer.singleShot(100, lambda: iface.mapCanvas().refresh())
+
     return {
         "id": layer.id(),
         "name": layer.name(),
