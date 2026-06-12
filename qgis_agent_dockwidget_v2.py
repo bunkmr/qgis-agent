@@ -340,20 +340,114 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
 
     def update_workflow_display(self, workflow_data):
         """
-        更新工作流标签页的显示内容
+        更新工作流标签页的显示内容（使用pyvis生成交互式graph）
 
         Args:
             workflow_data: 工作流数据字典
         """
-        html_content = self._generate_workflow_html(workflow_data)
-        self.workflowWebView.setHtml(html_content)
+        try:
+            # 尝试使用pyvis生成交互式graph
+            html_content = self._generate_workflow_html_pyvis(workflow_data)
+            self.workflowWebView.setHtml(html_content)
+        except ImportError:
+            # 如果pyvis不可用，使用简化版本
+            html_content = self._generate_workflow_html_simple(workflow_data)
+            self.workflowWebView.setHtml(html_content)
 
         # 更新摘要
         if "summary" in workflow_data:
             self.lblWorkflowSummary.setText(workflow_data["summary"])
 
-    def _generate_workflow_html(self, workflow_data):
-        """生成工作流HTML内容"""
+    def _generate_workflow_html_pyvis(self, workflow_data):
+        """使用pyvis生成交互式工作流graph"""
+        try:
+            from pyvis.network import Network
+            import networkx as nx
+            import tempfile
+            import os
+
+            name = workflow_data.get("name", "未命名工作流")
+            steps = workflow_data.get("steps", [])
+
+            # 创建NetworkX图
+            G = nx.DiGraph()
+
+            # 添加起始节点
+            G.add_node("Start", label="开始", node_type="start")
+
+            # 添加步骤节点和边
+            prev_node = "Start"
+            for i, step in enumerate(steps):
+                step_id = step.get("id", f"step_{i+1}")
+                step_name = step.get("name", f"步骤 {i+1}")
+                step_status = step.get("status", "pending")
+                tool_name = step.get("tool", "unknown")
+
+                # 节点标签
+                label = f"{step_name}\n({tool_name})"
+
+                # 添加节点
+                G.add_node(step_id, label=label, node_type="operation", status=step_status)
+
+                # 添加边
+                G.add_edge(prev_node, step_id)
+
+                prev_node = step_id
+
+            # 添加结束节点
+            G.add_node("End", label="结束", node_type="end")
+            G.add_edge(prev_node, "End")
+
+            # 创建pyvis网络
+            net = Network(notebook=False, height="500px", width="100%", directed=True)
+            net.from_nx(G)
+
+            # 设置节点颜色和形状
+            status_colors = {
+                "pending": "#cccccc",
+                "running": "#ffcc00",
+                "completed": "#66cc66",
+                "failed": "#cc6666"
+            }
+
+            node_colors = []
+            for node in net.nodes:
+                node_type = node.get("node_type", "operation")
+                status = node.get("status", "pending")
+
+                if node_type == "start":
+                    node_colors.append("#4CAF50")  # 绿色
+                    node["shape"] = "diamond"
+                elif node_type == "end":
+                    node_colors.append("#9C27B0")  # 紫色
+                    node["shape"] = "diamond"
+                else:
+                    node_colors.append(status_colors.get(status, "#cccccc"))
+                    node["shape"] = "box"
+
+            # 应用颜色
+            for i, color in enumerate(node_colors):
+                net.nodes[i]["color"] = color
+                net.nodes[i]["font"] = {"size": 14}
+
+            # 保存为HTML文件
+            temp_dir = tempfile.gettempdir()
+            html_path = os.path.join(temp_dir, "workflow_graph.html")
+            net.save_graph(html_path)
+
+            # 读取HTML内容
+            with open(html_path, 'r', encoding='utf-8') as f:
+                html_content = f.read()
+
+            return html_content
+
+        except Exception as e:
+            print(f"Error generating pyvis graph: {e}")
+            # 回退到简单版本
+            return self._generate_workflow_html_simple(workflow_data)
+
+    def _generate_workflow_html_simple(self, workflow_data):
+        """生成简化版工作流HTML（无依赖）"""
         name = workflow_data.get("name", "未命名工作流")
         status = workflow_data.get("status", "pending")
         steps = workflow_data.get("steps", [])
