@@ -297,9 +297,8 @@ class Processor(QObject):
                     "tool": tool_name,
                     "args": tool_args
                 })
-                # 延迟发送工作流更新信号，避免频繁更新导致卡顿
-                from qgis.PyQt.QtCore import QTimer
-                QTimer.singleShot(50, lambda: self.workflow_update.emit(workflow_data.copy()))
+                # 只在最后一个工具调用时发送工作流更新信号，减少更新频率
+                # 其他工具调用不发送信号，等待执行完成后再更新
 
                 # ── RAG 检索增强：对危险工具，先查 API 文档 ──
                 if tool_name in ("execute_pyqgis", "execute_processing"):
@@ -338,32 +337,20 @@ class Processor(QObject):
                     # ── 发送执行日志 ──
                     if "error" in result:
                         error_msg = result.get("error", "未知错误")
-                        # 延迟发送执行日志，避免频繁更新导致卡顿
-                        from qgis.PyQt.QtCore import QTimer
-                        QTimer.singleShot(50, lambda: self.execution_log.emit(f"❌ {tool_name} 执行失败: {error_msg}"))
                         # 更新工作流步骤状态为失败
                         if workflow_data["steps"]:
                             workflow_data["steps"][-1]["status"] = "failed"
                             workflow_data["steps"][-1]["error"] = error_msg
-                            QTimer.singleShot(50, lambda: self.workflow_update.emit(workflow_data.copy()))
                     elif result.get("executed") is False:
                         error_msg = result.get("error", "未知错误")
-                        # 延迟发送执行日志，避免频繁更新导致卡顿
-                        from qgis.PyQt.QtCore import QTimer
-                        QTimer.singleShot(50, lambda: self.execution_log.emit(f"❌ {tool_name} 执行失败: {error_msg}"))
                         # 更新工作流步骤状态为失败
                         if workflow_data["steps"]:
                             workflow_data["steps"][-1]["status"] = "failed"
                             workflow_data["steps"][-1]["error"] = error_msg
-                            QTimer.singleShot(50, lambda: self.workflow_update.emit(workflow_data.copy()))
                     else:
-                        # 延迟发送执行日志，避免频繁更新导致卡顿
-                        from qgis.PyQt.QtCore import QTimer
-                        QTimer.singleShot(50, lambda: self.execution_log.emit(f"✅ {tool_name} 执行成功"))
                         # 更新工作流步骤状态为完成
                         if workflow_data["steps"]:
                             workflow_data["steps"][-1]["status"] = "completed"
-                            QTimer.singleShot(50, lambda: self.workflow_update.emit(workflow_data.copy()))
                 except Exception as e:
                     error_msg = f"{str(e)}\n{tb.format_exc()}"
                     result_str = json.dumps({"error": error_msg}, ensure_ascii=False)
@@ -405,12 +392,18 @@ class Processor(QObject):
         response_time = get_current_timestamp()
         prompt_id = f"{self.llm_id}::0::agent"
 
-        # ── 更新工作流状态 ──
+        # ── 更新工作流状态并发送最终更新 ──
         workflow_data["status"] = "completed" if workflow == "withTool" else "completed"
         workflow_data["summary"] = f"任务执行完成，共 {len(workflow_data['steps'])} 个步骤"
-        # 延迟发送工作流更新信号，避免频繁更新导致卡顿
-        from qgis.PyQt.QtCore import QTimer
-        QTimer.singleShot(50, lambda: self.workflow_update.emit(workflow_data.copy()))
+
+        # 发送最终的工作流更新信号
+        self.workflow_update.emit(workflow_data)
+
+        # 发送最终的执行日志
+        if workflow_data["steps"]:
+            success_count = sum(1 for s in workflow_data["steps"] if s.get("status") == "completed")
+            failed_count = sum(1 for s in workflow_data["steps"] if s.get("status") == "failed")
+            self.execution_log.emit(f"✅ 任务完成: {success_count} 成功, {failed_count} 失败")
 
         # ── Cookbook 自动归档 ──
         try:

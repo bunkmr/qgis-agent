@@ -188,8 +188,9 @@ def remove_layer(layer_id_or_name: str):
     removed_name = layer.name()
     removed_id = layer.id()
     project.removeMapLayer(removed_id)
-    # 刷新地图画布，确保图层移除后立即反映在画布上
-    iface.mapCanvas().refresh()
+    # 延迟刷新地图画布，避免频繁刷新导致卡顿
+    from qgis.PyQt.QtCore import QTimer
+    QTimer.singleShot(100, lambda: iface.mapCanvas().refresh())
     return {"removed": removed_name, "id": removed_id}
 
 
@@ -209,8 +210,9 @@ def zoom_to_layer(layer_id_or_name: str):
 
     iface.setActiveLayer(layer)
     iface.zoomToActiveLayer()
-    # 强制刷新画布
-    iface.mapCanvas().refresh()
+    # 延迟刷新地图画布，避免频繁刷新导致卡顿
+    from qgis.PyQt.QtCore import QTimer
+    QTimer.singleShot(100, lambda: iface.mapCanvas().refresh())
     return {"zoomed_to": layer.name()}
 
 
@@ -363,7 +365,9 @@ def load_project(path: str):
 
     project = QgsProject.instance()
     if project.read(path):
-        iface.mapCanvas().refresh()
+        # 延迟刷新地图画布，避免频繁刷新导致卡顿
+        from qgis.PyQt.QtCore import QTimer
+        QTimer.singleShot(100, lambda: iface.mapCanvas().refresh())
         return {"loaded": path, "layer_count": len(project.mapLayers())}
     else:
         return {"error": f"加载失败: {path}"}
