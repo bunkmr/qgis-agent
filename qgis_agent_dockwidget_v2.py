@@ -335,3 +335,260 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
                 self.searchPressed.emit(self.ptSearchConversationCard.toPlainText())
                 return True
         return super().eventFilter(obj, event)
+
+    # ── 工作流可视化方法 ──
+
+    def update_workflow_display(self, workflow_data):
+        """
+        更新工作流标签页的显示内容
+
+        Args:
+            workflow_data: 工作流数据字典
+        """
+        html_content = self._generate_workflow_html(workflow_data)
+        self.workflowWebView.setHtml(html_content)
+
+        # 更新摘要
+        if "summary" in workflow_data:
+            self.lblWorkflowSummary.setText(workflow_data["summary"])
+
+    def _generate_workflow_html(self, workflow_data):
+        """生成工作流HTML内容"""
+        name = workflow_data.get("name", "未命名工作流")
+        status = workflow_data.get("status", "pending")
+        steps = workflow_data.get("steps", [])
+
+        # 状态颜色映射
+        status_colors = {
+            "pending": "#cccccc",
+            "running": "#ffcc00",
+            "completed": "#66cc66",
+            "failed": "#cc6666"
+        }
+
+        status_icons = {
+            "pending": "⏳",
+            "running": "⚙️",
+            "completed": "✅",
+            "failed": "❌"
+        }
+
+        html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body {{
+    font-family: "Microsoft YaHei", Arial, sans-serif;
+    padding: 10px;
+    font-size: 12px;
+    margin: 0;
+}}
+.workflow-container {{
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    padding: 15px;
+    border-radius: 10px;
+    margin: 10px 0;
+}}
+.workflow-title {{
+    font-size: 16px;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 10px;
+}}
+.workflow-status {{
+    display: inline-block;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 15px;
+}}
+.step-container {{
+    display: flex;
+    align-items: center;
+    margin: 10px 0;
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}}
+.step-icon {{
+    font-size: 24px;
+    margin-right: 15px;
+    min-width: 40px;
+    text-align: center;
+}}
+.step-info {{
+    flex: 1;
+}}
+.step-name {{
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 3px;
+}}
+.step-tool {{
+    font-size: 11px;
+    color: #666;
+}}
+.step-status {{
+    padding: 3px 10px;
+    border-radius: 15px;
+    font-size: 11px;
+    font-weight: bold;
+}}
+.arrow {{
+    text-align: center;
+    font-size: 20px;
+    color: #3498db;
+    margin: 5px 0;
+}}
+</style>
+</head>
+<body>
+<div class="workflow-container">
+    <div class="workflow-title">🔄 {name}</div>
+    <div class="workflow-status" style="background-color: {status_colors.get(status, '#cccccc')}">
+        {status_icons.get(status, '❓')} {status.upper()}
+    </div>
+"""
+
+        for i, step in enumerate(steps):
+            step_status = step.get("status", "pending")
+            step_icon = status_icons.get(step_status, "❓")
+            step_color = status_colors.get(step_status, "#cccccc")
+
+            html += f"""
+    <div class="step-container">
+        <div class="step-icon">{step_icon}</div>
+        <div class="step-info">
+            <div class="step-name">{step.get('name', f'步骤 {i+1}')}</div>
+            <div class="step-tool">🔧 {step.get('tool', 'unknown')}</div>
+        </div>
+        <div class="step-status" style="background-color: {step_color}; color: white;">
+            {step_status.upper()}
+        </div>
+    </div>
+"""
+            if i < len(steps) - 1:
+                html += '    <div class="arrow">↓</div>\n'
+
+        html += """
+</div>
+</body>
+</html>
+"""
+        return html
+
+    def clear_workflow_display(self):
+        """清空工作流显示"""
+        self.workflowWebView.setHtml("""
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body {
+    font-family: "Microsoft YaHei", Arial, sans-serif;
+    padding: 20px;
+    text-align: center;
+    color: #666;
+}
+.icon { font-size: 48px; margin-bottom: 15px; }
+.title { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 10px; }
+.desc { font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="icon">🔄</div>
+<div class="title">等待任务执行...</div>
+<div class="desc">执行任务后，工作流将在此可视化展示。</div>
+</body>
+</html>
+""")
+        self.lblWorkflowSummary.setText("")
+
+    # ── 报告页签方法 ──
+
+    def update_code_editor(self, code):
+        """更新代码编辑器"""
+        self.codeEditor.setPlainText(code)
+
+    def update_execution_log(self, log_text):
+        """更新执行日志"""
+        self.executionLog.setPlainText(log_text)
+
+    def append_execution_log(self, log_text):
+        """追加执行日志"""
+        self.executionLog.appendPlainText(log_text)
+
+    def show_debug_analysis(self, analysis):
+        """显示错误分析"""
+        self.lblDebugAnalysis.setVisible(True)
+        self.debugAnalysisText.setVisible(True)
+
+        html = f"""
+<div style="font-family: Arial; font-size: 12px;">
+    <p><strong>错误类型:</strong> {analysis.get('error_category', 'unknown')}</p>
+    <p><strong>置信度:</strong> {analysis.get('confidence', 0)*100:.1f}%</p>
+    <p><strong>建议:</strong></p>
+    <ul>
+"""
+        for suggestion in analysis.get('suggestions', []):
+            html += f"        <li>{suggestion}</li>\n"
+
+        html += """    </ul>
+</div>
+"""
+        self.debugAnalysisText.setHtml(html)
+
+    def hide_debug_analysis(self):
+        """隐藏错误分析"""
+        self.lblDebugAnalysis.setVisible(False)
+        self.debugAnalysisText.setVisible(False)
+
+    def copy_code_to_clipboard(self):
+        """复制代码到剪贴板"""
+        from qgis.PyQt.QtWidgets import QApplication
+        code = self.codeEditor.toPlainText()
+        if code:
+            QApplication.clipboard().setText(code)
+            return True
+        return False
+
+    def save_code_to_file(self):
+        """保存代码到文件"""
+        from qgis.PyQt.QtWidgets import QFileDialog
+        code = self.codeEditor.toPlainText()
+        if not code:
+            return None
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "保存代码", "", "Python Files (*.py);;All Files (*)"
+        )
+        if file_path:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(code)
+            return file_path
+        return None
+
+    def load_code_from_file(self):
+        """从文件加载代码"""
+        from qgis.PyQt.QtWidgets import QFileDialog
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "打开代码文件", "", "Python Files (*.py);;All Files (*)"
+        )
+        if file_path:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                code = f.read()
+            self.codeEditor.setPlainText(code)
+            return code
+        return None
+
+    def clear_code_editor(self):
+        """清空代码编辑器"""
+        self.codeEditor.clear()
+        self.executionLog.clear()
+        self.hide_debug_analysis()
