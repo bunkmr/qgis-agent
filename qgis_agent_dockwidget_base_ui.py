@@ -212,10 +212,16 @@ class Ui_QGISAgentDockWidget(object):
         self.lblWorkflowHint.setWordWrap(True)
         self.lblWorkflowHint.setStyleSheet("color: #666; font-size: 11px;")
 
-        # 工作流可视化区域
-        self.workflowWebView = QtWidgets.QTextBrowser()
-        self.workflowWebView.setOpenExternalLinks(True)
-        self.workflowWebView.setHtml("<html><body><h3>等待任务执行...</h3><p>执行任务后，工作流将在此可视化展示。</p></body></html>")
+        # 工作流可视化区域（使用QWebView，参考SpatialAnalysisAgent）
+        try:
+            from PyQt5.QtWebKitWidgets import QWebView
+            self.workflowWebView = QWebView()
+            self.workflowWebView.setHtml("<html><body><h3>等待任务执行...</h3><p>执行任务后，工作流将在此可视化展示。</p></body></html>")
+        except ImportError:
+            # 如果QWebView不可用，使用QTextBrowser
+            self.workflowWebView = QtWidgets.QTextBrowser()
+            self.workflowWebView.setOpenExternalLinks(True)
+            self.workflowWebView.setHtml("<html><body><h3>等待任务执行...</h3><p>执行任务后，工作流将在此可视化展示。</p></body></html>")
 
         # 工作流摘要
         self.lblWorkflowSummary = QtWidgets.QLabel("")

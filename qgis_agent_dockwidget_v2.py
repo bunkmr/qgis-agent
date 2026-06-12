@@ -340,18 +340,186 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
 
     def update_workflow_display(self, workflow_data):
         """
-        更新工作流标签页的显示内容
+        更新工作流标签页的显示内容（参考SpatialAnalysisAgent的方式）
 
         Args:
             workflow_data: 工作流数据字典
         """
-        # 使用纯HTML/CSS生成工作流graph（QTextBrowser不支持JavaScript）
-        html_content = self._generate_workflow_html(workflow_data)
-        self.workflowWebView.setHtml(html_content)
+        try:
+            # 生成HTML文件并保存到磁盘
+            html_path = self._generate_workflow_html_file(workflow_data)
 
-        # 更新摘要
-        if "summary" in workflow_data:
-            self.lblWorkflowSummary.setText(workflow_data["summary"])
+            # 加载HTML文件到QWebView
+            if hasattr(self.workflowWebView, 'load'):
+                # QWebView - 使用load方法
+                from qgis.PyQt.QtCore import QUrl
+                self.workflowWebView.load(QUrl.fromLocalFile(html_path))
+            else:
+                # QTextBrowser - 使用setHtml方法
+                with open(html_path, 'r', encoding='utf-8') as f:
+                    html_content = f.read()
+                self.workflowWebView.setHtml(html_content)
+
+            # 更新摘要
+            if "summary" in workflow_data:
+                self.lblWorkflowSummary.setText(workflow_data["summary"])
+
+        except Exception as e:
+            print(f"Error updating workflow display: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _generate_workflow_html_file(self, workflow_data):
+        """
+        生成工作流HTML文件并保存到磁盘
+
+        Returns:
+            str: HTML文件路径
+        """
+        import tempfile
+        import os
+
+        name = workflow_data.get("name", "未命名工作流")
+        steps = workflow_data.get("steps", [])
+
+        # 状态颜色映射
+        status_colors = {
+            "pending": "#cccccc",
+            "running": "#ffcc00",
+            "completed": "#66cc66",
+            "failed": "#cc6666"
+        }
+
+        status_icons = {
+            "pending": "⏳",
+            "running": "⚙️",
+            "completed": "✅",
+            "failed": "❌"
+        }
+
+        # 生成HTML内容
+        html = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body {{
+    font-family: "Microsoft YaHei", Arial, sans-serif;
+    padding: 10px;
+    font-size: 12px;
+    margin: 0;
+    background-color: #f5f5f5;
+}}
+.workflow-container {{
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}}
+.workflow-title {{
+    font-size: 16px;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 10px;
+}}
+.workflow-status {{
+    display: inline-block;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 15px;
+}}
+.steps-container {{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}}
+.step-node {{
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    color: white;
+    min-width: 250px;
+    margin: 5px 0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}}
+.step-icon {{
+    font-size: 20px;
+    margin-right: 15px;
+}}
+.step-info {{
+    flex: 1;
+}}
+.step-name {{
+    font-size: 14px;
+    margin-bottom: 3px;
+}}
+.step-tool {{
+    font-size: 11px;
+    opacity: 0.9;
+}}
+.arrow {{
+    font-size: 24px;
+    color: #3498db;
+    margin: 8px 0;
+}}
+</style>
+</head>
+<body>
+<div class="workflow-container">
+    <div class="workflow-title">🔄 {name}</div>
+    <div class="workflow-status" style="background-color: {status_colors.get(workflow_data.get('status', 'pending'), '#cccccc')}">
+        {status_icons.get(workflow_data.get('status', 'pending'), '❓')} {workflow_data.get('status', 'pending').upper()}
+    </div>
+    <div class="steps-container">
+        <div class="step-node" style="background: linear-gradient(135deg, #4CAF50, #45a049); border-radius: 50px;">
+            <span class="step-icon">▶</span>
+            <span class="step-info">开始</span>
+        </div>
+"""
+
+        for i, step in enumerate(steps):
+            step_status = step.get("status", "pending")
+            step_icon = status_icons.get(step_status, "❓")
+            step_name = step.get('name', f'步骤 {i+1}')
+            tool_name = step.get('tool', 'unknown')
+            step_color = status_colors.get(step_status, "#cccccc")
+
+            html += f"""
+        <div class="arrow">↓</div>
+        <div class="step-node" style="background: linear-gradient(135deg, {step_color}, {step_color}dd);">
+            <span class="step-icon">{step_icon}</span>
+            <span class="step-info">
+                <div class="step-name">{step_name}</div>
+                <div class="step-tool">🔧 {tool_name}</div>
+            </span>
+        </div>
+"""
+
+        html += """
+        <div class="arrow">↓</div>
+        <div class="step-node" style="background: linear-gradient(135deg, #9C27B0, #7B1FA2); border-radius: 50px;">
+            <span class="step-icon">⏹</span>
+            <span class="step-info">结束</span>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+"""
+
+        # 保存HTML文件到临时目录
+        temp_dir = tempfile.gettempdir()
+        html_path = os.path.join(temp_dir, "qgis_agent_workflow.html")
+
+        with open(html_path, 'w', encoding='utf-8') as f:
+            f.write(html)
+
+        return html_path
 
     def _generate_workflow_html_pyvis(self, workflow_data):
         """使用pyvis生成交互式工作流graph"""
