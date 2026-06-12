@@ -332,7 +332,7 @@ class Ui_QGISAgentDockWidget(object):
         QtCore.QMetaObject.connectSlotsByName(QGISAgentDockWidget)
 
     def _get_about_html(self):
-        """生成帮助/关于页面的HTML内容"""
+        """生成帮助/关于页面的HTML内容（纯HTML/CSS，不依赖JavaScript）"""
         return """
 <!DOCTYPE html>
 <html>
@@ -422,13 +422,6 @@ a {
 a:hover {
     text-decoration: underline;
 }
-.mermaid {
-    background-color: #f9f9f9;
-    padding: 10px;
-    border-radius: 5px;
-    margin: 10px 0;
-    text-align: center;
-}
 .feature-box {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -444,11 +437,65 @@ a:hover {
     color: #888;
     font-size: 11px;
 }
+/* 架构图样式 */
+.arch-box {
+    background: #f9f9f9;
+    border: 2px solid #3498db;
+    border-radius: 10px;
+    padding: 15px;
+    margin: 15px 0;
+}
+.arch-title {
+    background: #3498db;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 5px;
+    font-weight: bold;
+    display: inline-block;
+    margin-bottom: 10px;
+}
+.arch-item {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 5px 0;
+    display: flex;
+    align-items: center;
+}
+.arch-icon {
+    font-size: 20px;
+    margin-right: 10px;
+}
+.arch-arrow {
+    text-align: center;
+    font-size: 20px;
+    color: #3498db;
+    margin: 5px 0;
+}
+/* 流程图样式 */
+.flow-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 15px 0;
+}
+.flow-step {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 25px;
+    font-size: 12px;
+    text-align: center;
+    min-width: 120px;
+}
+.flow-arrow {
+    font-size: 24px;
+    color: #3498db;
+}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-<script>
-mermaid.initialize({ startOnLoad: true, theme: 'default' });
-</script>
 </head>
 <body>
 
@@ -468,39 +515,29 @@ mermaid.initialize({ startOnLoad: true, theme: 'default' });
 
 <h2>🏗️ 系统架构</h2>
 
-<div class="mermaid">
-graph TB
-    subgraph UI["🖥️ QGIS 主线程"]
-        A["QGISAgent<br/>主控制器"]
-        B["DockWidget<br/>UI 面板"]
-        C["Conversation<br/>会话管理"]
-    end
+<div class="arch-box">
+<div class="arch-title">🖥️ QGIS 主线程</div>
+<div class="arch-item"><span class="arch-icon">🧩</span> <strong>QGISAgent</strong> - 主控制器</div>
+<div class="arch-item"><span class="arch-icon">🪟</span> <strong>DockWidget</strong> - UI 面板</div>
+<div class="arch-item"><span class="arch-icon">💬</span> <strong>Conversation</strong> - 会话管理</div>
 
-    subgraph WORKER["⚙️ 工作线程"]
-        D["ToolAgentWorker<br/>异步执行"]
-        E["Processor<br/>Agent 循环"]
-    end
+<div class="arch-arrow">↓</div>
 
-    subgraph TOOLS["🔩 工具层"]
-        F["call_tool()<br/>线程桥"]
-        G["15+ QGIS 工具"]
-    end
+<div class="arch-title">⚙️ 工作线程</div>
+<div class="arch-item"><span class="arch-icon">🔧</span> <strong>ToolAgentWorker</strong> - 异步执行</div>
+<div class="arch-item"><span class="arch-icon">🧠</span> <strong>Processor</strong> - Agent 循环</div>
 
-    subgraph RAG["📚 RAG 引擎"]
-        H["DocStore<br/>SQLite FTS5"]
-        I["Retriever<br/>API 检索"]
-        J["ToolDocs<br/>679 工具"]
-    end
+<div class="arch-arrow">↓</div>
 
-    A --> B
-    A --> C
-    C --> D
-    D --> E
-    E --> F
-    F --> G
-    E --> I
-    I --> H
-    E --> J
+<div class="arch-title">📚 RAG 引擎</div>
+<div class="arch-item"><span class="arch-icon">📖</span> <strong>DocStore</strong> - SQLite FTS5 (380+ API)</div>
+<div class="arch-item"><span class="arch-icon">🧰</span> <strong>ToolDocs</strong> - 679 个 Processing 工具</div>
+
+<div class="arch-arrow">↓</div>
+
+<div class="arch-title">🔩 QGIS 工具层</div>
+<div class="arch-item"><span class="arch-icon">📞</span> <strong>call_tool()</strong> - 线程桥</div>
+<div class="arch-item"><span class="arch-icon">🗺️</span> <strong>QGIS API</strong> - QgsProject / iface / Processing</div>
 </div>
 
 <h2>🚀 快速开始</h2>
@@ -531,15 +568,16 @@ graph TB
 
 <h3>📚 RAG API 文档检索</h3>
 <p>执行代码前自动查询 PyQGIS API 签名和参数：</p>
-<pre>
-用户: 对道路图层做缓冲区分析
-↓
-RAG 检索: QgsVectorLayer, processing.run
-↓
-LLM 生成: 准确的 PyQGIS 代码
-↓
-执行: 缓冲区分析完成
-</pre>
+
+<div class="flow-container">
+<div class="flow-step">👤 用户请求</div>
+<div class="flow-arrow">→</div>
+<div class="flow-step">🔍 RAG 检索</div>
+<div class="flow-arrow">→</div>
+<div class="flow-step">🧠 LLM 生成</div>
+<div class="flow-arrow">→</div>
+<div class="flow-step">⚙️ 执行分析</div>
+</div>
 
 <h3>🐛 SmartDebugger 智能调试</h3>
 <p>代码执行失败时，自动分析错误并提供修复建议：</p>
@@ -553,11 +591,16 @@ LLM 生成: 准确的 PyQGIS 代码
 
 <h3>🔄 工作流固化</h3>
 <p>将对话中的工具调用序列保存为可重用工作流：</p>
-<pre>
-第一次: 对道路做缓冲 → 保存结果
-↓ 录制工作流
-第二次: 对河流做缓冲 → 直接执行（参数替换）
-</pre>
+
+<div class="flow-container">
+<div class="flow-step">📝 第一次对话</div>
+<div class="flow-arrow">→</div>
+<div class="flow-step">💾 录制工作流</div>
+<div class="flow-arrow">→</div>
+<div class="flow-step">🔄 第二次对话</div>
+<div class="flow-arrow">→</div>
+<div class="flow-step">⚡ 直接执行</div>
+</div>
 
 <h3>❓ 主动提问</h3>
 <p>识别模糊请求，主动向用户澄清：</p>
@@ -585,18 +628,16 @@ Agent: 请具体说明要分析什么：
 
 <p>内置 <strong>679 个 QGIS Processing 工具</strong> 文档：</p>
 
-<div class="mermaid">
-graph LR
-    A[用户请求] --> B{工具检索}
-    B --> C[native:buffer]
-    B --> D[native:clip]
-    B --> E[native:intersection]
-    B --> F[... 679 个工具]
-    C --> G[生成代码]
-    D --> G
-    E --> G
-    F --> G
-    G --> H[执行分析]
+<div class="flow-container">
+<div class="flow-step">👤 用户请求</div>
+<div class="flow-arrow">→</div>
+<div class="flow-step">🔍 工具检索</div>
+<div class="flow-arrow">→</div>
+<div class="flow-step">📋 参数说明</div>
+<div class="flow-arrow">→</div>
+<div class="flow-step">💻 生成代码</div>
+<div class="flow-arrow">→</div>
+<div class="flow-step">⚙️ 执行分析</div>
 </div>
 
 <h3>支持的工具类型</h3>
