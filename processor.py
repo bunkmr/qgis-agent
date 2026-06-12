@@ -102,6 +102,8 @@ class Processor(QObject):
     thinking = pyqtSignal(str)  # 实时流式思考内容
     tool_status = pyqtSignal(str)  # 工具执行状态提示
     workflow_update = pyqtSignal(dict)  # 工作流更新信号
+    code_update = pyqtSignal(str)  # 代码更新信号
+    execution_log = pyqtSignal(str)  # 执行日志信号
     error_signal = pyqtSignal(str)
 
     def __init__(self, llm_id, conversation_id, dataloader, temperature=0.0):
@@ -309,6 +311,14 @@ class Processor(QObject):
                     except Exception:
                         pass  # RAG 检索失败不阻塞流程
 
+                # ── 发送代码到报告页签 ──
+                if tool_name == "execute_pyqgis" and "code" in tool_args:
+                    self.code_update.emit(tool_args["code"])
+                    self.execution_log.emit(f"▶ 执行 PyQGIS 代码...")
+                elif tool_name == "execute_processing":
+                    code_snippet = f"processing.run('{tool_name}', {json.dumps(tool_args, indent=2)})"
+                    self.execution_log.emit(f"▶ 执行 Processing 算法: {tool_name}")
+
                 # 执行工具
                 try:
                     result = call_tool(tool_name, tool_args)
@@ -320,6 +330,12 @@ class Processor(QObject):
                     })
                     workflow = "withTool"
 
+                    # ── 发送执行日志 ──
+                    if result.get("executed"):
+                        self.execution_log.emit(f"✅ {tool_name} 执行成功")
+                    else:
+                        self.execution_log.emit(f"❌ {tool_name} 执行失败: {result.get('error', '')}")
+
                     # ── 更新工作流步骤状态为完成 ──
                     if workflow_data["steps"]:
                         workflow_data["steps"][-1]["status"] = "completed"
@@ -327,6 +343,7 @@ class Processor(QObject):
                         self.workflow_update.emit(workflow_data)
                 except Exception as e:
                     result_str = json.dumps({"error": str(e), "traceback": tb.format_exc()}, ensure_ascii=False)
+                    self.execution_log.emit(f"❌ {tool_name} 执行异常: {str(e)}")
 
                     # ── 更新工作流步骤状态为失败 ──
                     if workflow_data["steps"]:

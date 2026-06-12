@@ -440,3 +440,86 @@ body {
 </html>
 """)
         self.lblWorkflowSummary.setText("")
+
+    # ── 报告页签方法 ──
+
+    def update_code_editor(self, code):
+        """更新代码编辑器"""
+        self.codeEditor.setPlainText(code)
+
+    def update_execution_log(self, log_text):
+        """更新执行日志"""
+        self.executionLog.setPlainText(log_text)
+
+    def append_execution_log(self, log_text):
+        """追加执行日志"""
+        self.executionLog.appendPlainText(log_text)
+
+    def show_debug_analysis(self, analysis):
+        """显示错误分析"""
+        self.lblDebugAnalysis.setVisible(True)
+        self.debugAnalysisText.setVisible(True)
+
+        html = f"""
+<div style="font-family: Arial; font-size: 12px;">
+    <p><strong>错误类型:</strong> {analysis.get('error_category', 'unknown')}</p>
+    <p><strong>置信度:</strong> {analysis.get('confidence', 0)*100:.1f}%</p>
+    <p><strong>建议:</strong></p>
+    <ul>
+"""
+        for suggestion in analysis.get('suggestions', []):
+            html += f"        <li>{suggestion}</li>\n"
+
+        html += """    </ul>
+</div>
+"""
+        self.debugAnalysisText.setHtml(html)
+
+    def hide_debug_analysis(self):
+        """隐藏错误分析"""
+        self.lblDebugAnalysis.setVisible(False)
+        self.debugAnalysisText.setVisible(False)
+
+    def copy_code_to_clipboard(self):
+        """复制代码到剪贴板"""
+        from qgis.PyQt.QtWidgets import QApplication
+        code = self.codeEditor.toPlainText()
+        if code:
+            QApplication.clipboard().setText(code)
+            return True
+        return False
+
+    def save_code_to_file(self):
+        """保存代码到文件"""
+        from qgis.PyQt.QtWidgets import QFileDialog
+        code = self.codeEditor.toPlainText()
+        if not code:
+            return None
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "保存代码", "", "Python Files (*.py);;All Files (*)"
+        )
+        if file_path:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(code)
+            return file_path
+        return None
+
+    def load_code_from_file(self):
+        """从文件加载代码"""
+        from qgis.PyQt.QtWidgets import QFileDialog
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "打开代码文件", "", "Python Files (*.py);;All Files (*)"
+        )
+        if file_path:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                code = f.read()
+            self.codeEditor.setPlainText(code)
+            return code
+        return None
+
+    def clear_code_editor(self):
+        """清空代码编辑器"""
+        self.codeEditor.clear()
+        self.executionLog.clear()
+        self.hide_debug_analysis()

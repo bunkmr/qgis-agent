@@ -195,6 +195,13 @@ class QGISAgent:
         self.dockwidget.searchPressed.connect(self._on_search_conversation)
         self.dockwidget.switchClearMode.connect(self._switch_clear_mode)
 
+        # 报告页签按钮事件
+        self.dockwidget.pbRunCode.clicked.connect(self._on_run_code)
+        self.dockwidget.pbLoadCode.clicked.connect(self._on_load_code)
+        self.dockwidget.pbCopyCode.clicked.connect(self._on_copy_code)
+        self.dockwidget.pbSaveCode.clicked.connect(self._on_save_code)
+        self.dockwidget.pbClearCode.clicked.connect(self._on_clear_code)
+
         # 温度滑块变化时保存
         self.dockwidget.sliderTemperature.valueChanged.connect(self._on_temperature_changed)
 
@@ -305,6 +312,8 @@ class QGISAgent:
             self.live_conversation.llm_thinking.connect(self._on_thinking)
             self.live_conversation.llm_tool_status.connect(self._on_tool_status)
             self.live_conversation.llm_workflow_update.connect(self._on_workflow_update)
+            self.live_conversation.llm_code_update.connect(self._on_code_update)
+            self.live_conversation.llm_execution_log.connect(self._on_execution_log)
             self.live_conversation.llm_interrupted.connect(self._on_response_error)
             self.live_conversation.update_user_prompt(message, response_type)
 
@@ -360,6 +369,65 @@ class QGISAgent:
     def _on_workflow_update(self, workflow_data):
         """更新工作流可视化显示"""
         self.dockwidget.update_workflow_display(workflow_data)
+
+    def _on_code_update(self, code):
+        """更新代码编辑器"""
+        self.dockwidget.update_code_editor(code)
+
+    def _on_execution_log(self, log_text):
+        """追加执行日志"""
+        self.dockwidget.append_execution_log(log_text)
+
+    # ── 报告页签按钮事件 ──
+
+    def _on_run_code(self):
+        """运行代码编辑器中的代码"""
+        code = self.dockwidget.codeEditor.toPlainText()
+        if not code:
+            self.dockwidget.append_execution_log("⚠️ 没有可执行的代码")
+            return
+
+        self.dockwidget.append_execution_log(f"▶ 开始执行代码...")
+        self.dockwidget.hide_debug_analysis()
+
+        # 在工作线程中执行代码
+        from .qgis_tools import execute_pyqgis
+        result = execute_pyqgis(code)
+
+        if result.get("executed"):
+            self.dockwidget.append_execution_log(f"✅ 代码执行成功")
+            if result.get("stdout"):
+                self.dockwidget.append_execution_log(f"输出:\n{result['stdout']}")
+            if result.get("stderr"):
+                self.dockwidget.append_execution_log(f"警告:\n{result['stderr']}")
+        else:
+            self.dockwidget.append_execution_log(f"❌ 代码执行失败: {result.get('error', 'unknown')}")
+
+            # 显示错误分析
+            if "debug_analysis" in result:
+                self.dockwidget.show_debug_analysis(result["debug_analysis"])
+
+    def _on_load_code(self):
+        """从文件加载代码"""
+        code = self.dockwidget.load_code_from_file()
+        if code:
+            self.dockwidget.append_execution_log(f"📂 已加载代码文件")
+
+    def _on_copy_code(self):
+        """复制代码到剪贴板"""
+        if self.dockwidget.copy_code_to_clipboard():
+            self.dockwidget.append_execution_log(f"📋 代码已复制到剪贴板")
+
+    def _on_save_code(self):
+        """保存代码到文件"""
+        file_path = self.dockwidget.save_code_to_file()
+        if file_path:
+            self.dockwidget.append_execution_log(f"💾 代码已保存到: {file_path}")
+
+    def _on_clear_code(self):
+        """清空代码编辑器"""
+        self.dockwidget.clear_code_editor()
+        self.dockwidget.append_execution_log(f"🗑️ 已清空代码编辑器")
 
     def _on_response_error(self, error_message):
         self.dockwidget.set_sending_state(False)

@@ -267,25 +267,36 @@ class Ui_QGISAgentDockWidget(object):
 
         # 代码操作按钮
         self.codeButtonLayout = QtWidgets.QHBoxLayout()
-        self.pbCopyCode = QtWidgets.QPushButton("复制代码")
-        self.pbCopyCode.setStyleSheet("""
-            QPushButton { background-color: #5BC0DE; color: white; border-radius: 4px; padding: 4px 12px; }
-            QPushButton:hover { background-color: #46B8DA; }
-        """)
-        self.pbSaveCode = QtWidgets.QPushButton("保存代码")
-        self.pbSaveCode.setStyleSheet("""
-            QPushButton { background-color: #5CB85C; color: white; border-radius: 4px; padding: 4px 12px; }
+        self.pbRunCode = QtWidgets.QPushButton("▶ 运行代码")
+        self.pbRunCode.setStyleSheet("""
+            QPushButton { background-color: #5CB85C; color: white; border-radius: 4px; padding: 6px 12px; font-weight: bold; }
             QPushButton:hover { background-color: #4CAE4C; }
         """)
-        self.pbClearCode = QtWidgets.QPushButton("清空")
-        self.pbClearCode.setStyleSheet("""
-            QPushButton { background-color: #F0AD4E; color: white; border-radius: 4px; padding: 4px 12px; }
-            QPushButton:hover { background-color: #EC971F; }
+        self.pbLoadCode = QtWidgets.QPushButton("📂 从文件读取")
+        self.pbLoadCode.setStyleSheet("""
+            QPushButton { background-color: #5BC0DE; color: white; border-radius: 4px; padding: 6px 12px; }
+            QPushButton:hover { background-color: #46B8DA; }
         """)
+        self.pbCopyCode = QtWidgets.QPushButton("📋 复制代码")
+        self.pbCopyCode.setStyleSheet("""
+            QPushButton { background-color: #6c757d; color: white; border-radius: 4px; padding: 6px 12px; }
+            QPushButton:hover { background-color: #5a6268; }
+        """)
+        self.pbSaveCode = QtWidgets.QPushButton("💾 保存代码")
+        self.pbSaveCode.setStyleSheet("""
+            QPushButton { background-color: #17a2b8; color: white; border-radius: 4px; padding: 6px 12px; }
+            QPushButton:hover { background-color: #138496; }
+        """)
+        self.pbClearCode = QtWidgets.QPushButton("🗑️ 清空")
+        self.pbClearCode.setStyleSheet("""
+            QPushButton { background-color: #dc3545; color: white; border-radius: 4px; padding: 6px 12px; }
+            QPushButton:hover { background-color: #c82333; }
+        """)
+        self.codeButtonLayout.addWidget(self.pbRunCode)
+        self.codeButtonLayout.addWidget(self.pbLoadCode)
         self.codeButtonLayout.addWidget(self.pbCopyCode)
         self.codeButtonLayout.addWidget(self.pbSaveCode)
         self.codeButtonLayout.addWidget(self.pbClearCode)
-        self.codeButtonLayout.addStretch()
 
         # 执行日志
         self.lblExecutionLog = QtWidgets.QLabel("执行日志:")
