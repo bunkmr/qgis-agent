@@ -1,35 +1,41 @@
 tool_ID = "native:clip"
-tool_name = "Clip"
-brief_description = """Clips a vector layer using another polygon layer as a cookie cutter. Features that fall within the clip layer are extracted."""
-full_description = """Clips a vector layer using another polygon layer as a cookie cutter. This is a fundamental GIS operation for extracting features that fall within a specific area of interest."""
+tool_name = "clip"
+brief_description = """This algorithm creates a new point layer, with points representing the centroid of the geometries in an input layer.
+The attributes associated to each point in the output layer are the same ones associated to the original features."""
+full_description = """This algorithm creates a new point layer, with points representing the centroid of the geometries in an input layer.
+The attributes associated to each point in the output layer are the same ones associated to the original features."""
 parameters = """
-INPUT: Input vector layer to clip. Type: [vector: any]
-OVERLAY: Overlay layer (cookie cutter). Type: [vector: polygon]
-OUTPUT: Clipped layer. Type: [vector: any]
+INPUT:
+ALL_PARTS:
+OUTPUT: Specify the output (buffer) layer. One of: Create Temporary Layer (TEMPORARY_OUTPUT); Save to File…;
+        Save to Geopackage…; Save to Database Table…; Append to Layer…
+
 """
 code_example = """
-import processing
+# Import necessary modules
 from qgis.core import QgsVectorLayer, QgsProject
+import processing
 
-def clip_layer():
-    # Input parameters
-    input_path = 'D:/Data/Features.shp'
-    overlay_path = 'D:/Data/AOI.shp'
-    output_path = 'D:/Output/clipped_output.shp'
+def generate_centroids():
+    # Define input and output paths
+    input_path = 'D:/Data/Data.shp'
+    output_path = 'C:/output_path/output_layer.shp'
+  
 
-    # Run clip algorithm
-    parameters = {
-        'INPUT': input_path,
-        'OVERLAY': overlay_path,
+    # Load the shapefile as a vector layer
+    input_layer = QgsVectorLayer(input_path, 'Census Tracts', 'ogr')
+
+    # Run the Centroids algorithm
+    result = processing.run('native:centroids', {
+        'INPUT': input_layer,
+        'ALL_PARTS': False,  # Generates centroid for each feature (geom in multi-part geometries)
         'OUTPUT': output_path
-    }
+    })
 
-    result = processing.run('native:clip', parameters)
+    # Load the centroid layer to QGIS
+    centroids_layer = QgsVectorLayer(result['OUTPUT'], 'Centroids', 'ogr')
+    QgsProject.instance().addMapLayer(centroids_layer)
 
-    # Load result layer
-    clipped_layer = QgsVectorLayer(result['OUTPUT'], 'Clipped', 'ogr')
-    QgsProject.instance().addMapLayer(clipped_layer)
-
-# Execute
-clip_layer()
+# Execute the function
+generate_centroids()
 """

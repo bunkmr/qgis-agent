@@ -1,38 +1,43 @@
 tool_ID = "native:extractbyattribute"
-tool_name = "Extract by Attribute"
-brief_description = """Creates vector layer containing only features that match an attribute condition."""
-full_description = """Creates vector layer containing only features that match an attribute condition. Useful for filtering data based on specific attribute values."""
+tool_name = "extractbyattribute"
+brief_description = """This algorithm creates a new vector layer that only contains matching features from an input layer.
+The criteria for adding features to the resulting layer is defined based on the values of an attribute from the input layer."""
+full_description = """This algorithm creates a new vector layer that only contains matching features from an input layer.
+The criteria for adding features to the resulting layer is defined based on the values of an attribute from the input layer."""
 parameters = """
-INPUT: Input vector layer. Type: [vector: any]
-FIELD: Field to filter on. Type: [tablefield: any]
-OPERATOR: Comparison operator. Options: = (0), != (1), > (2), >= (3), < (4), <= (5), begins with (6), contains (7), does not contain (8), is null (9), is not null (10). Type: [enumeration]
-VALUE: Value to compare. Type: [string]
-OUTPUT: Extracted layer. Type: [vector: any]
+INPUT: Vector layer to select features in
+FIELD: Filtering field of the layer
+OPERATOR: Many different operators are available: ['0': '=', '1': '!=', '2': '>', '3':'>=', '4':'<', '5':'<=',
+        '6': 'begins with', '7': 'contains', '8':'is null', '9': 'is not null', '10':'does not contain
+VALUE: Value to be evaluated
+OUTPUT: Specify the output layer. One of: Create Temporary Layer (TEMPORARY_OUTPUT); Save to File…;
+        Save to Geopackage…; Save to Database Table…; Append to Layer…
+
 """
 code_example = """
 import processing
-from qgis.core import QgsVectorLayer, QgsProject
+from qgis.core import QgsProject,QgsVectorLayer
+def select_by_attribute(input_layer_path):
+    # Define the parameters
+    input_layer = QgsVectorLayer(input_layer_path, "Input Layer", "ogr")
 
-def extract_by_attribute():
-    # Input parameters
-    input_path = 'D:/Data/Buildings.shp'
-    output_path = 'D:/Output/extracted_output.shp'
-
-    # Extract features where HEIGHT > 10
+    # Define the parameters Example below:
+    field_name =
+    operator = 4  # Select the appropriate operator based on the task. Many different operators are available: ['0': '=', '1': '!=', '2': '>', '3':'>=', '4':'<', '5':'<=', '6': 'begins with', '7': 'contains', '8':'is null', '9': 'is not null', '10':'does not contain
+    value = '3000'
     parameters = {
-        'INPUT': input_path,
-        'FIELD': 'HEIGHT',
-        'OPERATOR': 2,  # >
-        'VALUE': '10',
-        'OUTPUT': output_path
+        'INPUT': input_layer_path,
+        'FIELD': 'Population',
+        'OPERATOR': operator,
+        'VALUE': 3000,
+        'OUTPUT': output_layer_path
     }
-
-    result = processing.run('native:extractbyattribute', parameters)
-
-    # Load result layer
-    extracted_layer = QgsVectorLayer(result['OUTPUT'], 'Extracted', 'ogr')
-    QgsProject.instance().addMapLayer(extracted_layer)
-
-# Execute
-extract_by_attribute()
+                                                
+    result = processing.run("native:extractbyattribute", parameters)
+                                               
+    output_layer = QgsVectorLayer(output_layer_path, 'Population_less_than_3000', 'ogr')
+    QgsProject.instance().addMapLayer(output_layer)
+input_layer_path = "D:/Data/PrevalenceData.shp"                               
+output_layer_path ="D:/workspace_directory/output_layer.shp"
+extractbyattribute(input_layer_path)
 """

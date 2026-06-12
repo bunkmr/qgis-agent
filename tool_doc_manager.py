@@ -10,15 +10,30 @@ from typing import Dict, List, Optional, Any
 
 
 class ToolDocManager:
-    """Manages TOML tool documentation for RAG retrieval"""
+    """Manages tool documentation for RAG retrieval"""
 
-    def __init__(self, docs_dir: str = None):
+    def __init__(self, docs_dir: str = None, index_file: str = None):
         self.docs_dir = docs_dir or os.path.join(os.path.dirname(__file__), "tool_docs")
+        self.index_file = index_file or os.path.join(os.path.dirname(__file__), "tool_docs_index.json")
         self.tools_index: Dict[str, Dict] = {}
-        self._load_all_docs()
+        self._load_from_index()
+
+    def _load_from_index(self):
+        """Load tools from JSON index file (faster)"""
+        if os.path.exists(self.index_file):
+            try:
+                with open(self.index_file, 'r', encoding='utf-8') as f:
+                    self.tools_index = json.load(f)
+                print(f"Loaded {len(self.tools_index)} tools from index")
+            except Exception as e:
+                print(f"Error loading index: {e}")
+                self._load_all_docs()
+        else:
+            print("Index file not found, loading from TOML files...")
+            self._load_all_docs()
 
     def _load_all_docs(self):
-        """Load all TOML documentation files"""
+        """Load all TOML documentation files (fallback)"""
         if not os.path.exists(self.docs_dir):
             print(f"Warning: Tool docs directory not found: {self.docs_dir}")
             return
@@ -38,7 +53,7 @@ class ToolDocManager:
             tool_id = doc.get("tool_ID", "")
             if tool_id:
                 self.tools_index[tool_id] = {
-                    "tool_ID": tool_id,
+                    "tool_id": tool_id,
                     "tool_name": doc.get("tool_name", ""),
                     "brief_description": doc.get("brief_description", ""),
                     "full_description": doc.get("full_description", ""),
@@ -46,9 +61,8 @@ class ToolDocManager:
                     "code_example": doc.get("code_example", ""),
                     "file_path": filepath
                 }
-                print(f"Loaded tool doc: {tool_id}")
         except Exception as e:
-            print(f"Error loading {filepath}: {e}")
+            pass  # Skip invalid TOML files
 
     def get_tool_doc(self, tool_id: str) -> Optional[Dict]:
         """Get documentation for a specific tool"""
