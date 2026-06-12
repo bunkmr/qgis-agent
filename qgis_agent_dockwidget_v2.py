@@ -441,8 +441,14 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
 
             return html_content
 
+        except ImportError as e:
+            # pyvis或networkx未安装，使用简化版本
+            print(f"pyvis/networkx not available: {e}")
+            return self._generate_workflow_html_simple(workflow_data)
         except Exception as e:
             print(f"Error generating pyvis graph: {e}")
+            import traceback
+            traceback.print_exc()
             # 回退到简单版本
             return self._generate_workflow_html_simple(workflow_data)
 
