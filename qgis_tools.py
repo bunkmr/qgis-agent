@@ -130,11 +130,18 @@ def add_vector_layer(path: str, name: str = None, provider: str = "ogr"):
     if not layer.isValid():
         return {"error": f"无法加载矢量图层: {path}"}
 
-    QgsProject.instance().addMapLayer(layer)
+    # 优化：临时禁用地图渲染，添加图层后再启用
+    canvas = iface.mapCanvas()
+    canvas.setRenderFlag(False)
 
-    # 延迟刷新地图画布，避免频繁刷新导致卡顿
-    from qgis.PyQt.QtCore import QTimer
-    QTimer.singleShot(100, lambda: iface.mapCanvas().refresh())
+    try:
+        QgsProject.instance().addMapLayer(layer)
+    finally:
+        # 重新启用地图渲染
+        canvas.setRenderFlag(True)
+        # 使用singleShot延迟刷新，确保渲染标志已设置
+        from qgis.PyQt.QtCore import QTimer
+        QTimer.singleShot(50, canvas.refresh)
 
     return {
         "id": layer.id(),
@@ -156,11 +163,18 @@ def add_raster_layer(path: str, name: str = None, provider: str = "gdal"):
     if not layer.isValid():
         return {"error": f"无法加载栅格图层: {path}"}
 
-    QgsProject.instance().addMapLayer(layer)
+    # 优化：临时禁用地图渲染，添加图层后再启用
+    canvas = iface.mapCanvas()
+    canvas.setRenderFlag(False)
 
-    # 延迟刷新地图画布，避免频繁刷新导致卡顿
-    from qgis.PyQt.QtCore import QTimer
-    QTimer.singleShot(100, lambda: iface.mapCanvas().refresh())
+    try:
+        QgsProject.instance().addMapLayer(layer)
+    finally:
+        # 重新启用地图渲染
+        canvas.setRenderFlag(True)
+        # 使用singleShot延迟刷新
+        from qgis.PyQt.QtCore import QTimer
+        QTimer.singleShot(50, canvas.refresh)
 
     return {
         "id": layer.id(),
@@ -187,10 +201,20 @@ def remove_layer(layer_id_or_name: str):
 
     removed_name = layer.name()
     removed_id = layer.id()
-    project.removeMapLayer(removed_id)
-    # 延迟刷新地图画布，避免频繁刷新导致卡顿
-    from qgis.PyQt.QtCore import QTimer
-    QTimer.singleShot(100, lambda: iface.mapCanvas().refresh())
+
+    # 优化：临时禁用地图渲染，移除图层后再启用
+    canvas = iface.mapCanvas()
+    canvas.setRenderFlag(False)
+
+    try:
+        project.removeMapLayer(removed_id)
+    finally:
+        # 重新启用地图渲染
+        canvas.setRenderFlag(True)
+        # 使用singleShot延迟刷新
+        from qgis.PyQt.QtCore import QTimer
+        QTimer.singleShot(50, canvas.refresh)
+
     return {"removed": removed_name, "id": removed_id}
 
 
@@ -208,11 +232,20 @@ def zoom_to_layer(layer_id_or_name: str):
     if not layer:
         return {"error": f"未找到图层: {layer_id_or_name}"}
 
-    iface.setActiveLayer(layer)
-    iface.zoomToActiveLayer()
-    # 延迟刷新地图画布，避免频繁刷新导致卡顿
-    from qgis.PyQt.QtCore import QTimer
-    QTimer.singleShot(100, lambda: iface.mapCanvas().refresh())
+    # 优化：临时禁用地图渲染，缩放后再启用
+    canvas = iface.mapCanvas()
+    canvas.setRenderFlag(False)
+
+    try:
+        iface.setActiveLayer(layer)
+        iface.zoomToActiveLayer()
+    finally:
+        # 重新启用地图渲染
+        canvas.setRenderFlag(True)
+        # 使用singleShot延迟刷新
+        from qgis.PyQt.QtCore import QTimer
+        QTimer.singleShot(50, canvas.refresh)
+
     return {"zoomed_to": layer.name()}
 
 
@@ -364,13 +397,22 @@ def load_project(path: str):
         return {"error": f"文件不存在: {path}"}
 
     project = QgsProject.instance()
-    if project.read(path):
-        # 延迟刷新地图画布，避免频繁刷新导致卡顿
+
+    # 优化：临时禁用地图渲染，加载项目后再启用
+    canvas = iface.mapCanvas()
+    canvas.setRenderFlag(False)
+
+    try:
+        if project.read(path):
+            return {"loaded": path, "layer_count": len(project.mapLayers())}
+        else:
+            return {"error": f"加载失败: {path}"}
+    finally:
+        # 重新启用地图渲染
+        canvas.setRenderFlag(True)
+        # 使用singleShot延迟刷新
         from qgis.PyQt.QtCore import QTimer
-        QTimer.singleShot(100, lambda: iface.mapCanvas().refresh())
-        return {"loaded": path, "layer_count": len(project.mapLayers())}
-    else:
-        return {"error": f"加载失败: {path}"}
+        QTimer.singleShot(50, canvas.refresh)
 
 
 def set_layer_labeling(
