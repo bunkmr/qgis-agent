@@ -12,7 +12,7 @@ from qgis.PyQt.QtGui import QIcon, QTextCursor, QClipboard, QPalette
 from qgis.PyQt.QtWidgets import (
     QAction, QDialog, QPushButton, QPlainTextEdit, QLineEdit,
     QDockWidget, QApplication, QMessageBox, QLabel, QVBoxLayout, QHBoxLayout,
-    QComboBox, QTableWidgetItem, QFrame
+    QComboBox, QTableWidgetItem, QFrame, QToolBar
 )
 from qgis.utils import iface
 
@@ -56,6 +56,9 @@ class QGISAgent:
         self.toolbar = self.iface.addToolBar("QGIS Agent")
         self.toolbar.setObjectName("QGISAgentToolbar")
 
+        # 将工具栏放到Python控制台后面
+        self._position_toolbar_after_console()
+
         self.plugin_is_active = False
         self.dockwidget = None
         self.edit_dialog = None
@@ -65,6 +68,27 @@ class QGISAgent:
         self.console_text = ""
         self.console_tracker = QTimer()
         self.new_editor = None
+
+    def _position_toolbar_after_console(self):
+        """将工具栏放到Python控制台后面"""
+        try:
+            # 获取主窗口
+            main_window = self.iface.mainWindow()
+
+            # 查找Python控制台工具栏
+            for toolbar in main_window.findChildren(QToolBar):
+                title = toolbar.windowTitle()
+                if "Python" in title or "Console" in title or "控制台" in title:
+                    # 获取工具栏区域
+                    area = main_window.toolBarArea(toolbar)
+                    # 将QGIS Agent工具栏添加到同一区域
+                    main_window.addToolBar(area, self.toolbar)
+                    # 设置为最后一个位置
+                    main_window.addToolBarBreak(area)
+                    break
+        except Exception as e:
+            # 如果找不到Python控制台，使用默认位置
+            print(f"Warning: Could not find Python console toolbar: {e}")
 
     def tr(self, message):
         return QCoreApplication.translate("QGISAgent", message)
