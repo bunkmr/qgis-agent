@@ -617,6 +617,10 @@ body {
     def append_execution_log(self, log_text):
         """追加执行日志"""
         self.executionLog.appendPlainText(log_text)
+        # 自动滚动到底部
+        self.executionLog.verticalScrollBar().setValue(
+            self.executionLog.verticalScrollBar().maximum()
+        )
 
     def show_debug_analysis(self, analysis):
         """显示错误分析"""

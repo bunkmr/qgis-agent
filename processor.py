@@ -331,18 +331,31 @@ class Processor(QObject):
                     workflow = "withTool"
 
                     # ── 发送执行日志 ──
-                    if result.get("executed"):
-                        self.execution_log.emit(f"✅ {tool_name} 执行成功")
+                    if "error" in result:
+                        error_msg = result.get("error", "未知错误")
+                        self.execution_log.emit(f"❌ {tool_name} 执行失败: {error_msg}")
+                        # 更新工作流步骤状态为失败
+                        if workflow_data["steps"]:
+                            workflow_data["steps"][-1]["status"] = "failed"
+                            workflow_data["steps"][-1]["error"] = error_msg
+                            self.workflow_update.emit(workflow_data)
+                    elif result.get("executed") is False:
+                        error_msg = result.get("error", "未知错误")
+                        self.execution_log.emit(f"❌ {tool_name} 执行失败: {error_msg}")
+                        # 更新工作流步骤状态为失败
+                        if workflow_data["steps"]:
+                            workflow_data["steps"][-1]["status"] = "failed"
+                            workflow_data["steps"][-1]["error"] = error_msg
+                            self.workflow_update.emit(workflow_data)
                     else:
-                        self.execution_log.emit(f"❌ {tool_name} 执行失败: {result.get('error', '')}")
-
-                    # ── 更新工作流步骤状态为完成 ──
-                    if workflow_data["steps"]:
-                        workflow_data["steps"][-1]["status"] = "completed"
-                        # 发送工作流更新信号
-                        self.workflow_update.emit(workflow_data)
+                        self.execution_log.emit(f"✅ {tool_name} 执行成功")
+                        # 更新工作流步骤状态为完成
+                        if workflow_data["steps"]:
+                            workflow_data["steps"][-1]["status"] = "completed"
+                            self.workflow_update.emit(workflow_data)
                 except Exception as e:
-                    result_str = json.dumps({"error": str(e), "traceback": tb.format_exc()}, ensure_ascii=False)
+                    error_msg = f"{str(e)}\n{tb.format_exc()}"
+                    result_str = json.dumps({"error": error_msg}, ensure_ascii=False)
                     self.execution_log.emit(f"❌ {tool_name} 执行异常: {str(e)}")
 
                     # ── 更新工作流步骤状态为失败 ──
