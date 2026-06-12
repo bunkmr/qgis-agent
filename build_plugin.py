@@ -70,6 +70,10 @@ EXCLUDE_PATTERNS = [
     "TEST_INSTRUCTIONS.md",
     "THINKING_DISPLAY_README.md",
     "requirements.txt",  # 使用 setup.py 或 pyproject.toml 代替
+    # 文档文件（可选，根据需要包含）
+    "V2.1_OPTIMIZATIONS.md",
+    "RAG_SYSTEMS.md",
+    "INTERACTIVE_FEATURES.md",
 ]
 
 

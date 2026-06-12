@@ -227,6 +227,20 @@ class Ui_QGISAgentDockWidget(object):
         self.workflowLayout.addWidget(self.workflowWebView, 1)
         self.workflowLayout.addWidget(self.lblWorkflowSummary)
 
+        # --- 帮助/关于标签页 ---
+        self.tbAbout = QtWidgets.QWidget()
+        self.tbAbout.setObjectName("tbAbout")
+        self.aboutLayout = QtWidgets.QVBoxLayout(self.tbAbout)
+        self.aboutLayout.setContentsMargins(4, 4, 4, 4)
+        self.aboutLayout.setSpacing(4)
+
+        # 帮助内容显示区域
+        self.aboutWebView = QtWidgets.QTextBrowser()
+        self.aboutWebView.setOpenExternalLinks(True)
+        self.aboutWebView.setHtml(self._get_about_html())
+
+        self.aboutLayout.addWidget(self.aboutWebView)
+
         # --- 报告标签页 ---
         self.tbReports = QtWidgets.QWidget()
         self.tbReports.setObjectName("tbReports")
@@ -308,6 +322,7 @@ class Ui_QGISAgentDockWidget(object):
         self.twTabs.addTab(self.tbSettings, "模型配置")
         self.twTabs.addTab(self.tbWorkflow, "工作流")
         self.twTabs.addTab(self.tbReports, "报告")
+        self.twTabs.addTab(self.tbAbout, "帮助")
 
         self.mainLayout.addWidget(self.twTabs)
 
@@ -315,6 +330,354 @@ class Ui_QGISAgentDockWidget(object):
 
         self.retranslateUi()
         QtCore.QMetaObject.connectSlotsByName(QGISAgentDockWidget)
+
+    def _get_about_html(self):
+        """生成帮助/关于页面的HTML内容"""
+        return """
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body {
+    font-family: "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    padding: 10px;
+    font-size: 12px;
+}
+h1 {
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+    font-size: 18px;
+}
+h2 {
+    color: #2980b9;
+    margin-top: 20px;
+    font-size: 14px;
+}
+h3 {
+    color: #27ae60;
+    font-size: 13px;
+}
+code {
+    background-color: #f4f4f4;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: Consolas, monospace;
+    font-size: 11px;
+}
+pre {
+    background-color: #f8f8f8;
+    padding: 10px;
+    border-radius: 5px;
+    border-left: 4px solid #3498db;
+    overflow-x: auto;
+    font-size: 11px;
+}
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 10px 0;
+    font-size: 11px;
+}
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+th {
+    background-color: #3498db;
+    color: white;
+}
+tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+.tip {
+    background-color: #e7f3fe;
+    border-left: 4px solid #2196F3;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 4px;
+}
+.warning {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 4px;
+}
+ul, ol {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+li {
+    margin: 5px 0;
+}
+a {
+    color: #3498db;
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+.mermaid {
+    background-color: #f9f9f9;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+    text-align: center;
+}
+.feature-box {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px;
+    border-radius: 10px;
+    margin: 10px 0;
+}
+.feature-box h3 {
+    color: white;
+    margin-top: 0;
+}
+.version {
+    color: #888;
+    font-size: 11px;
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'default' });
+</script>
+</head>
+<body>
+
+<h1>🗺️ QGIS Agent</h1>
+<p class="version">版本 2.1.0 | 将大语言模型嵌入QGIS的智能助手</p>
+
+<div class="feature-box">
+<h3>✨ 核心亮点</h3>
+<ul>
+<li>📚 <strong>RAG API 文档检索</strong> - 380+ PyQGIS API 文档</li>
+<li>🧰 <strong>679 个 Processing 工具</strong> - 完整的工具文档</li>
+<li>🐛 <strong>SmartDebugger</strong> - 智能调试系统</li>
+<li>🔄 <strong>工作流固化</strong> - 可复用的任务流程</li>
+<li>❓ <strong>主动提问</strong> - 识别模糊请求</li>
+</ul>
+</div>
+
+<h2>🏗️ 系统架构</h2>
+
+<div class="mermaid">
+graph TB
+    subgraph UI["🖥️ QGIS 主线程"]
+        A["QGISAgent<br/>主控制器"]
+        B["DockWidget<br/>UI 面板"]
+        C["Conversation<br/>会话管理"]
+    end
+
+    subgraph WORKER["⚙️ 工作线程"]
+        D["ToolAgentWorker<br/>异步执行"]
+        E["Processor<br/>Agent 循环"]
+    end
+
+    subgraph TOOLS["🔩 工具层"]
+        F["call_tool()<br/>线程桥"]
+        G["15+ QGIS 工具"]
+    end
+
+    subgraph RAG["📚 RAG 引擎"]
+        H["DocStore<br/>SQLite FTS5"]
+        I["Retriever<br/>API 检索"]
+        J["ToolDocs<br/>679 工具"]
+    end
+
+    A --> B
+    A --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    E --> I
+    I --> H
+    E --> J
+</div>
+
+<h2>🚀 快速开始</h2>
+
+<h3>1. 配置 LLM API</h3>
+<ol>
+<li>打开 QGIS Agent 面板</li>
+<li>切换到 <strong>模型配置</strong> 标签页</li>
+<li>点击 <strong>+ 添加模型</strong></li>
+<li>填写 API 端点和密钥</li>
+</ol>
+
+<div class="tip">
+💡 <strong>支持的 LLM 提供商</strong>: DeepSeek, OpenAI, GLM, Gemini, MiMo, 以及任何 OpenAI 兼容 API
+</div>
+
+<h3>2. 基本使用</h3>
+<table>
+<tr><th>操作</th><th>示例指令</th></tr>
+<tr><td>查看图层</td><td><code>查看当前项目有哪些图层</code></td></tr>
+<tr><td>添加图层</td><td><code>添加图层 D:/data/roads.shp</code></td></tr>
+<tr><td>缓冲区分析</td><td><code>对道路图层做100米缓冲区分析</code></td></tr>
+<tr><td>裁剪数据</td><td><code>用AOI图层裁剪道路图层</code></td></tr>
+<tr><td>属性查询</td><td><code>筛选面积大于100的建筑</code></td></tr>
+</table>
+
+<h2>🔧 核心功能</h2>
+
+<h3>📚 RAG API 文档检索</h3>
+<p>执行代码前自动查询 PyQGIS API 签名和参数：</p>
+<pre>
+用户: 对道路图层做缓冲区分析
+↓
+RAG 检索: QgsVectorLayer, processing.run
+↓
+LLM 生成: 准确的 PyQGIS 代码
+↓
+执行: 缓冲区分析完成
+</pre>
+
+<h3>🐛 SmartDebugger 智能调试</h3>
+<p>代码执行失败时，自动分析错误并提供修复建议：</p>
+<table>
+<tr><th>错误类型</th><th>识别</th><th>建议</th></tr>
+<tr><td>ImportError</td><td>✅</td><td>检查库安装</td></tr>
+<tr><td>QgsVectorLayer 错误</td><td>✅</td><td>检查路径</td></tr>
+<tr><td>Processing 算法错误</td><td>✅</td><td>检查算法ID</td></tr>
+<tr><td>几何错误</td><td>✅</td><td>修复几何</td></tr>
+</table>
+
+<h3>🔄 工作流固化</h3>
+<p>将对话中的工具调用序列保存为可重用工作流：</p>
+<pre>
+第一次: 对道路做缓冲 → 保存结果
+↓ 录制工作流
+第二次: 对河流做缓冲 → 直接执行（参数替换）
+</pre>
+
+<h3>❓ 主动提问</h3>
+<p>识别模糊请求，主动向用户澄清：</p>
+<pre>
+用户: 分析一下
+Agent: 请具体说明要分析什么：
+1. 统计面积、长度、数量
+2. 分析空间分布特征
+3. 检查数据质量
+</pre>
+
+<h2>📋 内置工具</h2>
+
+<table>
+<tr><th>工具</th><th>功能</th><th>分类</th></tr>
+<tr><td><code>get_qgis_info</code></td><td>获取项目信息</td><td>📊 查询</td></tr>
+<tr><td><code>add_vector_layer</code></td><td>添加矢量图层</td><td>📂 管理</td></tr>
+<tr><td><code>execute_processing</code></td><td>执行 Processing 算法</td><td>⚙️ 分析</td></tr>
+<tr><td><code>execute_pyqgis</code></td><td>执行 PyQGIS 代码</td><td>🐍 高级</td></tr>
+<tr><td><code>search_pyqgis_api</code></td><td>检索 API 文档</td><td>📚 RAG</td></tr>
+<tr><td><code>render_map</code></td><td>渲染地图截图</td><td>📸 输出</td></tr>
+</table>
+
+<h2>🔌 工具文档系统</h2>
+
+<p>内置 <strong>679 个 QGIS Processing 工具</strong> 文档：</p>
+
+<div class="mermaid">
+graph LR
+    A[用户请求] --> B{工具检索}
+    B --> C[native:buffer]
+    B --> D[native:clip]
+    B --> E[native:intersection]
+    B --> F[... 679 个工具]
+    C --> G[生成代码]
+    D --> G
+    E --> G
+    F --> G
+    G --> H[执行分析]
+</div>
+
+<h3>支持的工具类型</h3>
+<ul>
+<li><strong>native:</strong> - QGIS 原生算法</li>
+<li><strong>gdal:</strong> - GDAL/OGR 工具</li>
+<li><strong>qgis:</strong> - QGIS 扩展工具</li>
+<li><strong>3d:</strong> - 3D 分析工具</li>
+</ul>
+
+<h2>💡 最佳实践</h2>
+
+<div class="tip">
+<strong>提示 1:</strong> 使用绝对路径<br>
+<code>添加图层 D:/data/roads.shp</code> ✓<br>
+<code>添加图层 roads.shp</code> ✗
+</div>
+
+<div class="tip">
+<strong>提示 2:</strong> 明确指定参数<br>
+<code>对道路图层做100米缓冲区分析</code> ✓<br>
+<code>分析一下</code> ✗
+</div>
+
+<div class="tip">
+<strong>提示 3:</strong> 分步骤执行复杂任务<br>
+1. 先加载数据<br>
+2. 再执行分析<br>
+3. 最后保存结果
+</div>
+
+<h2>🐛 故障排除</h2>
+
+<table>
+<tr><th>问题</th><th>解决方案</th></tr>
+<tr><td>插件无法加载</td><td>检查 QGIS 版本 ≥ 3.0</td></tr>
+<tr><td>API 调用失败</td><td>检查网络连接和 API 密钥</td></tr>
+<tr><td>代码执行错误</td><td>查看 SmartDebugger 的修复建议</td></tr>
+<tr><td>图层加载失败</td><td>检查文件路径是否正确</td></tr>
+</table>
+
+<h2>📄 更新日志</h2>
+
+<h3>v2.1.0 (2026-06-12)</h3>
+<ul>
+<li>✨ 集成 SmartDebugger 智能调试系统</li>
+<li>✨ 添加 Task Graph 任务流程可视化</li>
+<li>✨ 添加 Query Tuning 查询优化</li>
+<li>✨ 集成 679 个 Processing 工具文档</li>
+<li>✨ 添加 Code Review 代码审查</li>
+<li>✨ 添加 Workflow Recorder 工作流录制</li>
+<li>✨ 添加 Workflow Executor 工作流执行</li>
+<li>✨ 添加 Clarification Manager 主动提问</li>
+</ul>
+
+<h3>v1.2.0</h3>
+<ul>
+<li>✅ RAG API 文档检索</li>
+<li>✅ Cookbook 自我进化</li>
+<li>✅ 15 个内置 QGIS 工具</li>
+</ul>
+
+<h2>🔗 相关链接</h2>
+<ul>
+<li><a href="https://github.com/bunkmr/qgis_agent">GitHub 仓库</a></li>
+<li><a href="https://github.com/bunkmr/qgis_agent/issues">问题反馈</a></li>
+<li><a href="https://qgis.org">QGIS 官网</a></li>
+</ul>
+
+<h2>📝 许可证</h2>
+<p>MIT License</p>
+
+<hr>
+<p style="text-align: center; color: #888;">
+Made with ❤️ by bunkmr<br>
+Inspired by SpatialAnalysisAgent (GIBD, Penn State University)
+</p>
+
+</body>
+</html>
+"""
 
     def retranslateUi(self):
         pass
