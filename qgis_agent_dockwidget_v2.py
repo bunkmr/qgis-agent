@@ -340,19 +340,14 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
 
     def update_workflow_display(self, workflow_data):
         """
-        更新工作流标签页的显示内容（使用pyvis生成交互式graph）
+        更新工作流标签页的显示内容
 
         Args:
             workflow_data: 工作流数据字典
         """
-        try:
-            # 尝试使用pyvis生成交互式graph
-            html_content = self._generate_workflow_html_pyvis(workflow_data)
-            self.workflowWebView.setHtml(html_content)
-        except ImportError:
-            # 如果pyvis不可用，使用简化版本
-            html_content = self._generate_workflow_html_simple(workflow_data)
-            self.workflowWebView.setHtml(html_content)
+        # 使用纯HTML/CSS生成工作流graph（QTextBrowser不支持JavaScript）
+        html_content = self._generate_workflow_html(workflow_data)
+        self.workflowWebView.setHtml(html_content)
 
         # 更新摘要
         if "summary" in workflow_data:
@@ -452,8 +447,8 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
             # 回退到简单版本
             return self._generate_workflow_html_simple(workflow_data)
 
-    def _generate_workflow_html_simple(self, workflow_data):
-        """生成简化版工作流HTML（无依赖）"""
+    def _generate_workflow_html(self, workflow_data):
+        """生成工作流HTML（纯CSS实现，不依赖JavaScript）"""
         name = workflow_data.get("name", "未命名工作流")
         status = workflow_data.get("status", "pending")
         steps = workflow_data.get("steps", [])
@@ -506,44 +501,72 @@ body {{
     color: white;
     margin-bottom: 15px;
 }}
-.step-container {{
+.graph-container {{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+}}
+.node {{
     display: flex;
     align-items: center;
-    margin: 10px 0;
-    padding: 10px;
-    background: white;
+    justify-content: center;
+    padding: 12px 20px;
     border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}}
-.step-icon {{
-    font-size: 24px;
-    margin-right: 15px;
-    min-width: 40px;
+    font-weight: bold;
+    color: white;
+    min-width: 200px;
     text-align: center;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
 }}
-.step-info {{
-    flex: 1;
+.node-start {{
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }}
-.step-name {{
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 3px;
+.node-end {{
+    background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }}
-.step-tool {{
-    font-size: 11px;
-    color: #666;
+.node-operation {{
+    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+    border-radius: 10px;
 }}
-.step-status {{
-    padding: 3px 10px;
-    border-radius: 15px;
-    font-size: 11px;
-    font-weight: bold;
+.node-pending {{
+    background: linear-gradient(135deg, #9E9E9E 0%, #757575 100%);
+}}
+.node-running {{
+    background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+    animation: pulse 1.5s infinite;
+}}
+.node-completed {{
+    background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+}}
+.node-failed {{
+    background: linear-gradient(135deg, #f44336 0%, #D32F2F 100%);
+}}
+@keyframes pulse {{
+    0%, 100% {{ opacity: 1; }}
+    50% {{ opacity: 0.7; }}
 }}
 .arrow {{
-    text-align: center;
-    font-size: 20px;
+    font-size: 24px;
     color: #3498db;
-    margin: 5px 0;
+    margin: 8px 0;
+    font-weight: bold;
+}}
+.node-label {{
+    font-size: 12px;
+    margin-top: 5px;
 }}
 </style>
 </head>
@@ -553,29 +576,28 @@ body {{
     <div class="workflow-status" style="background-color: {status_colors.get(status, '#cccccc')}">
         {status_icons.get(status, '❓')} {status.upper()}
     </div>
+    <div class="graph-container">
+        <div class="node node-start">▶ 开始</div>
 """
 
         for i, step in enumerate(steps):
             step_status = step.get("status", "pending")
             step_icon = status_icons.get(step_status, "❓")
-            step_color = status_colors.get(step_status, "#cccccc")
+            step_name = step.get('name', f'步骤 {i+1}')
+            tool_name = step.get('tool', 'unknown')
 
             html += f"""
-    <div class="step-container">
-        <div class="step-icon">{step_icon}</div>
-        <div class="step-info">
-            <div class="step-name">{step.get('name', f'步骤 {i+1}')}</div>
-            <div class="step-tool">🔧 {step.get('tool', 'unknown')}</div>
+        <div class="arrow">↓</div>
+        <div class="node node-operation node-{step_status}">
+            {step_icon} {step_name}
+            <div class="node-label">🔧 {tool_name}</div>
         </div>
-        <div class="step-status" style="background-color: {step_color}; color: white;">
-            {step_status.upper()}
-        </div>
-    </div>
 """
-            if i < len(steps) - 1:
-                html += '    <div class="arrow">↓</div>\n'
 
         html += """
+        <div class="arrow">↓</div>
+        <div class="node node-end">⏹ 结束</div>
+    </div>
 </div>
 </body>
 </html>
