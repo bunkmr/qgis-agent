@@ -52,7 +52,11 @@ class DocStore:
 
     def _ensure_tables(self):
         """确保所有必要的表已创建"""
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        # 内存数据库不需要创建目录
+        if self.db_path != ":memory:":
+            db_dir = os.path.dirname(self.db_path)
+            if db_dir:
+                os.makedirs(db_dir, exist_ok=True)
         conn = self.get_connection()
 
         # API 文档主表

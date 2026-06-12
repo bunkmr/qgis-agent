@@ -197,9 +197,117 @@ class Ui_QGISAgentDockWidget(object):
         self.settingsLayout.addWidget(self.cbSkipConfirmSettings)
         self.settingsLayout.addStretch()
 
+        # --- 工作流标签页 ---
+        self.tbWorkflow = QtWidgets.QWidget()
+        self.tbWorkflow.setObjectName("tbWorkflow")
+        self.workflowLayout = QtWidgets.QVBoxLayout(self.tbWorkflow)
+        self.workflowLayout.setContentsMargins(4, 4, 4, 4)
+        self.workflowLayout.setSpacing(4)
+
+        # 工作流标题
+        self.lblWorkflowTitle = QtWidgets.QLabel("地理处理工作流")
+        self.lblWorkflowTitle.setStyleSheet("font-size: 14px; font-weight: bold;")
+
+        self.lblWorkflowHint = QtWidgets.QLabel("可视化展示任务执行流程和步骤状态")
+        self.lblWorkflowHint.setWordWrap(True)
+        self.lblWorkflowHint.setStyleSheet("color: #666; font-size: 11px;")
+
+        # 工作流可视化区域
+        self.workflowWebView = QtWidgets.QTextBrowser()
+        self.workflowWebView.setOpenExternalLinks(True)
+        self.workflowWebView.setHtml("<html><body><h3>等待任务执行...</h3><p>执行任务后，工作流将在此可视化展示。</p></body></html>")
+
+        # 工作流摘要
+        self.lblWorkflowSummary = QtWidgets.QLabel("")
+        self.lblWorkflowSummary.setStyleSheet("color: #888; font-size: 11px;")
+        self.lblWorkflowSummary.setWordWrap(True)
+
+        self.workflowLayout.addWidget(self.lblWorkflowTitle)
+        self.workflowLayout.addWidget(self.lblWorkflowHint)
+        self.workflowLayout.addWidget(self.workflowWebView, 1)
+        self.workflowLayout.addWidget(self.lblWorkflowSummary)
+
+        # --- 报告标签页 ---
+        self.tbReports = QtWidgets.QWidget()
+        self.tbReports.setObjectName("tbReports")
+        self.reportsLayout = QtWidgets.QVBoxLayout(self.tbReports)
+        self.reportsLayout.setContentsMargins(4, 4, 4, 4)
+        self.reportsLayout.setSpacing(4)
+
+        # 报告标题
+        self.lblReportsTitle = QtWidgets.QLabel("代码与执行报告")
+        self.lblReportsTitle.setStyleSheet("font-size: 14px; font-weight: bold;")
+
+        self.lblReportsHint = QtWidgets.QLabel("查看生成的代码和执行日志")
+        self.lblReportsHint.setWordWrap(True)
+        self.lblReportsHint.setStyleSheet("color: #666; font-size: 11px;")
+
+        # 代码编辑器
+        self.lblCode = QtWidgets.QLabel("生成的代码:")
+        self.lblCode.setStyleSheet("font-size: 12px; font-weight: bold; margin-top: 8px;")
+
+        self.codeEditor = QtWidgets.QPlainTextEdit()
+        self.codeEditor.setReadOnly(True)
+        self.codeEditor.setPlaceholderText("等待代码生成...")
+        self.codeEditor.setStyleSheet("font-family: Consolas, monospace; font-size: 11px;")
+
+        # 代码操作按钮
+        self.codeButtonLayout = QtWidgets.QHBoxLayout()
+        self.pbCopyCode = QtWidgets.QPushButton("复制代码")
+        self.pbCopyCode.setStyleSheet("""
+            QPushButton { background-color: #5BC0DE; color: white; border-radius: 4px; padding: 4px 12px; }
+            QPushButton:hover { background-color: #46B8DA; }
+        """)
+        self.pbSaveCode = QtWidgets.QPushButton("保存代码")
+        self.pbSaveCode.setStyleSheet("""
+            QPushButton { background-color: #5CB85C; color: white; border-radius: 4px; padding: 4px 12px; }
+            QPushButton:hover { background-color: #4CAE4C; }
+        """)
+        self.pbClearCode = QtWidgets.QPushButton("清空")
+        self.pbClearCode.setStyleSheet("""
+            QPushButton { background-color: #F0AD4E; color: white; border-radius: 4px; padding: 4px 12px; }
+            QPushButton:hover { background-color: #EC971F; }
+        """)
+        self.codeButtonLayout.addWidget(self.pbCopyCode)
+        self.codeButtonLayout.addWidget(self.pbSaveCode)
+        self.codeButtonLayout.addWidget(self.pbClearCode)
+        self.codeButtonLayout.addStretch()
+
+        # 执行日志
+        self.lblExecutionLog = QtWidgets.QLabel("执行日志:")
+        self.lblExecutionLog.setStyleSheet("font-size: 12px; font-weight: bold; margin-top: 8px;")
+
+        self.executionLog = QtWidgets.QPlainTextEdit()
+        self.executionLog.setReadOnly(True)
+        self.executionLog.setPlaceholderText("等待执行日志...")
+        self.executionLog.setMaximumHeight(150)
+        self.executionLog.setStyleSheet("font-family: Consolas, monospace; font-size: 10px; color: #666;")
+
+        # 错误分析（SmartDebugger）
+        self.lblDebugAnalysis = QtWidgets.QLabel("错误分析:")
+        self.lblDebugAnalysis.setStyleSheet("font-size: 12px; font-weight: bold; margin-top: 8px; color: #D9534F;")
+        self.lblDebugAnalysis.setVisible(False)
+
+        self.debugAnalysisText = QtWidgets.QTextBrowser()
+        self.debugAnalysisText.setOpenExternalLinks(True)
+        self.debugAnalysisText.setMaximumHeight(120)
+        self.debugAnalysisText.setVisible(False)
+
+        self.reportsLayout.addWidget(self.lblReportsTitle)
+        self.reportsLayout.addWidget(self.lblReportsHint)
+        self.reportsLayout.addWidget(self.lblCode)
+        self.reportsLayout.addWidget(self.codeEditor, 1)
+        self.reportsLayout.addLayout(self.codeButtonLayout)
+        self.reportsLayout.addWidget(self.lblExecutionLog)
+        self.reportsLayout.addWidget(self.executionLog)
+        self.reportsLayout.addWidget(self.lblDebugAnalysis)
+        self.reportsLayout.addWidget(self.debugAnalysisText)
+
         self.twTabs.addTab(self.tbMessages, "对话")
         self.twTabs.addTab(self.tbConversations, "对话列表")
         self.twTabs.addTab(self.tbSettings, "模型配置")
+        self.twTabs.addTab(self.tbWorkflow, "工作流")
+        self.twTabs.addTab(self.tbReports, "报告")
 
         self.mainLayout.addWidget(self.twTabs)
 

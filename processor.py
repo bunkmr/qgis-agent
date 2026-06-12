@@ -13,6 +13,9 @@ from .qgis_tools import TOOL_DEFINITIONS, call_tool
 # ── RAG 模块 ──
 from .rag import DocStore, APIDocRetriever, Cookbook
 
+# ── Query Tuning 模块 ──
+from .query_tuning import QueryTuner, DataOverview
+
 # Agent 系统提示词
 AGENT_SYSTEM_PROMPT = """你是一个 QGIS 地理信息系统智能助手，运行在 QGIS 桌面版内部。
 
@@ -125,6 +128,10 @@ class Processor(QObject):
         self.retriever = APIDocRetriever(self.doc_store)
         self.cookbook = Cookbook(self.doc_store)
 
+        # ── Query Tuning 组件 ──
+        self.query_tuner = QueryTuner(self.llm)
+        self.data_overview = DataOverview()
+
     def cancel(self):
         """设置中断标志，后台线程会在下一轮循环前检查"""
         self._cancelled = True
@@ -144,6 +151,16 @@ class Processor(QObject):
         from langchain_core.messages import ToolMessage
 
         request_time = get_current_timestamp()
+
+        # ── Query Tuning: 优化用户查询 ──
+        try:
+            data_overview_text = self.data_overview.get_data_overview()
+            tuned_query = self.query_tuner.tune_query(user_input, data_overview_text)
+            if thinking_callback:
+                thinking_callback(f"[Query Tuning] 优化查询: {tuned_query[:100]}...\n")
+        except Exception as e:
+            # Query tuning失败不影响主流程
+            tuned_query = user_input
 
         # ── 加载长期记忆 ──
         system_prompt = AGENT_SYSTEM_PROMPT

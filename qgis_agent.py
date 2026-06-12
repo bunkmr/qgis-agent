@@ -139,11 +139,18 @@ class QGISAgent:
         from .dataloader import DataLoader
         from .conversation import Conversation
         from .dialog_new_conversation import NewConversationDialog
-        from .qgis_agent_dockwidget import QGISAgentDockWidget
+        try:
+            from .qgis_agent_dockwidget_v2 import QGISAgentDockWidgetV2 as QGISAgentDockWidget
+        except ImportError:
+            from .qgis_agent_dockwidget import QGISAgentDockWidget
         from .utils import (
             generate_unique_id, get_current_timestamp, pack, extract_code, set_font_color
         )
         from .config import DB_NAME, PLUGIN_NAME
+
+        # 先创建 dockwidget（后续信号连接依赖它）
+        if self.dockwidget is None:
+            self.dockwidget = QGISAgentDockWidget()
 
         # 在主线程中初始化工具调度桥接器（必须在任何工具调用前完成）
         from .qgis_tools import _init_main_thread_bridge, set_code_confirm_callback, set_skip_all_confirms
@@ -162,11 +169,11 @@ class QGISAgent:
             lambda state: self.dockwidget.cbSkipConfirm.setChecked(state == Qt.Checked)
         )
 
+        # ── 恢复保存的设置 ──
+        self._load_saved_settings()
+
         # ── 初始化 RAG 索引（首次自动构建） ──
         self._init_rag_index()
-
-        if self.dockwidget is None:
-            self.dockwidget = QGISAgentDockWidget()
 
         self.dockwidget.closingPlugin.connect(self.onClosePlugin)
         self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
@@ -187,6 +194,9 @@ class QGISAgent:
         )
         self.dockwidget.searchPressed.connect(self._on_search_conversation)
         self.dockwidget.switchClearMode.connect(self._switch_clear_mode)
+
+        # 温度滑块变化时保存
+        self.dockwidget.sliderTemperature.valueChanged.connect(self._on_temperature_changed)
 
         # 标签页切换时刷新模型配置页
         self.dockwidget.twTabs.currentChanged.connect(self._on_tab_changed)
@@ -402,9 +412,30 @@ class QGISAgent:
         return result == QMessageBox.Yes
 
     def _on_skip_confirm_changed(self, state):
-        """当"跳过确认"checkbox 状态变化时更新全局开关"""
+        """当"跳过确认"checkbox 状态变化时更新全局开关并保存"""
         from .qgis_tools import set_skip_all_confirms
         set_skip_all_confirms(state == Qt.Checked)
+        # 保存设置
+        settings = QSettings("QGIS", "QGISAgent")
+        settings.setValue("skipConfirm", state == Qt.Checked)
+
+    def _load_saved_settings(self):
+        """加载保存的设置"""
+        settings = QSettings("QGIS", "QGISAgent")
+
+        # 恢复跳过确认设置
+        skip_confirm = settings.value("skipConfirm", False, type=bool)
+        self.dockwidget.cbSkipConfirm.setChecked(skip_confirm)
+        self.dockwidget.cbSkipConfirmSettings.setChecked(skip_confirm)
+
+        # 恢复温度设置
+        temperature = settings.value("temperature", 0, type=int)
+        self.dockwidget.sliderTemperature.setValue(temperature)
+
+    def _on_temperature_changed(self, value):
+        """温度滑块变化时保存设置"""
+        settings = QSettings("QGIS", "QGISAgent")
+        settings.setValue("temperature", value)
 
     def _init_rag_index(self):
         """初始化 RAG API 文档索引（首次使用时自动构建）"""

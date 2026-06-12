@@ -1,6 +1,6 @@
 # QGIS Agent 项目上下文
 
-> QGIS 桌面插件，将 LLM Agent 嵌入 QGIS，支持通过自然语言调用 11 个 QGIS 工具完成地理空间操作。
+> QGIS 桌面插件，将 LLM Agent 嵌入 QGIS，支持通过自然语言调用 15 个 QGIS 工具完成地理空间操作。集成 RAG API 文档检索和 Cookbook 自我进化机制。
 
 ---
 
@@ -25,7 +25,7 @@ graph TB
     subgraph TOOLS["🔩 主线程调度"]
         direction LR
         F["📞 call_tool()<br/><small>qgis_tools.py</small>"]
-        G["🧰 11 QGIS 工具函数"]
+        G["🧰 15 QGIS 工具函数"]
         H["🗺️ QGIS API<br/><small>QgsProject / iface / Processing</small>"]
     end
 
@@ -193,6 +193,7 @@ flowchart TD
         T11["💾 save/load_project"]
         TM1["🧠 save_memory"]
         TM2["📖 load_memory"]
+        TR1["📚 search_pyqgis_api"]
     end
 
     OUTPUT["🤖 AI 回复文本"]
@@ -214,21 +215,25 @@ flowchart TD
 
 ---
 
-## 11 个 QGIS 工具
+## 15 个 QGIS 工具
 
 | # | 工具名 | 功能 | 关键 QGIS API |
 |---|--------|------|---------------|
-| 1 | `get_qgis_info` | 获取版本、项目路径、CRS、图层列表 | `QgsProject.instance()`, `Qgis.QGIS_VERSION` |
-| 2 | `get_layer_features` | 获取矢量图层属性表 + 几何 WKT | `layer.getFeatures()`, `feature.geometry().asWkt()` |
-| 3 | `add_vector_layer` | 添加矢量图层 | `QgsVectorLayer()`, `QgsProject.addMapLayer()` |
-| 4 | `add_raster_layer` | 添加栅格图层 | `QgsRasterLayer()`, `QgsProject.addMapLayer()` |
-| 5 | `remove_layer` | 移除图层 | `QgsProject.removeMapLayer()` |
-| 6 | `zoom_to_layer` | 缩放到图层范围 | `iface.setActiveLayer()`, `iface.zoomToActiveLayer()` |
-| 7 | `execute_processing` | 执行 Processing 算法 | `processing.run()` |
-| 8 | `execute_pyqgis` | 执行任意 PyQGIS 代码 | `exec()` + stdout/stderr 重定向 |
-| 9 | `save_project` | 保存项目文件 | `QgsProject.write()` |
-| 10 | `load_project` | 加载项目文件 | `QgsProject.read()`, `iface.mapCanvas().refresh()` |
-| 11 | `render_map` | 渲染地图为 PNG | `QgsMapRendererParallelJob` |
+| 1 | `save_memory` | 保存长期记忆（追加到 MEMORY.md） | 文件 I/O + 去重 |
+| 2 | `load_memory` | 读取长期记忆文件全部内容 | 文件 I/O |
+| 3 | `search_pyqgis_api` | 检索 PyQGIS/GDAL/Processing API 文档 | `rag.retriever` → SQLite FTS5 |
+| 4 | `get_qgis_info` | 获取版本、项目路径、CRS、图层列表 | `QgsProject.instance()`, `Qgis.QGIS_VERSION` |
+| 5 | `get_layer_features` | 获取矢量图层属性表 + 几何 WKT | `layer.getFeatures()`, `feature.geometry().asWkt()` |
+| 6 | `add_vector_layer` | 添加矢量图层 | `QgsVectorLayer()`, `QgsProject.addMapLayer()` |
+| 7 | `add_raster_layer` | 添加栅格图层 | `QgsRasterLayer()`, `QgsProject.addMapLayer()` |
+| 8 | `remove_layer` | 移除图层 | `QgsProject.removeMapLayer()` |
+| 9 | `zoom_to_layer` | 缩放到图层范围 | `iface.setActiveLayer()`, `iface.zoomToActiveLayer()` |
+| 10 | `execute_processing` | 执行 Processing 算法 | `processing.run()` |
+| 11 | `execute_pyqgis` | 执行任意 PyQGIS 代码 | `exec()` + stdout/stderr 重定向 |
+| 12 | `set_layer_labeling` | 设置矢量图层标注（字体/颜色/缓冲/位置） | `QgsPalLayerSettings` |
+| 13 | `save_project` | 保存项目文件 | `QgsProject.write()` |
+| 14 | `load_project` | 加载项目文件 | `QgsProject.read()`, `iface.mapCanvas().refresh()` |
+| 15 | `render_map` | 渲染地图为 PNG | `QgsMapRendererParallelJob` |
 
 ---
 
@@ -271,6 +276,66 @@ flowchart TD
 
 ---
 
+## RAG API 文档检索
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#e3f2fd', 'primaryBorderColor': '#1976d2', 'lineColor': '#5a6a7a'}}}%%
+flowchart TD
+    START["🔍 search_pyqgis_api 被调用"]
+    QUERY["📝 用户查询关键词"]
+    KW["🔤 关键词提取 + 中英文翻译"]
+    FTS["🔎 SQLite FTS5 全文搜索"]
+    SCORE["📊 相关性排序 (Top-K)"]
+    RESULT["📋 返回 API 签名 + 参数说明"]
+
+    START --> QUERY
+    QUERY --> KW
+    KW --> FTS
+    FTS --> SCORE
+    SCORE --> RESULT
+    RESULT -->|"注入上下文"| PYQGIS["🐍 execute_pyqgis / ⚙️ execute_processing"]
+
+    style START fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#6a1b9a
+    style FTS fill:#1976d2,stroke:#0d47a1,color:#fff
+    style RESULT fill:#66bb6a,stroke:#2e7d32,color:#fff
+    style PYQGIS fill:#ffa726,stroke:#e65100,color:#fff
+```
+
+**模块**：`rag/doc_store.py`（SQLite FTS5 索引） + `rag/retriever.py`（检索逻辑） + `rag/doc_generator.py`（文档生成）
+- 首次运行自动构建 PyQGIS API 索引（从 QGIS 运行时反射）
+- `execute_pyqgis` 和 `execute_processing` 执行前自动检索相关 API 文档
+- 支持中英文关键词搜索
+
+---
+
+## Cookbook 自我进化
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#e3f2fd', 'primaryBorderColor': '#1976d2', 'lineColor': '#5a6a7a'}}}%%
+flowchart LR
+    SUCCESS["✅ 工具执行成功"]
+    ARCHIVE["📦 归档到案例库"]
+    SIMILAR["🔍 相似案例检索"]
+    INJECT["💉 注入 Agent 上下文"]
+
+    SUCCESS --> ARCHIVE
+    SIMILAR --> INJECT
+    INJECT --> LLM["🧠 LLM 推理"]
+
+    ARCHIVE -.->|"下次对话"| SIMILAR
+
+    style SUCCESS fill:#66bb6a,stroke:#2e7d32,color:#fff
+    style ARCHIVE fill:#1976d2,stroke:#0d47a1,color:#fff
+    style LLM fill:#ff6b6b,stroke:#c62828,color:#fff
+```
+
+**模块**：`rag/cookbook.py`
+- 每次工具成功执行后自动归档案例（任务描述 + 工具调用 + 结果摘要）
+- 新任务开始时检索相似历史案例，帮助 LLM 更快找到正确方案
+- 质量评分机制：高分案例优先注入
+
+---
+
 ## 对话历史存储
 
 - **存储引擎**：SQLite（`QGIS_Agent.db`）
@@ -297,6 +362,11 @@ graph LR
     TOOLS["🔩 qgis_tools.py"]
     WORKER["🔧 response_worker.py"]
 
+    RAG["📚 rag/"]
+    DOCSTORE["rag/doc_store.py"]
+    RETR["rag/retriever.py"]
+    COOK["rag/cookbook.py"]
+
     QAPI["🗺️ QGIS Core/GUI/Widgets"]
     SQL["📦 sqlite3"]
 
@@ -311,14 +381,23 @@ graph LR
     PROC --> TOOLS
     PROC --> WORKER
     PROC --> UTIL
+    PROC --> RAG
+
+    RAG --> DOCSTORE
+    RAG --> RETR
+    RAG --> COOK
+    DOCSTORE --> SQL
+    RETR --> DOCSTORE
 
     TOOLS --> QAPI
+    TOOLS --> RETR
     WORKER --> PROC
     DL --> SQL
 
     style MAIN fill:#1976d2,stroke:#0d47a1,color:#fff
     style PROC fill:#ff6b6b,stroke:#c62828,color:#fff
     style TOOLS fill:#ffa726,stroke:#e65100,color:#fff
+    style RAG fill:#9c27b0,stroke:#6a1b9a,color:#fff
     style QAPI fill:#66bb6a,stroke:#2e7d32,color:#fff
     style SQL fill:#7b1fa2,stroke:#4a148c,color:#fff
 ```
@@ -348,3 +427,6 @@ graph LR
 | LLM 遗忘上下文 | `agent_chat` 未加载历史 | `processor.py` 已修复：加载 SQLite 历史 + MEMORY.md |
 | `set_font_color` NameError | 局部导入未存为实例属性 | `qgis_agent.py` 已修复为 `self._set_font_color` |
 | 文本未左对齐 | HTML div 缺少 `text-align:left` | `qgis_agent_dockwidget.py` 已修复 |
+| `cbSkipConfirm` NoneType 错误 | dockwidget 创建在信号连接之后 | `qgis_agent.py:_init_plugin()` 已修复：dockwidget 创建前置 |
+| GitHub 文件内容乱码 | API push 时双重 base64 编码 | 使用 `/git/blobs` API + sha 构建 tree |
+| `requirements.txt` 缺少 `langchain_core` | 依赖声明不完整 | 代码中 `required_modules` 含 `langchain_core`，但 `requirements.txt` 未声明 |

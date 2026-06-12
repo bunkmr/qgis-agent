@@ -341,6 +341,7 @@ def generate_pyqgis_docs(
     include_runtime: bool = True,
     include_processing: bool = True,
     include_manual: bool = True,
+    include_official: bool = True,
     progress_callback=None,
 ) -> dict:
     """生成 PyQGIS API 文档索引。
@@ -352,15 +353,16 @@ def generate_pyqgis_docs(
         include_runtime: 是否通过 inspect 提取运行时 API
         include_processing: 是否提取 Processing 算法列表
         include_manual: 是否导入手动补充的文档
+        include_official: 是否导入官方 API 文档
         progress_callback: 进度回调 callback(phase, count, total)
 
     Returns:
-        {"api_count": 123, "processing_count": 45, "manual_count": 10, "total": 178}
+        {"api_count": 123, "processing_count": 45, "manual_count": 10, "official_count": 80, "total": 258}
     """
     if store is None:
         store = DocStore()
 
-    stats = {"api_count": 0, "processing_count": 0, "manual_count": 0, "total": 0}
+    stats = {"api_count": 0, "processing_count": 0, "manual_count": 0, "official_count": 0, "total": 0}
 
     # ── 1. Runtime inspect ──
     if include_runtime:
@@ -397,7 +399,29 @@ def generate_pyqgis_docs(
         store.insert_batch(_MANUAL_API_DOCS)
         stats["manual_count"] = len(_MANUAL_API_DOCS)
 
-    stats["total"] = stats["api_count"] + stats["processing_count"] + stats["manual_count"]
+    # ── 4. 官方 API 文档 ──
+    if include_official:
+        try:
+            from .official_doc_scraper import BuiltinOfficialDocs
+            official_docs = BuiltinOfficialDocs.get_docs()
+            # 转换为字典格式
+            official_dicts = []
+            for doc in official_docs:
+                official_dicts.append({
+                    "class_name": doc.class_name,
+                    "method_name": doc.method_name,
+                    "full_signature": doc.full_signature,
+                    "description": doc.description,
+                    "parameters": doc.parameters,
+                    "return_type": doc.return_type,
+                    "source": doc.source,
+                })
+            store.insert_batch(official_dicts)
+            stats["official_count"] = len(official_dicts)
+        except Exception as e:
+            print(f"Failed to load official docs: {e}")
+
+    stats["total"] = stats["api_count"] + stats["processing_count"] + stats["manual_count"] + stats["official_count"]
     return stats
 
 
