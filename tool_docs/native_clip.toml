@@ -1,0 +1,35 @@
+tool_ID = "native:clip"
+tool_name = "Clip"
+brief_description = """Clips a vector layer using another polygon layer as a cookie cutter. Features that fall within the clip layer are extracted."""
+full_description = """Clips a vector layer using another polygon layer as a cookie cutter. This is a fundamental GIS operation for extracting features that fall within a specific area of interest."""
+parameters = """
+INPUT: Input vector layer to clip. Type: [vector: any]
+OVERLAY: Overlay layer (cookie cutter). Type: [vector: polygon]
+OUTPUT: Clipped layer. Type: [vector: any]
+"""
+code_example = """
+import processing
+from qgis.core import QgsVectorLayer, QgsProject
+
+def clip_layer():
+    # Input parameters
+    input_path = 'D:/Data/Features.shp'
+    overlay_path = 'D:/Data/AOI.shp'
+    output_path = 'D:/Output/clipped_output.shp'
+
+    # Run clip algorithm
+    parameters = {
+        'INPUT': input_path,
+        'OVERLAY': overlay_path,
+        'OUTPUT': output_path
+    }
+
+    result = processing.run('native:clip', parameters)
+
+    # Load result layer
+    clipped_layer = QgsVectorLayer(result['OUTPUT'], 'Clipped', 'ogr')
+    QgsProject.instance().addMapLayer(clipped_layer)
+
+# Execute
+clip_layer()
+"""

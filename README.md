@@ -4,7 +4,7 @@
 
 [![QGIS](https://img.shields.io/badge/QGIS-3.0+-589632?logo=qgis&style=flat-square)](https://qgis.org/)
 [![Python](https://img.shields.io/badge/Python-3.7+-3776AB?logo=python&style=flat-square)](https://www.python.org/)
-[![Version](https://img.shields.io/badge/version-1.2.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue?style=flat-square)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
 ---
@@ -24,6 +24,11 @@ QGIS Agent 是 QGIS 的 AI 原生插件——用自然语言直接操控 QGIS，
 | 🧵 **线程安全** | LLM 调用在工作线程执行，QGIS API 操作通过 QTimer 调度回主线程 |
 | 🧠 **多模型** | 支持 DeepSeek、OpenAI、GLM、Gemini、MiMo 等所有 OpenAI 兼容 API |
 | 🔌 **Skills 系统** | 可扩展的技能插件架构，支持网络搜索、GIS 数据查询等功能 |
+| 🐛 **SmartDebugger** | 智能调试系统，20+种错误模式识别，自动提供修复建议 |
+| 📊 **Task Graph** | 任务流程图可视化，NetworkX + PyVis 支持 |
+| 🎯 **Query Tuning** | 用户查询优化，自动分解 GIS 任务 |
+| 📋 **Tool Docs** | TOML 格式工具文档，支持 RAG 检索 |
+| 🔍 **Code Review** | 代码审查机制，确保生成代码正确性 |
 
 ## 🏗️ 架构概览
 

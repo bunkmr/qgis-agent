@@ -1,0 +1,45 @@
+tool_ID = "native:buffer"
+tool_name = "Buffer"
+brief_description = """Creates buffers around features of a vector layer. The buffer distance is specified in map units."""
+full_description = """Creates buffers around features of a vector layer. The buffer distance is specified in map units. This algorithm is commonly used for proximity analysis, creating zones around features, and spatial analysis operations."""
+parameters = """
+INPUT: Input vector layer. Type: [vector: any]
+DISTANCE: Buffer distance in map units. Type: [number] Default: 10.0
+SEGMENTS: Number of segments to approximate quarter circles. Type: [number] Default: 25
+END_CAP_STYLE: End cap style. Options: Round (0), Flat (1), Square (2). Type: [enumeration] Default: 0
+JOIN_STYLE: Join style. Options: Round (0), Mitre (1), Bevel (2). Type: [enumeration] Default: 0
+MITER_LIMIT: Miter limit for Mitre join style. Type: [number] Default: 2.0
+DISSOLVE: Dissolve output. Type: [boolean] Default: False
+OUTPUT: Output layer. Type: [vector: polygon]
+"""
+code_example = """
+import processing
+from qgis.core import QgsVectorLayer, QgsProject
+
+def create_buffer():
+    # Input parameters
+    input_path = 'D:/Data/InputLayer.shp'
+    output_path = 'D:/Output/buffer_output.shp'
+    buffer_distance = 100.0  # meters
+
+    # Run buffer algorithm
+    parameters = {
+        'INPUT': input_path,
+        'DISTANCE': buffer_distance,
+        'SEGMENTS': 25,
+        'END_CAP_STYLE': 0,  # Round
+        'JOIN_STYLE': 0,     # Round
+        'MITER_LIMIT': 2.0,
+        'DISSOLVE': False,
+        'OUTPUT': output_path
+    }
+
+    result = processing.run('native:buffer', parameters)
+
+    # Load result layer
+    buffer_layer = QgsVectorLayer(result['OUTPUT'], 'Buffer', 'ogr')
+    QgsProject.instance().addMapLayer(buffer_layer)
+
+# Execute
+create_buffer()
+"""

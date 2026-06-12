@@ -1,0 +1,38 @@
+tool_ID = "native:extractbyattribute"
+tool_name = "Extract by Attribute"
+brief_description = """Creates vector layer containing only features that match an attribute condition."""
+full_description = """Creates vector layer containing only features that match an attribute condition. Useful for filtering data based on specific attribute values."""
+parameters = """
+INPUT: Input vector layer. Type: [vector: any]
+FIELD: Field to filter on. Type: [tablefield: any]
+OPERATOR: Comparison operator. Options: = (0), != (1), > (2), >= (3), < (4), <= (5), begins with (6), contains (7), does not contain (8), is null (9), is not null (10). Type: [enumeration]
+VALUE: Value to compare. Type: [string]
+OUTPUT: Extracted layer. Type: [vector: any]
+"""
+code_example = """
+import processing
+from qgis.core import QgsVectorLayer, QgsProject
+
+def extract_by_attribute():
+    # Input parameters
+    input_path = 'D:/Data/Buildings.shp'
+    output_path = 'D:/Output/extracted_output.shp'
+
+    # Extract features where HEIGHT > 10
+    parameters = {
+        'INPUT': input_path,
+        'FIELD': 'HEIGHT',
+        'OPERATOR': 2,  # >
+        'VALUE': '10',
+        'OUTPUT': output_path
+    }
+
+    result = processing.run('native:extractbyattribute', parameters)
+
+    # Load result layer
+    extracted_layer = QgsVectorLayer(result['OUTPUT'], 'Extracted', 'ogr')
+    QgsProject.instance().addMapLayer(extracted_layer)
+
+# Execute
+extract_by_attribute()
+"""

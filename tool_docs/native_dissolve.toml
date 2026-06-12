@@ -1,0 +1,34 @@
+tool_ID = "native:dissolve"
+tool_name = "Dissolve"
+brief_description = """Dissolves features that share the same attribute value, combining their geometries."""
+full_description = """Dissolves features that share the same attribute value. This operation combines geometries and aggregates attributes, useful for creating simplified boundary layers."""
+parameters = """
+INPUT: Input vector layer. Type: [vector: any]
+FIELD: Field to dissolve on (optional). Type: [tablefield: any]
+OUTPUT: Dissolved layer. Type: [vector: any]
+"""
+code_example = """
+import processing
+from qgis.core import QgsVectorLayer, QgsProject
+
+def dissolve_layer():
+    # Input parameters
+    input_path = 'D:/Data/Districts.shp'
+    output_path = 'D:/Output/dissolved_output.shp'
+
+    # Dissolve by REGION field
+    parameters = {
+        'INPUT': input_path,
+        'FIELD': 'REGION',
+        'OUTPUT': output_path
+    }
+
+    result = processing.run('native:dissolve', parameters)
+
+    # Load result layer
+    dissolved_layer = QgsVectorLayer(result['OUTPUT'], 'Dissolved', 'ogr')
+    QgsProject.instance().addMapLayer(dissolved_layer)
+
+# Execute
+dissolve_layer()
+"""

@@ -1,0 +1,35 @@
+tool_ID = "native:intersection"
+tool_name = "Intersection"
+brief_description = """Computes the intersection of two layers, extracting features that overlap."""
+full_description = """Computes the intersection of two layers. The output layer contains only the parts of features from the input layer that overlap with the overlay layer. Attributes from both layers are preserved."""
+parameters = """
+INPUT: Input vector layer. Type: [vector: any]
+OVERLAY: Overlay layer. Type: [vector: any]
+OUTPUT: Intersected layer. Type: [vector: any]
+"""
+code_example = """
+import processing
+from qgis.core import QgsVectorLayer, QgsProject
+
+def intersect_layers():
+    # Input parameters
+    input_path = 'D:/Data/LandUse.shp'
+    overlay_path = 'D:/Data/Watershed.shp'
+    output_path = 'D:/Output/intersection_output.shp'
+
+    # Run intersection algorithm
+    parameters = {
+        'INPUT': input_path,
+        'OVERLAY': overlay_path,
+        'OUTPUT': output_path
+    }
+
+    result = processing.run('native:intersection', parameters)
+
+    # Load result layer
+    intersection_layer = QgsVectorLayer(result['OUTPUT'], 'Intersection', 'ogr')
+    QgsProject.instance().addMapLayer(intersection_layer)
+
+# Execute
+intersect_layers()
+"""
