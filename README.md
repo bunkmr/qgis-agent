@@ -29,6 +29,9 @@ QGIS Agent 是 QGIS 的 AI 原生插件——用自然语言直接操控 QGIS，
 | 🎯 **Query Tuning** | 用户查询优化，自动分解 GIS 任务 |
 | 📋 **Tool Docs** | TOML 格式工具文档，支持 RAG 检索 |
 | 🔍 **Code Review** | 代码审查机制，确保生成代码正确性 |
+| 🔄 **Workflow Recorder** | 记录对话中的工具调用序列，保存为可重用工作流 |
+| 🚀 **Workflow Executor** | 在新工程中直接执行保存的工作流 |
+| ❓ **Clarification Manager** | 识别模糊请求，主动向用户澄清 |
 
 ## 🏗️ 架构概览
 
