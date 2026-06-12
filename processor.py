@@ -101,6 +101,7 @@ class Processor(QObject):
     reflection_ready = pyqtSignal(str, str, str, str)
     thinking = pyqtSignal(str)  # 实时流式思考内容
     tool_status = pyqtSignal(str)  # 工具执行状态提示
+    workflow_update = pyqtSignal(dict)  # 工作流更新信号
     error_signal = pyqtSignal(str)
 
     def __init__(self, llm_id, conversation_id, dataloader, temperature=0.0):
@@ -140,7 +141,8 @@ class Processor(QObject):
 
     # ── Agent 模式：带工具调用的智能对话 ──
 
-    def agent_chat(self, user_input: str, thinking_callback=None, tool_status_callback=None) -> tuple:
+    def agent_chat(self, user_input: str, thinking_callback=None, tool_status_callback=None,
+                  workflow_callback=None) -> tuple:
         """
         Agent 对话：LLM 可以调用 QGIS 工具完成用户请求。
         支持多轮工具调用（观察→操作→反馈循环）。
@@ -151,6 +153,14 @@ class Processor(QObject):
         from langchain_core.messages import ToolMessage
 
         request_time = get_current_timestamp()
+
+        # ── 初始化工作流数据 ──
+        workflow_data = {
+            "name": "任务执行",
+            "status": "running",
+            "steps": [],
+            "summary": ""
+        }
 
         # ── Query Tuning: 优化用户查询 ──
         try:
@@ -276,6 +286,18 @@ class Processor(QObject):
                 if tool_status_callback:
                     tool_status_callback(status_msg)
 
+                # ── 更新工作流数据 ──
+                step_id = f"step_{len(workflow_data['steps']) + 1}"
+                workflow_data["steps"].append({
+                    "id": step_id,
+                    "name": f"{tool_name}",
+                    "status": "running",
+                    "tool": tool_name,
+                    "args": tool_args
+                })
+                # 发送工作流更新信号
+                self.workflow_update.emit(workflow_data)
+
                 # ── RAG 检索增强：对危险工具，先查 API 文档 ──
                 if tool_name in ("execute_pyqgis", "execute_processing"):
                     try:
@@ -297,8 +319,21 @@ class Processor(QObject):
                         "result": result,
                     })
                     workflow = "withTool"
+
+                    # ── 更新工作流步骤状态为完成 ──
+                    if workflow_data["steps"]:
+                        workflow_data["steps"][-1]["status"] = "completed"
+                        # 发送工作流更新信号
+                        self.workflow_update.emit(workflow_data)
                 except Exception as e:
                     result_str = json.dumps({"error": str(e), "traceback": tb.format_exc()}, ensure_ascii=False)
+
+                    # ── 更新工作流步骤状态为失败 ──
+                    if workflow_data["steps"]:
+                        workflow_data["steps"][-1]["status"] = "failed"
+                        workflow_data["steps"][-1]["error"] = str(e)
+                        # 发送工作流更新信号
+                        self.workflow_update.emit(workflow_data)
 
                 # 截断过长的结果
                 if len(result_str) > 4000:
@@ -328,6 +363,12 @@ class Processor(QObject):
 
         response_time = get_current_timestamp()
         prompt_id = f"{self.llm_id}::0::agent"
+
+        # ── 更新工作流状态 ──
+        workflow_data["status"] = "completed" if workflow == "withTool" else "completed"
+        workflow_data["summary"] = f"任务执行完成，共 {len(workflow_data['steps'])} 个步骤"
+        # 发送工作流更新信号
+        self.workflow_update.emit(workflow_data)
 
         # ── Cookbook 自动归档 ──
         try:

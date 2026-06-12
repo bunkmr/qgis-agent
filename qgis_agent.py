@@ -304,6 +304,7 @@ class QGISAgent:
             self.live_conversation.llm_response.connect(self._on_response_received)
             self.live_conversation.llm_thinking.connect(self._on_thinking)
             self.live_conversation.llm_tool_status.connect(self._on_tool_status)
+            self.live_conversation.llm_workflow_update.connect(self._on_workflow_update)
             self.live_conversation.llm_interrupted.connect(self._on_response_error)
             self.live_conversation.update_user_prompt(message, response_type)
 
@@ -355,6 +356,10 @@ class QGISAgent:
     def _on_tool_status(self, status_text):
         """显示工具调用状态"""
         self.dockwidget.showToolStatus(status_text)
+
+    def _on_workflow_update(self, workflow_data):
+        """更新工作流可视化显示"""
+        self.dockwidget.update_workflow_display(workflow_data)
 
     def _on_response_error(self, error_message):
         self.dockwidget.set_sending_state(False)

@@ -9,6 +9,7 @@ class Conversation(QObject):
     llm_reflection = pyqtSignal(str, str, str)
     llm_thinking = pyqtSignal(str)  # 流式思考内容
     llm_tool_status = pyqtSignal(str)  # 工具调用状态
+    llm_workflow_update = pyqtSignal(dict)  # 工作流更新
     llm_interrupted = pyqtSignal(str)
 
     def __init__(self, conversation_id: str, dataloader):
@@ -21,6 +22,7 @@ class Conversation(QObject):
         self.processor = Processor(self.llmID, self.ID, dataloader)
         self.processor.thinking.connect(self.llm_thinking.emit)
         self.processor.tool_status.connect(self.llm_tool_status.emit)
+        self.processor.workflow_update.connect(self.llm_workflow_update.emit)
         self.modified = get_current_timestamp()
         self.code_list = []
 
