@@ -1,0 +1,47 @@
+tool_ID = "native:gltftovector"
+tool_name = "gltftovector"
+brief_description = """Converts .GLTF or .GLB file contents to standard vector layer formats."""
+full_description = """Converts .GLTF or .GLB file contents to standard vector layer formats."""
+parameters = """
+INPUT: Input
+GLTF. Input file to convert.. Type: 
+[3D Tile] 
+OUTPUT_POLYGONS: Output polygons Optional. Specify the output vector layer to store polygon features. One of: Skip Output Create Temporary Layer ( 
+TEMPORARY_OUTPUT ) Save to File… Save to Geopackage… Save to Database Table… The file encoding can also be changed here.. Type: [vector: polygon] Default: [Create temporary layer] 
+OUTPUT_LINES: Output lines Optional. Specify the output vector layer to store line features. One of: Skip Output Create Temporary Layer ( 
+TEMPORARY_OUTPUT ) Save to File… Save to Geopackage… Save to Database Table… The file encoding can also be changed here.. Type: [vector: line] Default: [Create temporary layer] outputs = 
+OUTPUT_POLYGONS: Output polygons. 
+A vector layer storing the polygon features in input layer.. Type: [vector: polygon] 
+OUTPUT_LINES: Output lines. 
+A vector layer storing the line features in input layer.. Type: [vector: line]
+
+"""
+code_example = """
+import processing
+from qgis.core import QgsProject, QgsVectorLayer
+
+def convert_gltf_to_vector():
+    input_gltf_path = 'D:/input_model.gltf'
+    # Load the input GLTF file
+    input_layer = QgsVectorLayer(input_gltf_path, """Input GLTF", "3dmodel")
+
+                           
+    parameters = {
+        'INPUT': input_gltf_path,
+        'OUTPUT_POLYGONS': 'TEMPORARY_OUTPUT',                                                                                                                                  
+        'OUTPUT_LINES': 'TEMPORARY_OUTPUT'                                                                                                                                  
+    }
+
+                                           
+    result = processing.run("native:gltftovector", parameters)
+
+                                  
+    output_polygons_layer = QgsVectorLayer(result['OUTPUT_POLYGONS'], 'Polygons', 'ogr')
+    QgsProject.instance().addMapLayer(output_polygons_layer)
+
+    output_lines_layer = QgsVectorLayer(result['OUTPUT_LINES'], 'Lines', 'ogr')
+    QgsProject.instance().addMapLayer(output_lines_layer)
+
+                      
+convert_gltf_to_vector()
+"""

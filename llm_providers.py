@@ -8,7 +8,12 @@ from langchain_deepseek import ChatDeepSeek
 
 def get_llm_instance(provider, model, api_key, endpoint, temperature=0):
     # 创建一个不使用系统代理的 httpx client，避免代理导致 DNS 解析失败
-    http_client = httpx.Client(proxy=None)
+    # httpx 0.24.0+ 使用 proxies 参数（字典格式）
+    try:
+        http_client = httpx.Client(proxy=None)
+    except TypeError:
+        # httpx 新版本使用 proxies 参数
+        http_client = httpx.Client(proxies={})
 
     if provider == "DeepSeek":
         return ChatDeepSeek(

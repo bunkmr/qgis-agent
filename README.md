@@ -4,7 +4,7 @@
 
 [![QGIS](https://img.shields.io/badge/QGIS-3.0+-589632?logo=qgis&style=flat-square)](https://qgis.org/)
 [![Python](https://img.shields.io/badge/Python-3.7+-3776AB?logo=python&style=flat-square)](https://www.python.org/)
-[![Version](https://img.shields.io/badge/version-1.2.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue?style=flat-square)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
 ---
@@ -17,11 +17,21 @@ QGIS Agent 是 QGIS 的 AI 原生插件——用自然语言直接操控 QGIS，
 
 | 亮点 | 说明 |
 |------|------|
-| 📚 **RAG API 文档检索** | 本地 SQLite FTS5 全文引擎，执行代码前自动查询 PyQGIS API 签名和参数，大幅降低"写错参数"的概率 |
-| 🧬 **Cookbook 自我进化** | 成功任务自动归档为案例，下次执行前检索相似案例注入上下文，越用越准确 |
+| 📚 **RAG API 文档检索** | 本地 SQLite FTS5 全文引擎，执行代码前自动查询 PyQGIS API 签名和参数 |
+| 🧬 **Cookbook 自我进化** | 成功任务自动归档为案例，下次执行前检索相似案例注入上下文 |
+| 📖 **官方 API 文档** | 内置 71 条官方 API 文档，覆盖核心类的完整方法签名 |
 | 🔒 **代码安全确认** | 执行 PyQGIS/Processing 前弹窗确认，杜绝误操作 |
-| 🧵 **线程安全** | LLM 调用在工作线程执行，QGIS API 操作通过 QTimer 调度回主线程，UI 零阻塞 |
+| 🧵 **线程安全** | LLM 调用在工作线程执行，QGIS API 操作通过 QTimer 调度回主线程 |
 | 🧠 **多模型** | 支持 DeepSeek、OpenAI、GLM、Gemini、MiMo 等所有 OpenAI 兼容 API |
+| 🔌 **Skills 系统** | 可扩展的技能插件架构，支持网络搜索、GIS 数据查询等功能 |
+| 🐛 **SmartDebugger** | 智能调试系统，20+种错误模式识别，自动提供修复建议 |
+| 📊 **Task Graph** | 任务流程图可视化，NetworkX + PyVis 支持 |
+| 🎯 **Query Tuning** | 用户查询优化，自动分解 GIS 任务 |
+| 📋 **Tool Docs** | TOML 格式工具文档，支持 RAG 检索 |
+| 🔍 **Code Review** | 代码审查机制，确保生成代码正确性 |
+| 🔄 **Workflow Recorder** | 记录对话中的工具调用序列，保存为可重用工作流 |
+| 🚀 **Workflow Executor** | 在新工程中直接执行保存的工作流 |
+| ❓ **Clarification Manager** | 识别模糊请求，主动向用户澄清 |
 
 ## 🏗️ 架构概览
 
@@ -43,7 +53,7 @@ graph TB
     subgraph TOOLS["🔩 QGIS 工具层 — 主线程调度"]
         direction LR
         F["📞 call_tool()<br/><small>线程桥</small>"]
-        G["🧰 15 个 QGIS 工具"]
+        G["🧰 15+ QGIS 工具"]
         H["🗺️ QGIS API<br/><small>QgsProject / iface / Processing</small>"]
     end
 
@@ -74,195 +84,32 @@ graph TB
     E -->|finished 信号| A
 ```
 
-## 调用流程
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as 👤 用户
-    participant UI as 🪟 DockWidget
-    participant Agent as 🧩 QGISAgent
-    participant Conv as 💬 Conversation
-    participant Proc as 🧠 Processor
-    participant Worker as 🔧 Worker
-    participant Tool as 📞 call_tool
-    participant QGIS as 🗺️ QGIS API
-
-    rect rgb(227, 242, 253)
-        Note over User,Agent: 📥 用户发起请求
-        User->>UI: 输入消息 + 回车
-        UI->>Agent: _on_new_message_send()
-        Agent->>UI: 显示用户消息 HTML
-        Agent->>Conv: update_user_prompt(message)
-        Conv->>Proc: async_response(message)
-        Proc->>Worker: 创建 Worker 投入线程池
-    end
-
-    rect rgb(255, 243, 224)
-        Note over Worker,Proc: ⚙️ 工作线程执行
-        Worker->>Proc: agent_chat(user_input, callbacks)
-        Proc->>Proc: 📄 加载 MEMORY.md 长期记忆
-        Proc->>Proc: 🧬 检索 Cookbook 相似案例
-        Proc->>Proc: 🗃️ 加载 SQLite 对话历史
-        Proc->>Proc: 📦 组装 messages = [System + Cookbook + History + User]
-
-        loop 🔄 最多 10 轮工具调用
-            Proc->>Proc: llm.bind_tools().invoke(messages)
-            Note over Proc: ⏳ 等待 LLM 返回...
-
-            alt ✅ LLM 返回 tool_calls
-                loop 每个 tool_call
-                    opt 危险工具 (execute_pyqgis/processing)
-                        Proc->>Proc: 📚 RAG 检索 API 文档
-                    end
-                    Proc->>Tool: call_tool(name, args)
-                    Note over Tool: 🔍 检测线程：非主线程
-                    Tool-->>QGIS: QTimer.singleShot(0) 调度
-                    Note over QGIS: ✅ 主线程执行
-                    QGIS-->>Tool: 返回结果
-                    Tool-->>Proc: 工具执行结果
-                end
-                Proc->>Proc: 追加 ToolMessage 到 messages
-            else 🎯 LLM 返回最终回复
-                Note over Proc: ✅ 退出循环
-            end
-        end
-
-        Proc->>Proc: 💾 保存交互到 SQLite
-        Proc->>Proc: 🧬 归档成功案例到 Cookbook
-    end
-
-    rect rgb(227, 242, 253)
-        Note over Worker,User: 📤 返回结果
-        Worker->>Agent: finished 信号
-        Agent->>UI: updateConversation() 渲染回复
-        UI->>User: 显示 AI 回复
-    end
-```
-
-## 线程模型
-
-```mermaid
-flowchart LR
-    subgraph MT["🖥️ QGIS 主线程 (GUI Thread)"]
-        direction TB
-        MT_UI["🪟 DockWidget UI<br/><small>对话渲染 / 输入处理</small>"]
-        MT_AGENT["🧩 QGISAgent<br/><small>信号处理 / 状态管理</small>"]
-        MT_TOOLS["🗺️ QGIS API 操作<br/><small>图层 / 渲染 / Processing</small>"]
-        MT_CANVAS["🖼️ Map Canvas<br/><small>地图渲染</small>"]
-    end
-
-    subgraph WT["⚙️ QThreadPool 工作线程"]
-        direction TB
-        WT_LLM["🤖 LLM API 调用<br/><small>可能耗时数秒~数十秒</small>"]
-        WT_HISTORY["🗃️ SQLite 读写<br/><small>对话历史持久化</small>"]
-        WT_LOOP["🔄 Agent 工具调用循环<br/><small>最多 10 轮</small>"]
-    end
-
-    WT_LOOP -->|"⏱️ QTimer.singleShot(0)"| MT_TOOLS
-    WT_LOOP -->|"📡 thinking / tool_status 信号"| MT_UI
-    WT_LLM --> WT_LOOP
-```
-
-> **核心设计原则**：
-> - LLM API 调用在工作线程中执行，**不阻塞 QGIS 主线程 UI**
-> - 所有 QGIS API 操作通过 `QTimer.singleShot(0)` 调度回主线程执行，**保证线程安全**
-> - 工作线程通过信号/槽同步等待主线程执行结果，超时 60 秒
-
-## 数据流
-
-```mermaid
-flowchart TD
-    INPUT["👤 用户自然语言输入"]
-
-    subgraph CONTEXT["📦 上下文组装"]
-        direction LR
-        MEMORY["📄 MEMORY.md<br/><small>长期记忆文件</small>"]
-        COOKBOOK["🧬 Cookbook<br/><small>相似案例检索</small>"]
-        HISTORY["🗃️ SQLite 对话历史<br/><small>最近 20 条</small>"]
-        SYSTEM["📋 AGENT_SYSTEM_PROMPT<br/><small>系统提示词</small>"]
-    end
-
-    subgraph LLM["🧠 LLM 推理"]
-        direction LR
-        BIND["🔗 llm.bind_tools<br/><small>绑定 15 个工具</small>"]
-        INFER["⚡ llm.invoke<br/><small>推理 + 工具选择</small>"]
-    end
-
-    subgraph RAG["📚 RAG 检索 (代码执行前)"]
-        R1["🔍 search_pyqgis_api<br/><small>LLM 主动查询</small>"]
-        R2["📖 FTS5 全文索引<br/><small>自动检索 API 文档</small>"]
-    end
-
-    subgraph TOOLS["🔩 工具执行 (主线程调度)"]
-        T1["📊 get_qgis_info"]
-        T2["📂 add_vector_layer"]
-        T3["🗾 add_raster_layer"]
-        T4["🔍 get_layer_features"]
-        T5["🗑️ remove_layer"]
-        T6["🔎 zoom_to_layer"]
-        T7["⚙️ execute_processing"]
-        T8["🐍 execute_pyqgis"]
-        T9["🏷️ set_layer_labeling"]
-        T10["📸 render_map"]
-        T11["💾 save/load_project"]
-        TM1["🧠 save_memory"]
-        TM2["📖 load_memory"]
-    end
-
-    COOKARCHIVE["🧬 Cookbook 归档<br/><small>成功案例自动存储</small>"]
-
-    OUTPUT["🤖 AI 回复文本"]
-
-    INPUT --> CONTEXT
-    CONTEXT -->|"messages 列表"| LLM
-    LLM -->|"tool_calls"| TOOLS
-    LLM -->|"查询 API"| RAG
-    RAG -->|"文档片段"| LLM
-    TOOLS -->|"ToolMessage 结果"| LLM
-    TOOLS -->|"成功案例"| COOKARCHIVE
-    COOKARCHIVE -->|"入库"| COOKBOOK
-    LLM -->|"最终回复"| OUTPUT
-```
-
-## 功能特性
-
-| 分类 | 功能 | 说明 |
-|------|------|------|
-| 💬 交互 | 自然语言操控 QGIS | 输入中文指令，AI 自动选择工具执行 |
-| 🧰 工具 | 15 个内置 QGIS 工具 | 图层管理、空间分析、地图渲染、API 检索等 |
-| 🧠 模型 | 多 LLM 支持 | DeepSeek、OpenAI、GLM、Gemini、MiMo 等 |
-| 📚 RAG | API 文档检索 | 本地 SQLite FTS5 引擎，代码执行前自动查询 PyQGIS API 签名 |
-| 🧬 进化 | Cookbook 自我进化 | 成功案例自动归档，下次执行前检索相似案例 |
-| 🧵 架构 | 线程安全 | LLM 调用不阻塞 UI，QGIS API 通过 QTimer 调度回主线程 |
-| 💾 存储 | 对话持久化 | SQLite 存储完整对话历史，支持检索与恢复 |
-| 📝 记忆 | 长期记忆 | 跨对话记忆，AI 记住偏好和工作习惯 |
-| 🔒 安全 | 代码安全确认 | 执行 PyQGIS/Processing 前弹窗确认 |
-| 🌡️ 可控 | Temperature 控制 | UI 滑块调节 LLM 输出创造性 |
-| 🌐 国际化 | 中英文界面 | i18n 翻译文件支持 |
-
 ## 📥 安装
 
-### Windows
+### 方式一：QGIS ZIP 安装（推荐）
+
+1. 从 [Releases](https://github.com/bunkmr/qgis-agent/releases) 下载最新版 `qgis_agent_vX.X.X.zip`
+2. 打开 QGIS → 菜单栏 **插件** → **管理和安装插件**
+3. 点击左侧 **从 ZIP 安装**，选择下载的 ZIP 文件
+4. 点击 **安装插件**
+5. 在已安装列表中勾选启用 **QGIS Agent**
+
+### 方式二：手动安装
+
+#### Windows
 
 ```powershell
 # 1. 复制到 QGIS 插件目录
 Copy-Item -Recurse qgis_agent\ "$env:APPDATA\QGIS\QGIS3\profiles\default\python\plugins\qgis_agent"
 
-# 2. 安装依赖（使用 QGIS 内置 Python）
-& "C:\Program Files\QGIS 3.x\bin\python-qgis.bat" -m pip install -r "$env:APPDATA\QGIS\QGIS3\profiles\default\python\plugins\qgis_agent\requirements.txt"
-
-# 3. 重启 QGIS，在 插件 → 管理和安装插件 中启用 QGIS Agent
+# 2. 重启 QGIS，在 插件 → 管理和安装插件 中启用 QGIS Agent
 ```
 
-### macOS / Linux
+#### macOS / Linux
 
 ```bash
 cp -r qgis_agent/ ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/
-pip install -r ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/qgis_agent/requirements.txt
 ```
-
-> **推荐**：也可通过 QGIS 插件管理器 → 从 ZIP 安装，插件会自动处理依赖。
 
 ## ⚙️ 配置
 
@@ -272,7 +119,17 @@ pip install -r ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/qgis_ag
    - **名称**：任意（如 `DeepSeek`）
    - **API 端点**：如 `https://api.deepseek.com/v1`
    - **API Key**：你的密钥
-4. 也可通过环境变量配置：`DEEPSEEK_API_KEY`、`OPENAI_API_KEY` 等
+
+### 支持的 LLM 提供商
+
+| 提供商 | API 端点 | 模型 |
+|--------|----------|------|
+| DeepSeek | `https://api.deepseek.com/v1` | deepseek-chat, deepseek-reasoner |
+| OpenAI | `https://api.openai.com/v1` | gpt-4o, gpt-4o-mini |
+| 智谱 GLM | `https://open.bigmodel.cn/api/paas/v4/` | glm-4, glm-4-flash |
+| Google | `https://generativelanguage.googleapis.com/v1beta/openai/` | gemini-2.0-flash |
+| 小米 MiMo | `https://api.xiaomimimo.com/v1/chat/completions` | mimo-v2.5 |
+| 自定义 | 任何 OpenAI 兼容接口 | 任意模型名 |
 
 ## 🚀 快速上手
 
@@ -286,7 +143,7 @@ pip install -r ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/qgis_ag
 | `以 selected_layer 为输入做 100m 缓冲区` | 执行缓冲区空间分析 |
 | `将地图渲染导出为 PNG` | 导出当前地图画布截图 |
 
-> 💡 **提示**：AI 在执行 PyQGIS 代码前会自动检索 API 文档，确保参数准确。你也可以直接说"查一下 buffer 的 API 签名"。
+> 💡 **提示**：AI 在执行 PyQGIS 代码前会自动检索 API 文档，确保参数准确。
 
 ## 🔧 内置工具
 
@@ -301,12 +158,34 @@ pip install -r ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/qgis_ag
 | `set_layer_labeling` | 设置图层标注 | 🏷️ 标注 |
 | `execute_processing` | 执行 Processing 算法 | ⚙️ 空间分析 |
 | `execute_pyqgis` | 执行任意 PyQGIS 代码 | 🐍 高级操作 |
-| `search_pyqgis_api` | 🆕 检索 PyQGIS API 文档 | 📚 RAG |
+| `search_pyqgis_api` | 检索 PyQGIS API 文档 | 📚 RAG |
 | `render_map` | 渲染地图截图 | 📸 输出 |
 | `save_project` | 保存 QGIS 项目 | 💾 项目 |
 | `load_project` | 加载 QGIS 项目 | 💾 项目 |
 | `save_memory` | 保存长期记忆 | 🧠 记忆 |
 | `load_memory` | 加载长期记忆 | 🧠 记忆 |
+
+## 📚 RAG API 文档覆盖
+
+RAG 系统包含以下来源的 API 文档：
+
+| 来源 | 数量 | 说明 |
+|------|------|------|
+| 官方 API 文档 | 71 | 核心类的完整方法签名（QgsVectorLayer, QgsGeometry, QgsFeature 等） |
+| 运行时反射 | 200+ | 从 QGIS 运行时提取的方法签名 |
+| Processing 算法 | 100+ | 所有已安装的 Processing 算法 |
+| 手动补充 | 11 | 常用操作速查 |
+| **总计** | **380+** | 完整的 QGIS API 覆盖 |
+
+### 覆盖的核心类
+
+- **QgsVectorLayer** (17 methods) - 矢量图层操作
+- **QgsGeometry** (16 methods) - 几何操作
+- **QgsProject** (11 methods) - 项目管理
+- **QgsCoordinateReferenceSystem** (9 methods) - 坐标系
+- **QgsFeature** (9 methods) - 要素操作
+- **QgsMapCanvas** (7 methods) - 地图画布
+- **QgsApplication** (2 methods) - 应用程序
 
 ## 📁 项目结构
 
@@ -325,15 +204,50 @@ qgis_agent/
 │   ├── doc_store.py             #   SQLite FTS5 文档存储
 │   ├── retriever.py             #   API 文档检索器
 │   ├── doc_generator.py         #   API 文档生成器
-│   └── cookbook.py              #   Cookbook 自我进化
+│   ├── official_doc_scraper.py  #   📖 官方 API 文档
+│   └── cookbook.py               #   Cookbook 自我进化
+├── agent_loop/                  # 🔄 Agent Loop 架构（实验性）
+│   ├── state.py                 #   状态管理
+│   ├── tools.py                 #   工具注册系统
+│   ├── memory.py                #   记忆系统
+│   ├── loop.py                  #   核心循环
+│   └── rag.py                   #   RAG 引擎
+├── skills/                      # 🔌 技能系统（实验性）
+│   ├── skill_manager.py         #   技能管理器
+│   ├── builtins.py              #   内置技能（网络搜索等）
+│   └── user_skills/             #   用户自定义技能
 ├── scripts/build_api_index.py   # 构建 API 索引
-├── data/pyqgis_api.db           # API 文档数据库（自动生成）
-├── resources/prompt.json        # 提示词模板
-├── help/                        # Sphinx 中文文档
-├── i18n/                        # 国际化翻译
 ├── tests/                       # 单元测试
 ├── metadata.txt                 # QGIS 插件元数据
 └── requirements.txt             # Python 依赖
+```
+
+## 🔌 技能系统（实验性）
+
+QGIS Agent 支持可扩展的技能插件系统：
+
+### 内置技能
+
+| 技能 | 功能 |
+|------|------|
+| `web_search` | 网络搜索（DuckDuckGo/Google/Bing） |
+| `gis_data_search` | GIS 数据源搜索 |
+| `format_results` | 格式化搜索结果 |
+
+### 自定义技能
+
+```python
+from skills.skill_manager import Skill, SkillResult
+
+def handler(**kwargs):
+    # 你的逻辑
+    return SkillResult(success=True, output="结果")
+
+SKILL = Skill(
+    name="my_skill",
+    description="技能描述",
+    handler=handler,
+)
 ```
 
 ## ❓ FAQ
@@ -368,8 +282,13 @@ qgis_agent/
 
 - 运行 `scripts/build_api_index.py` 可重新构建索引
 - 在 `rag/doc_generator.py` 的 `MANUAL_DOCS` 中添加补充文档
+- 在 `rag/official_doc_scraper.py` 中添加官方 API 文档
 </details>
 
 ## 📄 许可
 
 [MIT](LICENSE)
+
+---
+
+**如果这个项目对你有帮助，请给个 ⭐ Star 支持一下！**

@@ -12,7 +12,7 @@ from qgis.PyQt.QtGui import QIcon, QTextCursor, QClipboard, QPalette
 from qgis.PyQt.QtWidgets import (
     QAction, QDialog, QPushButton, QPlainTextEdit, QLineEdit,
     QDockWidget, QApplication, QMessageBox, QLabel, QVBoxLayout, QHBoxLayout,
-    QComboBox, QTableWidgetItem, QFrame
+    QComboBox, QTableWidgetItem, QFrame, QToolBar
 )
 from qgis.utils import iface
 
@@ -56,6 +56,9 @@ class QGISAgent:
         self.toolbar = self.iface.addToolBar("QGIS Agent")
         self.toolbar.setObjectName("QGISAgentToolbar")
 
+        # 将工具栏放到Python控制台后面
+        self._position_toolbar_after_console()
+
         self.plugin_is_active = False
         self.dockwidget = None
         self.edit_dialog = None
@@ -65,6 +68,27 @@ class QGISAgent:
         self.console_text = ""
         self.console_tracker = QTimer()
         self.new_editor = None
+
+    def _position_toolbar_after_console(self):
+        """将工具栏放到Python控制台后面"""
+        try:
+            # 获取主窗口
+            main_window = self.iface.mainWindow()
+
+            # 查找Python控制台工具栏
+            for toolbar in main_window.findChildren(QToolBar):
+                title = toolbar.windowTitle()
+                if "Python" in title or "Console" in title or "控制台" in title:
+                    # 获取工具栏区域
+                    area = main_window.toolBarArea(toolbar)
+                    # 将QGIS Agent工具栏添加到同一区域
+                    main_window.addToolBar(area, self.toolbar)
+                    # 设置为最后一个位置
+                    main_window.addToolBarBreak(area)
+                    break
+        except Exception as e:
+            # 如果找不到Python控制台，使用默认位置
+            print(f"Warning: Could not find Python console toolbar: {e}")
 
     def tr(self, message):
         return QCoreApplication.translate("QGISAgent", message)
@@ -139,11 +163,18 @@ class QGISAgent:
         from .dataloader import DataLoader
         from .conversation import Conversation
         from .dialog_new_conversation import NewConversationDialog
-        from .qgis_agent_dockwidget import QGISAgentDockWidget
+        try:
+            from .qgis_agent_dockwidget_v2 import QGISAgentDockWidgetV2 as QGISAgentDockWidget
+        except ImportError:
+            from .qgis_agent_dockwidget import QGISAgentDockWidget
         from .utils import (
             generate_unique_id, get_current_timestamp, pack, extract_code, set_font_color
         )
         from .config import DB_NAME, PLUGIN_NAME
+
+        # 先创建 dockwidget（后续信号连接依赖它）
+        if self.dockwidget is None:
+            self.dockwidget = QGISAgentDockWidget()
 
         # 在主线程中初始化工具调度桥接器（必须在任何工具调用前完成）
         from .qgis_tools import _init_main_thread_bridge, set_code_confirm_callback, set_skip_all_confirms
@@ -162,11 +193,11 @@ class QGISAgent:
             lambda state: self.dockwidget.cbSkipConfirm.setChecked(state == Qt.Checked)
         )
 
+        # ── 恢复保存的设置 ──
+        self._load_saved_settings()
+
         # ── 初始化 RAG 索引（首次自动构建） ──
         self._init_rag_index()
-
-        if self.dockwidget is None:
-            self.dockwidget = QGISAgentDockWidget()
 
         self.dockwidget.closingPlugin.connect(self.onClosePlugin)
         self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
@@ -187,6 +218,16 @@ class QGISAgent:
         )
         self.dockwidget.searchPressed.connect(self._on_search_conversation)
         self.dockwidget.switchClearMode.connect(self._switch_clear_mode)
+
+        # 报告页签按钮事件
+        self.dockwidget.pbRunCode.clicked.connect(self._on_run_code)
+        self.dockwidget.pbLoadCode.clicked.connect(self._on_load_code)
+        self.dockwidget.pbCopyCode.clicked.connect(self._on_copy_code)
+        self.dockwidget.pbSaveCode.clicked.connect(self._on_save_code)
+        self.dockwidget.pbClearCode.clicked.connect(self._on_clear_code)
+
+        # 温度滑块变化时保存
+        self.dockwidget.sliderTemperature.valueChanged.connect(self._on_temperature_changed)
 
         # 标签页切换时刷新模型配置页
         self.dockwidget.twTabs.currentChanged.connect(self._on_tab_changed)
@@ -294,6 +335,9 @@ class QGISAgent:
             self.live_conversation.llm_response.connect(self._on_response_received)
             self.live_conversation.llm_thinking.connect(self._on_thinking)
             self.live_conversation.llm_tool_status.connect(self._on_tool_status)
+            self.live_conversation.llm_workflow_update.connect(self._on_workflow_update)
+            self.live_conversation.llm_code_update.connect(self._on_code_update)
+            self.live_conversation.llm_execution_log.connect(self._on_execution_log)
             self.live_conversation.llm_interrupted.connect(self._on_response_error)
             self.live_conversation.update_user_prompt(message, response_type)
 
@@ -345,6 +389,69 @@ class QGISAgent:
     def _on_tool_status(self, status_text):
         """显示工具调用状态"""
         self.dockwidget.showToolStatus(status_text)
+
+    def _on_workflow_update(self, workflow_data):
+        """更新工作流可视化显示"""
+        self.dockwidget.update_workflow_display(workflow_data)
+
+    def _on_code_update(self, code):
+        """更新代码编辑器"""
+        self.dockwidget.update_code_editor(code)
+
+    def _on_execution_log(self, log_text):
+        """追加执行日志"""
+        self.dockwidget.append_execution_log(log_text)
+
+    # ── 报告页签按钮事件 ──
+
+    def _on_run_code(self):
+        """运行代码编辑器中的代码"""
+        code = self.dockwidget.codeEditor.toPlainText()
+        if not code:
+            self.dockwidget.append_execution_log("⚠️ 没有可执行的代码")
+            return
+
+        self.dockwidget.append_execution_log(f"▶ 开始执行代码...")
+        self.dockwidget.hide_debug_analysis()
+
+        # 在工作线程中执行代码
+        from .qgis_tools import execute_pyqgis
+        result = execute_pyqgis(code)
+
+        if result.get("executed"):
+            self.dockwidget.append_execution_log(f"✅ 代码执行成功")
+            if result.get("stdout"):
+                self.dockwidget.append_execution_log(f"输出:\n{result['stdout']}")
+            if result.get("stderr"):
+                self.dockwidget.append_execution_log(f"警告:\n{result['stderr']}")
+        else:
+            self.dockwidget.append_execution_log(f"❌ 代码执行失败: {result.get('error', 'unknown')}")
+
+            # 显示错误分析
+            if "debug_analysis" in result:
+                self.dockwidget.show_debug_analysis(result["debug_analysis"])
+
+    def _on_load_code(self):
+        """从文件加载代码"""
+        code = self.dockwidget.load_code_from_file()
+        if code:
+            self.dockwidget.append_execution_log(f"📂 已加载代码文件")
+
+    def _on_copy_code(self):
+        """复制代码到剪贴板"""
+        if self.dockwidget.copy_code_to_clipboard():
+            self.dockwidget.append_execution_log(f"📋 代码已复制到剪贴板")
+
+    def _on_save_code(self):
+        """保存代码到文件"""
+        file_path = self.dockwidget.save_code_to_file()
+        if file_path:
+            self.dockwidget.append_execution_log(f"💾 代码已保存到: {file_path}")
+
+    def _on_clear_code(self):
+        """清空代码编辑器"""
+        self.dockwidget.clear_code_editor()
+        self.dockwidget.append_execution_log(f"🗑️ 已清空代码编辑器")
 
     def _on_response_error(self, error_message):
         self.dockwidget.set_sending_state(False)
@@ -402,9 +509,30 @@ class QGISAgent:
         return result == QMessageBox.Yes
 
     def _on_skip_confirm_changed(self, state):
-        """当"跳过确认"checkbox 状态变化时更新全局开关"""
+        """当"跳过确认"checkbox 状态变化时更新全局开关并保存"""
         from .qgis_tools import set_skip_all_confirms
         set_skip_all_confirms(state == Qt.Checked)
+        # 保存设置
+        settings = QSettings("QGIS", "QGISAgent")
+        settings.setValue("skipConfirm", state == Qt.Checked)
+
+    def _load_saved_settings(self):
+        """加载保存的设置"""
+        settings = QSettings("QGIS", "QGISAgent")
+
+        # 恢复跳过确认设置
+        skip_confirm = settings.value("skipConfirm", False, type=bool)
+        self.dockwidget.cbSkipConfirm.setChecked(skip_confirm)
+        self.dockwidget.cbSkipConfirmSettings.setChecked(skip_confirm)
+
+        # 恢复温度设置
+        temperature = settings.value("temperature", 0, type=int)
+        self.dockwidget.sliderTemperature.setValue(temperature)
+
+    def _on_temperature_changed(self, value):
+        """温度滑块变化时保存设置"""
+        settings = QSettings("QGIS", "QGISAgent")
+        settings.setValue("temperature", value)
 
     def _init_rag_index(self):
         """初始化 RAG API 文档索引（首次使用时自动构建）"""

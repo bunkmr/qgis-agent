@@ -2,6 +2,7 @@
 """
 QGIS 工具集 —— 融合自 qgis_mcp 的命令处理逻辑。
 为 LLM 提供直接操作 QGIS 的能力，无需 Socket 通信。
+Inspired by SpatialAnalysisAgent's SmartDebugger.
 """
 
 import os
@@ -20,6 +21,9 @@ from qgis.PyQt.QtCore import QSize, QObject
 from qgis.PyQt.QtGui import QColor
 from qgis.PyQt.QtWidgets import QApplication
 from qgis.utils import iface
+
+# Import SmartDebugger
+from .smart_debugger import SmartDebugger, get_debug_suggestions
 
 
 def _get_layer_type(layer):
@@ -126,9 +130,19 @@ def add_vector_layer(path: str, name: str = None, provider: str = "ogr"):
     if not layer.isValid():
         return {"error": f"无法加载矢量图层: {path}"}
 
-    QgsProject.instance().addMapLayer(layer)
-    # 刷新地图画布，确保新图层立即显示
-    iface.mapCanvas().refresh()
+    # 优化：临时禁用地图渲染，添加图层后再启用
+    canvas = iface.mapCanvas()
+    canvas.setRenderFlag(False)
+
+    try:
+        QgsProject.instance().addMapLayer(layer)
+    finally:
+        # 重新启用地图渲染
+        canvas.setRenderFlag(True)
+        # 使用singleShot延迟刷新，确保渲染标志已设置
+        from qgis.PyQt.QtCore import QTimer
+        QTimer.singleShot(50, canvas.refresh)
+
     return {
         "id": layer.id(),
         "name": layer.name(),
@@ -149,9 +163,19 @@ def add_raster_layer(path: str, name: str = None, provider: str = "gdal"):
     if not layer.isValid():
         return {"error": f"无法加载栅格图层: {path}"}
 
-    QgsProject.instance().addMapLayer(layer)
-    # 刷新地图画布，确保新图层立即显示
-    iface.mapCanvas().refresh()
+    # 优化：临时禁用地图渲染，添加图层后再启用
+    canvas = iface.mapCanvas()
+    canvas.setRenderFlag(False)
+
+    try:
+        QgsProject.instance().addMapLayer(layer)
+    finally:
+        # 重新启用地图渲染
+        canvas.setRenderFlag(True)
+        # 使用singleShot延迟刷新
+        from qgis.PyQt.QtCore import QTimer
+        QTimer.singleShot(50, canvas.refresh)
+
     return {
         "id": layer.id(),
         "name": layer.name(),
@@ -177,9 +201,20 @@ def remove_layer(layer_id_or_name: str):
 
     removed_name = layer.name()
     removed_id = layer.id()
-    project.removeMapLayer(removed_id)
-    # 刷新地图画布，确保图层移除后立即反映在画布上
-    iface.mapCanvas().refresh()
+
+    # 优化：临时禁用地图渲染，移除图层后再启用
+    canvas = iface.mapCanvas()
+    canvas.setRenderFlag(False)
+
+    try:
+        project.removeMapLayer(removed_id)
+    finally:
+        # 重新启用地图渲染
+        canvas.setRenderFlag(True)
+        # 使用singleShot延迟刷新
+        from qgis.PyQt.QtCore import QTimer
+        QTimer.singleShot(50, canvas.refresh)
+
     return {"removed": removed_name, "id": removed_id}
 
 
@@ -197,10 +232,20 @@ def zoom_to_layer(layer_id_or_name: str):
     if not layer:
         return {"error": f"未找到图层: {layer_id_or_name}"}
 
-    iface.setActiveLayer(layer)
-    iface.zoomToActiveLayer()
-    # 强制刷新画布
-    iface.mapCanvas().refresh()
+    # 优化：临时禁用地图渲染，缩放后再启用
+    canvas = iface.mapCanvas()
+    canvas.setRenderFlag(False)
+
+    try:
+        iface.setActiveLayer(layer)
+        iface.zoomToActiveLayer()
+    finally:
+        # 重新启用地图渲染
+        canvas.setRenderFlag(True)
+        # 使用singleShot延迟刷新
+        from qgis.PyQt.QtCore import QTimer
+        QTimer.singleShot(50, canvas.refresh)
+
     return {"zoomed_to": layer.name()}
 
 
@@ -218,7 +263,24 @@ def execute_processing(algorithm: str, parameters: dict):
                 serialized[k] = type(v).__name__
         return {"algorithm": algorithm, "result": serialized}
     except Exception as e:
-        return {"error": f"Processing 执行失败: {str(e)}"}
+        # Use SmartDebugger for intelligent error analysis
+        debugger = SmartDebugger()
+        code_snippet = f"processing.run('{algorithm}', {json.dumps(parameters, indent=2)})"
+        error_analysis = debugger.analyze_error(str(e), code_snippet, "processing")
+        suggestions = debugger.generate_debug_suggestions(str(e), code_snippet, "processing")
+
+        # Record the failed attempt
+        debugger.record_fix_attempt(str(e), "initial_execution", False)
+
+        return {
+            "error": f"Processing 执行失败: {str(e)}",
+            "debug_analysis": {
+                "error_category": error_analysis.get("error_category"),
+                "confidence": error_analysis.get("confidence", 0.0),
+                "suggestions": suggestions,
+                "fallback_strategies": [s["description"] for s in error_analysis.get("fallback_strategies", [])]
+            }
+        }
 
 
 def execute_pyqgis(code: str):
@@ -292,12 +354,27 @@ def execute_pyqgis(code: str):
     except Exception as e:
         sys.stdout = original_stdout
         sys.stderr = original_stderr
+
+        # Use SmartDebugger for intelligent error analysis
+        debugger = SmartDebugger()
+        error_analysis = debugger.analyze_error(str(e), code, "pyqgis")
+        suggestions = debugger.generate_debug_suggestions(str(e), code, "pyqgis")
+
+        # Record the failed attempt
+        debugger.record_fix_attempt(str(e), "initial_execution", False)
+
         return {
             "executed": False,
             "error": str(e),
             "traceback": traceback.format_exc(),
             "stdout": stdout_capture.getvalue(),
             "stderr": stderr_capture.getvalue(),
+            "debug_analysis": {
+                "error_category": error_analysis.get("error_category"),
+                "confidence": error_analysis.get("confidence", 0.0),
+                "suggestions": suggestions,
+                "fallback_strategies": [s["description"] for s in error_analysis.get("fallback_strategies", [])]
+            }
         }
 
 
@@ -320,11 +397,22 @@ def load_project(path: str):
         return {"error": f"文件不存在: {path}"}
 
     project = QgsProject.instance()
-    if project.read(path):
-        iface.mapCanvas().refresh()
-        return {"loaded": path, "layer_count": len(project.mapLayers())}
-    else:
-        return {"error": f"加载失败: {path}"}
+
+    # 优化：临时禁用地图渲染，加载项目后再启用
+    canvas = iface.mapCanvas()
+    canvas.setRenderFlag(False)
+
+    try:
+        if project.read(path):
+            return {"loaded": path, "layer_count": len(project.mapLayers())}
+        else:
+            return {"error": f"加载失败: {path}"}
+    finally:
+        # 重新启用地图渲染
+        canvas.setRenderFlag(True)
+        # 使用singleShot延迟刷新
+        from qgis.PyQt.QtCore import QTimer
+        QTimer.singleShot(50, canvas.refresh)
 
 
 def set_layer_labeling(

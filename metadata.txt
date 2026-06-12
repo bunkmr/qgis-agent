@@ -1,24 +1,37 @@
 [general]
 name=QGIS Agent
 qgisMinimumVersion=3.0
-description=将大语言模型 (LLM) 嵌入 QGIS 的智能助手插件。用自然语言操控 QGIS，支持 DeepSeek、OpenAI、GLM、Gemini、MiMo 等模型，内置 15 个 QGIS 工具，集成 RAG API 文档检索和 Cookbook 自我进化，支持图层管理、空间分析、地图渲染等。
-version=1.2.0
-author=QGIS Agent Contributors
-email=
+description=LLM-powered intelligent assistant for QGIS. Supports natural language to operate QGIS tools.
+version=2.1.0
+author=bunkmr
+email=bunkmr@example.com
+about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It allows you to control QGIS through natural language conversations, including: viewing project info, adding/removing layers, executing Processing algorithms, running PyQGIS code, setting layer labels, rendering maps, and more.
 
-about=QGIS Agent 是一个基于大语言模型（LLM）的 QGIS 智能助手插件。\n\n主要功能：\n- 自然语言操控 QGIS，无需编写代码\n- 支持多种 LLM（DeepSeek、OpenAI、GLM、Gemini、MiMo 等）\n- 15 个内置 QGIS 工具：图层管理、空间分析、地图渲染\n- RAG API 文档检索：执行代码前自动查询 PyQGIS API 签名\n- Cookbook 自我进化：成功案例自动归档，越用越聪明\n- 对话持久化（SQLite）与长期记忆\n- 线程安全架构，不阻塞 UI
+    Features:
+    - Natural language interface for QGIS operations
+    - 15 built-in QGIS tools
+    - RAG-enhanced API documentation retrieval
+    - Cookbook self-evolution mechanism
+    - Long-term memory support
+    - Multiple LLM providers (DeepSeek, OpenAI, GLM, Gemini, etc.)
 
-tracker=https://github.com/bunkmr/qgis-agent/issues
-repository=https://github.com/bunkmr/qgis-agent
-
-hasProcessingProvider=no
-changelog=1.2.0 新增RAG API文档检索、Cookbook自我进化、15个QGIS工具
-
-tags=AI, LLM, Agent, PyQGIS, 地理处理, 智能助手, DeepSeek, OpenAI
-
-homepage=https://github.com/bunkmr/qgis-agent
-category=Plugins
+tracker=https://github.com/bunkmr/qgis_agent/issues
+repository=https://github.com/bunkmr/qgis_agent
+tags=ai,agent,llm,qgis,assistant,automation,deepseek,openai
+homepage=https://github.com/bunkmr/qgis_agent
+category=Analysis
 icon=icon.png
-experimental=True
+experimental=False
 deprecated=False
-server=False
+changelog=
+    v2.1.0 - Integrated SmartDebugger intelligent debugging system
+    v2.1.0 - Added Graph visualization for task workflows
+    v2.1.0 - Added Query Tuning for better task understanding
+    v2.1.0 - Added DataEye data overview feature
+    v2.1.0 - Added Reports tab for code and execution logs
+    v2.1.0 - Inspired by SpatialAnalysisAgent best practices
+    v1.2.0 - Added RAG API documentation retrieval
+    v1.2.0 - Added Cookbook self-evolution mechanism
+    v1.2.0 - Added skip confirmation toggle
+    v1.2.0 - Fixed RAG import errors
+    v1.0.0 - Initial release with 15 QGIS tools

@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QGIS Agent - 使用帮助</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'default' });
+</script>
+<style>
+* {
+    box-sizing: border-box;
+}
+body {
+    font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.8;
+    color: #333;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 30px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+}
+.container {
+    background: white;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+}
+h1 {
+    color: #2c3e50;
+    border-bottom: 3px solid #3498db;
+    padding-bottom: 15px;
+    font-size: 2.2em;
+    text-align: center;
+}
+h2 {
+    color: #2980b9;
+    margin-top: 40px;
+    padding-left: 15px;
+    border-left: 4px solid #3498db;
+    font-size: 1.6em;
+}
+h3 {
+    color: #27ae60;
+    margin-top: 25px;
+    font-size: 1.3em;
+}
+code {
+    background-color: #f4f4f4;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-family: "Consolas", "Monaco", monospace;
+    font-size: 0.95em;
+    color: #e74c3c;
+}
+pre {
+    background-color: #2d2d2d;
+    color: #f8f8f2;
+    padding: 20px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-size: 0.9em;
+    line-height: 1.5;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+pre code {
+    background: none;
+    color: inherit;
+    padding: 0;
+}
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 20px 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-radius: 10px;
+    overflow: hidden;
+}
+th, td {
+    border: 1px solid #e0e0e0;
+    padding: 15px;
+    text-align: left;
+}
+th {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+    font-weight: bold;
+}
+tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+tr:hover {
+    background-color: #f0f0f0;
+    transition: background-color 0.3s;
+}
+.tip {
+    background: linear-gradient(135deg, #e7f3fe 0%, #d4e6f1 100%);
+    border-left: 5px solid #2196F3;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(33,150,243,0.2);
+}
+.warning {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
+    border-left: 5px solid #ffc107;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(255,193,7,0.2);
+}
+.success {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border-left: 5px solid #28a745;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(40,167,69,0.2);
+}
+ul, ol {
+    margin: 15px 0;
+    padding-left: 30px;
+}
+li {
+    margin: 10px 0;
+    line-height: 1.8;
+}
+a {
+    color: #3498db;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+a:hover {
+    color: #2980b9;
+    text-decoration: underline;
+}
+.feature-box {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    margin: 30px 0;
+    box-shadow: 0 10px 30px rgba(102,126,234,0.4);
+}
+.feature-box h3 {
+    color: white;
+    margin-top: 0;
+    font-size: 1.5em;
+}
+.feature-box ul {
+    margin-bottom: 0;
+}
+.version {
+    color: #888;
+    font-size: 1em;
+    text-align: center;
+    margin-top: 10px;
+}
+.mermaid {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.footer {
+    text-align: center;
+    margin-top: 50px;
+    padding-top: 30px;
+    border-top: 2px solid #eee;
+    color: #888;
+}
+.step {
+    display: flex;
+    align-items: flex-start;
+    margin: 20px 0;
+}
+.step-number {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 20px;
+    flex-shrink: 0;
+    box-shadow: 0 3px 10px rgba(52,152,219,0.3);
+}
+.step-content {
+    flex: 1;
+}
+.badge {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: bold;
+    margin-right: 8px;
+}
+.badge-blue { background: #3498db; color: white; }
+.badge-green { background: #27ae60; color: white; }
+.badge-orange { background: #f39c12; color: white; }
+.badge-red { background: #e74c3c; color: white; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🗺️ QGIS Agent</h1>
+<p class="version">版本 2.1.0 | 将大语言模型嵌入QGIS的智能助手</p>
+<p style="text-align: center; color: #666;">用自然语言操控 QGIS，无需编写代码</p>
+
+<div class="feature-box">
+<h3>✨ 核心亮点</h3>
+<ul>
+<li><strong>📚 RAG API 文档检索</strong> - 380+ PyQGIS API 文档，自动查询准确参数</li>
+<li><strong>🧰 679 个 Processing 工具</strong> - 完整的工具文档和代码示例</li>
+<li><strong>🐛 SmartDebugger</strong> - 智能调试系统，自动分析错误并提供修复建议</li>
+<li><strong>🔄 工作流固化</strong> - 将对话中的工具链保存为可重用工作流</li>
+<li><strong>❓ 主动提问</strong> - 识别模糊请求，主动向用户澄清</li>
+<li><strong>📊 Task Graph</strong> - 任务流程图可视化</li>
+<li><strong>🎯 Query Tuning</strong> - 用户查询优化</li>
+</ul>
+</div>
+
+<h2>🏗️ 系统架构</h2>
+
+<div class="mermaid">
+graph TB
+    subgraph UI["🖥️ QGIS 主线程 — GUI"]
+        direction LR
+        A["🧩 QGISAgent<br/><small>主控制器</small>"]
+        B["🪟 DockWidget<br/><small>UI 面板</small>"]
+        C["💬 Conversation<br/><small>会话管理</small>"]
+    end
+
+    subgraph WORKER["⚙️ 工作线程 — QThreadPool"]
+        direction LR
+        D["🔧 ToolAgentWorker<br/><small>异步执行</small>"]
+        E["🧠 Processor<br/><small>Agent 循环 + RAG + Cookbook</small>"]
+    end
+
+    subgraph TOOLS["🔩 QGIS 工具层 — 主线程调度"]
+        direction LR
+        F["📞 call_tool()<br/><small>线程桥</small>"]
+        G["🧰 15+ QGIS 工具"]
+        H["🗺️ QGIS API<br/><small>QgsProject / iface / Processing</small>"]
+    end
+
+    subgraph RAG["📚 RAG 引擎 (本地)"]
+        direction LR
+        J["📖 DocStore<br/><small>SQLite FTS5</small>"]
+        K["🔍 Retriever<br/><small>关键词搜索</small>"]
+        L["🧰 ToolDocs<br/><small>679 Processing 工具</small>"]
+    end
+
+    subgraph EXT["☁️ 外部服务"]
+        I["🤖 LLM API<br/><small>DeepSeek / OpenAI 兼容</small>"]
+    end
+
+    A -->|创建/管理| B
+    A -->|创建/管理| C
+    C -->|async_response| D
+    D -->|在线程中运行| E
+    E -->|API 调用| I
+    E -->|检索文档| K
+    K -->|查询| J
+    E -->|检索工具| L
+    E -->|跨线程调用工具| F
+    F -->|QTimer 调度到主线程| G
+    G -->|操作| H
+</div>
+
+<h2>🚀 快速开始</h2>
+
+<h3>1. 安装插件</h3>
+<div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+        <strong>打开 QGIS</strong> → 菜单栏 <strong>插件</strong> → <strong>管理和安装插件</strong>
+    </div>
+</div>
+<div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+        <strong>从 ZIP 安装</strong> → 选择 <code>qgis_agent_v2.1.0_20260612_flat.zip</code>
+    </div>
+</div>
+<div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+        <strong>启用插件</strong> → 在已安装列表中勾选 <strong>QGIS Agent</strong>
+    </div>
+</div>
+
+<h3>2. 配置 LLM API</h3>
+<div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+        打开 QGIS Agent 面板，切换到 <strong>模型配置</strong> 标签页
+    </div>
+</div>
+<div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+        点击 <strong>+ 添加模型</strong>
+    </div>
+</div>
+<div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+        填写配置信息：
+        <ul>
+            <li><strong>名称</strong>: DeepSeek (或自定义名称)</li>
+            <li><strong>API 端点</strong>: <code>https://api.deepseek.com/v1</code></li>
+            <li><strong>API Key</strong>: 你的密钥</li>
+        </ul>
+    </div>
+</div>
+
+<div class="tip">
+<strong>💡 支持的 LLM 提供商</strong>
+<table>
+<tr><th>提供商</th><th>API 端点</th><th>模型</th></tr>
+<tr><td>DeepSeek</td><td><code>https://api.deepseek.com/v1</code></td><td>deepseek-chat</td></tr>
+<tr><td>OpenAI</td><td><code>https://api.openai.com/v1</code></td><td>gpt-4o, gpt-4o-mini</td></tr>
+<tr><td>智谱 GLM</td><td><code>https://open.bigmodel.cn/api/paas/v4/</code></td><td>glm-4, glm-4-flash</td></tr>
+<tr><td>Google</td><td><code>https://generativelanguage.googleapis.com/v1beta/openai/</code></td><td>gemini-2.0-flash</td></tr>
+<tr><td>小米 MiMo</td><td><code>https://api.xiaomimimo.com/v1</code></td><td>mimo-v2.5</td></tr>
+<tr><td>自定义</td><td>任何 OpenAI 兼容接口</td><td>任意模型名</td></tr>
+</table>
+</div>
+
+<h3>3. 基本使用</h3>
+<table>
+<tr><th>操作</th><th>示例指令</th><th>预期结果</th></tr>
+<tr><td><span class="badge badge-blue">查询</span></td><td><code>查看当前项目有哪些图层</code></td><td>显示图层列表和属性</td></tr>
+<tr><td><span class="badge badge-green">加载</span></td><td><code>添加图层 D:/data/roads.shp</code></td><td>加载矢量图层</td></tr>
+<tr><td><span class="badge badge-orange">分析</span></td><td><code>对道路图层做100米缓冲区分析</code></td><td>执行缓冲区分析</td></tr>
+<tr><td><span class="badge badge-orange">分析</span></td><td><code>用AOI图层裁剪道路图层</code></td><td>执行裁剪分析</td></tr>
+<tr><td><span class="badge badge-orange">分析</span></td><td><code>筛选面积大于100的建筑</code></td><td>属性查询筛选</td></tr>
+<tr><td><span class="badge badge-red">输出</span></td><td><code>将地图渲染导出为PNG</code></td><td>导出地图截图</td></tr>
+</table>
+
+<h2>🔧 核心功能详解</h2>
+
+<h3>📚 RAG API 文档检索</h3>
+<p>执行代码前自动查询 PyQGIS API 签名和参数，确保代码准确性：</p>
+
+<div class="mermaid">
+graph LR
+    A[用户请求] --> B[Query Tuning]
+    B --> C[RAG 检索]
+    C --> D[PyQGIS API]
+    C --> E[Processing 工具]
+    D --> F[LLM 生成代码]
+    E --> F
+    F --> G[执行分析]
+    G --> H[返回结果]
+</div>
+
+<pre><code>用户: 对道路图层做缓冲区分析
+↓
+RAG 检索: QgsVectorLayer, processing.run
+↓
+LLM 生成: 准确的 PyQGIS 代码
+↓
+执行: 缓冲区分析完成</code></pre>
+
+<h3>🐛 SmartDebugger 智能调试</h3>
+<p>代码执行失败时，自动分析错误并提供修复建议：</p>
+
+<table>
+<tr><th>错误类型</th><th>识别模式</th><th>修复建议</th></tr>
+<tr><td><span class="badge badge-red">ImportError</span></td><td><code>ModuleNotFoundError</code></td><td>检查库安装，尝试替代导入</td></tr>
+<tr><td><span class="badge badge-red">QgsVectorLayer 错误</span></td><td><code>invalid layer</code></td><td>检查路径，验证图层有效性</td></tr>
+<tr><td><span class="badge badge-red">Processing 算法错误</span></td><td><code>Algorithm not found</code></td><td>检查算法ID，验证参数</td></tr>
+<tr><td><span class="badge badge-orange">几何错误</span></td><td><code>Invalid geometry</code></td><td>使用 buffer(0) 修复</td></tr>
+<tr><td><span class="badge badge-orange">字段错误</span></td><td><code>Field not found</code></td><td>检查字段名，验证数据类型</td></tr>
+<tr><td><span class="badge badge-blue">内存错误</span></td><td><code>MemoryError</code></td><td>分块处理，简化几何</td></tr>
+</table>
+
+<h3>🔄 工作流固化</h3>
+<p>将对话中的工具调用序列保存为可重用工作流：</p>
+
+<div class="mermaid">
+graph TB
+    A[第一次对话] --> B[执行工具链]
+    B --> C[录制工作流]
+    C --> D[保存为模板]
+    D --> E[第二次对话]
+    E --> F[加载工作流]
+    F --> G[参数替换]
+    G --> H[直接执行]
+    H --> I[返回结果]
+</div>
+
+<pre><code># 录制工作流
+workflow = recorder.record_from_conversation(
+    tool_calls=[
+        {"tool": "native:buffer", "args": {"INPUT": "${input_layer}", "DISTANCE": "${distance}"}},
+        {"tool": "native:savefeatures", "args": {"OUTPUT": "${output_path}"}}
+    ],
+    workflow_name="缓冲区分析工作流"
+)
+
+# 下次直接执行
+results = executor.execute_workflow(
+    template=workflow,
+    parameters={
+        "input_layer": "D:/data/rivers.shp",
+        "distance": 200,
+        "output_path": "D:/output/rivers_buffer.shp"
+    }
+)</code></pre>
+
+<h3>❓ 主动提问</h3>
+<p>识别模糊或不完整的请求，主动向用户澄清：</p>
+
+<table>
+<tr><th>用户输入</th><th>识别问题</th><th>Agent 提问</th></tr>
+<tr><td><code>分析一下</code></td><td>请求模糊</td><td>请具体说明要分析什么内容</td></tr>
+<tr><td><code>添加图层</code></td><td>缺少路径</td><td>请提供数据文件的完整路径</td></tr>
+<tr><td><code>缓冲区分析</code></td><td>缺少距离</td><td>请指定缓冲区距离（单位：米）</td></tr>
+<tr><td><code>按字段筛选</code></td><td>缺少字段</td><td>请指定要使用的字段名称</td></tr>
+</table>
+
+<h2>📋 内置工具</h2>
+
+<table>
+<tr><th>工具</th><th>功能</th><th>分类</th><th>示例</th></tr>
+<tr><td><code>get_qgis_info</code></td><td>获取项目信息</td><td>📊 查询</td><td>查看当前项目有哪些图层</td></tr>
+<tr><td><code>get_layer_features</code></td><td>查询图层属性</td><td>📊 查询</td><td>查看道路图层的属性表</td></tr>
+<tr><td><code>add_vector_layer</code></td><td>添加矢量图层</td><td>📂 管理</td><td>添加图层 D:/data/roads.shp</td></tr>
+<tr><td><code>add_raster_layer</code></td><td>添加栅格图层</td><td>📂 管理</td><td>添加栅格 D:/data/dem.tif</td></tr>
+<tr><td><code>remove_layer</code></td><td>移除图层</td><td>📂 管理</td><td>移除道路图层</td></tr>
+<tr><td><code>zoom_to_layer</code></td><td>缩放到图层</td><td>🔎 导航</td><td>缩放到道路图层</td></tr>
+<tr><td><code>set_layer_labeling</code></td><td>设置图层标注</td><td>🏷️ 标注</td><td>显示道路名称标注</td></tr>
+<tr><td><code>execute_processing</code></td><td>执行 Processing 算法</td><td>⚙️ 分析</td><td>执行缓冲区分析</td></tr>
+<tr><td><code>execute_pyqgis</code></td><td>执行 PyQGIS 代码</td><td>🐍 高级</td><td>自定义空间分析</td></tr>
+<tr><td><code>search_pyqgis_api</code></td><td>检索 API 文档</td><td>📚 RAG</td><td>查询 QgsGeometry 方法</td></tr>
+<tr><td><code>render_map</code></td><td>渲染地图截图</td><td>📸 输出</td><td>导出当前地图为PNG</td></tr>
+<tr><td><code>save_project</code></td><td>保存项目</td><td>💾 项目</td><td>保存当前项目</td></tr>
+<tr><td><code>load_project</code></td><td>加载项目</td><td>💾 项目</td><td>加载项目文件</td></tr>
+<tr><td><code>save_memory</code></td><td>保存长期记忆</td><td>🧠 记忆</td><td>记住用户偏好</td></tr>
+<tr><td><code>load_memory</code></td><td>加载长期记忆</td><td>🧠 记忆</td><td>读取之前保存的信息</td></tr>
+</table>
+
+<h2>🧰 工具文档系统</h2>
+
+<p>内置 <strong>679 个 QGIS Processing 工具</strong> 文档，支持 RAG 检索：</p>
+
+<div class="mermaid">
+graph LR
+    A[用户请求] --> B{工具检索}
+    B --> C[native:buffer]
+    B --> D[native:clip]
+    B --> E[native:intersection]
+    B --> F[native:dissolve]
+    B --> G[... 679 个工具]
+    C --> H[参数说明]
+    D --> H
+    E --> H
+    F --> H
+    G --> H
+    H --> I[代码示例]
+    I --> J[LLM 生成代码]
+    J --> K[执行分析]
+</div>
+
+<h3>支持的工具类型</h3>
+<table>
+<tr><th>前缀</th><th>说明</th><th>示例工具</th></tr>
+<tr><td><code>native:</code></td><td>QGIS 原生算法</td><td>buffer, clip, dissolve, intersection</td></tr>
+<tr><td><code>gdal:</code></td><td>GDAL/OGR 工具</td><td>aspect, slope, contour, rasterize</td></tr>
+<tr><td><code>qgis:</code></td><td>QGIS 扩展工具</td><td>heatmap, idw, tininterpolation</td></tr>
+<tr><td><code>3d:</code></td><td>3D 分析工具</td><td>tessellate</td></tr>
+<tr><td><code>pdal:</code></td><td>点云处理工具</td><td>boundary, density, filter</td></tr>
+</table>
+
+<h2>💡 最佳实践</h2>
+
+<div class="success">
+<strong>✅ 正确示例</strong>
+<ul>
+<li>使用绝对路径：<code>添加图层 D:/data/roads.shp</code></li>
+<li>明确指定参数：<code>对道路图层做100米缓冲区分析</code></li>
+<li>分步骤执行：先加载数据 → 再执行分析 → 最后保存结果</li>
+<li>指定图层名称：<code>用AOI图层裁剪道路图层</code></li>
+</ul>
+</div>
+
+<div class="warning">
+<strong>❌ 错误示例</strong>
+<ul>
+<li>使用相对路径：<code>添加图层 roads.shp</code>（可能找不到文件）</li>
+<li>请求模糊：<code>分析一下</code>（不知道要分析什么）</li>
+<li>缺少参数：<code>缓冲区分析</code>（没有指定距离）</li>
+<li>一次性复杂任务：<code>加载数据、分析、保存</code>（建议分步执行）</li>
+</ul>
+</div>
+
+<h2>🐛 故障排除</h2>
+
+<table>
+<tr><th>问题</th><th>可能原因</th><th>解决方案</th></tr>
+<tr><td>插件无法加载</td><td>QGIS 版本过低</td><td>升级到 QGIS 3.0+</td></tr>
+<tr><td>API 调用失败</td><td>网络连接或密钥错误</td><td>检查网络和 API 密钥</td></tr>
+<tr><td>代码执行错误</td><td>语法或参数错误</td><td>查看 SmartDebugger 的修复建议</td></tr>
+<tr><td>图层加载失败</td><td>文件路径错误</td><td>检查文件路径是否正确</td></tr>
+<tr><td>工具调用失败</td><td>算法ID或参数错误</td><td>使用 search_pyqgis_api 查询正确用法</td></tr>
+<tr><td>内存不足</td><td>数据量过大</td><td>分块处理或简化几何</td></tr>
+</table>
+
+<h2>📊 工作流示例</h2>
+
+<h3>示例1: 缓冲区分析工作流</h3>
+<div class="mermaid">
+graph LR
+    A[加载道路图层] --> B[执行缓冲区分析]
+    B --> C[保存结果]
+    C --> D[加载结果图层]
+</div>
+
+<pre><code># 缓冲区分析工作流代码
+import processing
+from qgis.core import QgsVectorLayer, QgsProject
+
+# Step 1: 加载道路图层
+roads = QgsVectorLayer('D:/data/roads.shp', 'roads', 'ogr')
+QgsProject.instance().addMapLayer(roads)
+
+# Step 2: 执行缓冲区分析
+result = processing.run('native:buffer', {
+    'INPUT': 'D:/data/roads.shp',
+    'DISTANCE': 100,
+    'SEGMENTS': 25,
+    'END_CAP_STYLE': 0,
+    'JOIN_STYLE': 0,
+    'DISSOLVE': False,
+    'OUTPUT': 'D:/output/roads_buffer.shp'
+})
+
+# Step 3: 加载结果图层
+buffer_layer = QgsVectorLayer(result['OUTPUT'], 'roads_buffer', 'ogr')
+QgsProject.instance().addMapLayer(buffer_layer)
+
+print('缓冲区分析完成！')</code></pre>
+
+<h3>示例2: 空间叠加分析工作流</h3>
+<div class="mermaid">
+graph LR
+    A[加载土地利用图层] --> B[加载行政区划图层]
+    B --> C[执行相交分析]
+    C --> D[统计各区域面积]
+    D --> E[导出结果]
+</div>
+
+<h2>📄 更新日志</h2>
+
+<h3>v2.1.0 (2026-06-12)</h3>
+<ul>
+<li>✨ 集成 SmartDebugger 智能调试系统</li>
+<li>✨ 添加 Task Graph 任务流程可视化</li>
+<li>✨ 添加 Query Tuning 查询优化</li>
+<li>✨ 集成 679 个 Processing 工具文档</li>
+<li>✨ 添加 Code Review 代码审查</li>
+<li>✨ 添加 Workflow Recorder 工作流录制</li>
+<li>✨ 添加 Workflow Executor 工作流执行</li>
+<li>✨ 添加 Clarification Manager 主动提问</li>
+<li>✨ 添加帮助/关于页面</li>
+</ul>
+
+<h3>v1.2.0 (2026-06-06)</h3>
+<ul>
+<li>✅ RAG API 文档检索 (380+ 文档)</li>
+<li>✅ Cookbook 自我进化机制</li>
+<li>✅ 15 个内置 QGIS 工具</li>
+<li>✅ 多 LLM 提供商支持</li>
+<li>✅ 代码执行确认机制</li>
+</ul>
+
+<h2>🔗 相关链接</h2>
+<ul>
+<li><a href="https://github.com/bunkmr/qgis_agent">📦 GitHub 仓库</a></li>
+<li><a href="https://github.com/bunkmr/qgis_agent/issues">🐛 问题反馈</a></li>
+<li><a href="https://qgis.org">🌐 QGIS 官网</a></li>
+<li><a href="https://docs.qgis.org">📖 QGIS 文档</a></li>
+</ul>
+
+<div class="footer">
+<p>Made with ❤️ by <strong>bunkmr</strong></p>
+<p>Inspired by <a href="https://github.com/Teakinboyewa/SpatialAnalysisAgent">SpatialAnalysisAgent</a> (GIBD, Penn State University)</p>
+<p>© 2026 QGIS Agent. MIT License.</p>
+</div>
+
+</div>
+</body>
+</html>
