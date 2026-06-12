@@ -166,10 +166,11 @@ def build_plugin_zip():
 
 def build_plugin_zip_flat():
     """
-    构建扁平化的 ZIP 包（QGIS 标准格式）
+    构建 QGIS 标准格式的 ZIP 包
 
-    这种格式下，ZIP 根目录直接包含插件文件，
-    不需要额外的父目录。
+    QGIS 插件 ZIP 格式要求：
+    - ZIP 根目录包含一个与插件同名的文件夹
+    - 插件文件在该文件夹内
     """
     # 获取版本号
     version = get_version()
@@ -178,7 +179,7 @@ def build_plugin_zip_flat():
     # 输出文件名
     output_file = f"{PLUGIN_NAME}_v{version}_{timestamp}_flat.zip"
 
-    print(f"Building QGIS plugin (flat format): {PLUGIN_NAME} v{version}")
+    print(f"Building QGIS plugin (standard format): {PLUGIN_NAME} v{version}")
     print(f"Output: {output_file}")
     print("-" * 50)
 
@@ -199,14 +200,15 @@ def build_plugin_zip_flat():
 
     print(f"Files to pack: {len(files_to_pack)}")
 
-    # 创建 ZIP 文件（扁平化格式）
+    # 创建 ZIP 文件（QGIS 标准格式：根目录包含插件名文件夹）
     with zipfile.ZipFile(output_file, "w", zipfile.ZIP_DEFLATED) as zipf:
         for filepath in sorted(files_to_pack):
-            # 直接使用相对路径（不添加插件名前缀）
+            # 在 ZIP 中的路径：插件名/文件路径
+            zip_path = f"{PLUGIN_NAME}/{filepath}"
             full_path = os.path.join(plugin_dir, filepath)
 
-            zipf.write(full_path, filepath)
-            print(f"  + {filepath}")
+            zipf.write(full_path, zip_path)
+            print(f"  + {zip_path}")
 
     print("-" * 50)
     print(f"Build complete: {output_file}")
