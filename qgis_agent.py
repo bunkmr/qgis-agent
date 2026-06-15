@@ -294,10 +294,9 @@ class QGISAgent:
         # 如果用户切换了模型选择器中的模型，更新对话的 llmID
         selected_llm = self._get_selected_llm_id()
         temperature = self._get_temperature()
-        need_recreate = (
-            (selected_llm and selected_llm != self.live_conversation.llmID)
-            or (temperature != getattr(self.live_conversation.processor, 'temperature', 0.0))
-        )
+        llm_changed = selected_llm and selected_llm != self.live_conversation.llmID
+        temp_changed = temperature != getattr(self.live_conversation.processor, 'temperature', 0.0)
+        need_recreate = llm_changed or temp_changed
         if need_recreate:
             if selected_llm:
                 self.live_conversation.meta_info["llmID"] = selected_llm
@@ -716,8 +715,8 @@ class QGISAgent:
             return
 
         def search_filter(meta_info, keyword=search_text):
-            return (keyword.lower() in meta_info["title"].lower() or
-                    keyword.lower() in meta_info["description"].lower())
+            kw = keyword.lower()
+            return kw in meta_info["title"].lower() or kw in meta_info["description"].lower()
 
         def highlight(full_text, keyword=search_text):
             pattern = re.compile(f"({re.escape(keyword)})", re.IGNORECASE)
