@@ -64,7 +64,7 @@ class DataLoader:
     def _create_llm_table(self):
         t = self._table_ref(self.llm_table_name)
         columns = ["ID TEXT NOT NULL PRIMARY KEY", "name TEXT NOT NULL", "endpoint TEXT", "apiKey TEXT"]
-        creation_sql = f"CREATE TABLE IF NOT EXISTS {t} ({', '.join(columns)})"  # nosec B608
+        creation_sql = "CREATE TABLE IF NOT EXISTS " + t + " (" + ', '.join(columns) + ")"
         self.cursor.execute(creation_sql)
         self.connection.commit()
 
@@ -78,9 +78,9 @@ class DataLoader:
             columns = [
                 "ID TEXT NOT NULL PRIMARY KEY", "llmID TEXT NOT NULL", "version INTEGER NOT NULL",
                 "template TEXT NOT NULL", "promptType TEXT NOT NULL",
-                f"FOREIGN KEY (llmID) REFERENCES {lt}(ID)"  # nosec B608
+                "FOREIGN KEY (llmID) REFERENCES " + lt + "(ID)"
             ]
-            creation_sql = f"CREATE TABLE IF NOT EXISTS {t} ({', '.join(columns)})"  # nosec B608
+            creation_sql = "CREATE TABLE IF NOT EXISTS " + t + " (" + ', '.join(columns) + ")"
             self.cursor.execute(creation_sql)
 
             current_folder = os.path.dirname(os.path.abspath(__file__))
@@ -107,10 +107,11 @@ class DataLoader:
                             rows_to_insert.append([prompt_id, llm_id, version, template, prompt_type])
 
                 if rows_to_insert:
-                    self.cursor.executemany(f"""  # nosec B608
-                        INSERT INTO {t} (ID, llmID, version, template, promptType)
-                        VALUES (?, ?, ?, ?, ?)
-                    """, rows_to_insert)
+                    self.cursor.executemany(
+                        "INSERT INTO " + t + " (ID, llmID, version, template, promptType)"  # nosec B608
+                        " VALUES (?, ?, ?, ?, ?)",
+                        rows_to_insert
+                    )
                     self.connection.commit()
 
     def _create_conversation_table(self):
@@ -121,9 +122,9 @@ class DataLoader:
                 "ID TEXT NOT NULL PRIMARY KEY", "llmID TEXT NOT NULL", "title TEXT NOT NULL",
                 "description TEXT NOT NULL", "created TEXT NOT NULL", "modified TEXT NOT NULL",
                 "messageCount INT NOT NULL", "workflowCount INT NOT NULL", "userID TEXT NOT NULL",
-                f"FOREIGN KEY (llmID) REFERENCES {lt}(ID)"  # nosec B608
+                "FOREIGN KEY (llmID) REFERENCES " + lt + "(ID)"
             ]
-            sql = f"CREATE TABLE IF NOT EXISTS {t} ({', '.join(columns)})"  # nosec B608
+            sql = "CREATE TABLE IF NOT EXISTS " + t + " (" + ', '.join(columns) + ")"
             self.cursor.execute(sql)
             self.connection.commit()
 
@@ -136,18 +137,18 @@ class DataLoader:
                 "requestText TEXT NOT NULL", "contextText TEXT NOT NULL", "requestTime TEXT NOT NULL",
                 "typeMessage TEXT NOT NULL", "responseText TEXT", "responseTime TEXT",
                 "workflow TEXT", "executionLog TEXT",
-                f"FOREIGN KEY (conversationID) REFERENCES {ct}(ID)"  # nosec B608
+                "FOREIGN KEY (conversationID) REFERENCES " + ct + "(ID)"
             ]
-            sql = f"CREATE TABLE IF NOT EXISTS {t} ({', '.join(columns)})"  # nosec B608
+            sql = "CREATE TABLE IF NOT EXISTS " + t + " (" + ', '.join(columns) + ")"
             self.cursor.execute(sql)
-            self.cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_conversation_id ON {t} (conversationID)")  # nosec B608
+            self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_conversation_id ON " + t + " (conversationID)")
             self.connection.commit()
 
     def _create_credential_table(self):
         if not self._check_existence(self.credential_table_name):
             t = self._table_ref(self.credential_table_name)
             columns = ["ID TEXT PRIMARY KEY", "sessionID TEXT", "sessionKey TEXT"]
-            sql = f"CREATE TABLE IF NOT EXISTS {t} ({', '.join(columns)})"  # nosec B608
+            sql = "CREATE TABLE IF NOT EXISTS " + t + " (" + ', '.join(columns) + ")"
             self.cursor.execute(sql)
 
     def _load_llm_configs_from_db(self):
@@ -173,7 +174,7 @@ class DataLoader:
 
     def fetch_llm_info(self, llm_id):
         t = self._table_ref(self.llm_table_name)
-        sql = f"SELECT name, endpoint, apiKey FROM {t} WHERE ID = ?"  # nosec B608
+        sql = "SELECT name, endpoint, apiKey FROM " + t + " WHERE ID = ?"  # nosec B608
         self.cursor.execute(sql, (llm_id,))
         row = self.cursor.fetchone()
         if row:
@@ -191,7 +192,7 @@ class DataLoader:
         t = self._table_ref(self.conversation_table_name)
         colnames = ", ".join(self.conversation_table_colname)
         placeholders = ", ".join(["?"] * len(self.conversation_table_colname))
-        sql = f"INSERT INTO {t} ({colnames}) VALUES ({placeholders})"  # nosec B608
+        sql = "INSERT INTO " + t + " (" + colnames + ") VALUES (" + placeholders + ")"  # nosec B608
         self.cursor.execute(sql, unpack(conversation_info_dict, "conversation"))
         self.connection.commit()
 
@@ -200,13 +201,13 @@ class DataLoader:
         if old_api_key == api_key:
             return
         t = self._table_ref(self.llm_table_name)
-        sql = f"UPDATE {t} SET apiKey = ? WHERE ID = ?"  # nosec B608
+        sql = "UPDATE " + t + " SET apiKey = ? WHERE ID = ?"  # nosec B608
         self.cursor.execute(sql, (api_key, llm_id))
         self.connection.commit()
 
     def fetch_api_key(self, llm_id):
         t = self._table_ref(self.llm_table_name)
-        sql = f"SELECT endpoint, apiKey FROM {t} WHERE ID = ?"  # nosec B608
+        sql = "SELECT endpoint, apiKey FROM " + t + " WHERE ID = ?"  # nosec B608
         self.cursor.execute(sql, (llm_id,))
         result = self.cursor.fetchone()
         if result:
@@ -215,7 +216,7 @@ class DataLoader:
 
     def fetch_all_config(self):
         t = self._table_ref(self.llm_table_name)
-        sql = f"SELECT * FROM {t}"  # nosec B608
+        sql = "SELECT * FROM " + t  # nosec B608
         self.cursor.execute(sql)
         return self.cursor.fetchall()
 
@@ -223,23 +224,23 @@ class DataLoader:
         ct = self._table_ref(self.conversation_table_name)
         it = self._table_ref(self.interaction_table_name)
         if conversation_id is None:
-            sql = f"SELECT * FROM {ct}"  # nosec B608
+            sql = "SELECT * FROM " + ct  # nosec B608
             self.cursor.execute(sql)
             rows = tuple_to_dict(self.cursor.fetchall(), "conversation")
         else:
-            sql = f"SELECT * FROM {ct} WHERE ID = ?"  # nosec B608
+            sql = "SELECT * FROM " + ct + " WHERE ID = ?"  # nosec B608
             self.cursor.execute(sql, (conversation_id,))
             rows = tuple_to_dict(self.cursor.fetchall(), "conversation")
 
         for row in rows:
             cid = row["ID"]
-            self.cursor.execute(  # nosec B608
-                f"SELECT COUNT(*) FROM {it} WHERE conversationID = ? AND typeMessage != 'internal'",
+            self.cursor.execute(
+                "SELECT COUNT(*) FROM " + it + " WHERE conversationID = ? AND typeMessage != 'internal'",  # nosec B608
                 (cid,)
             )
             row["messageCount"] = self.cursor.fetchone()[0]
-            self.cursor.execute(  # nosec B608
-                f"SELECT COUNT(*) FROM {it} WHERE conversationID = ? AND workflow != 'empty'",
+            self.cursor.execute(
+                "SELECT COUNT(*) FROM " + it + " WHERE conversationID = ? AND workflow != 'empty'",  # nosec B608
                 (cid,)
             )
             row["workflowCount"] = self.cursor.fetchone()[0]
@@ -248,14 +249,14 @@ class DataLoader:
 
     def delete_conversation_info(self, conversation_id):
         t = self._table_ref(self.conversation_table_name)
-        sql = f"DELETE FROM {t} WHERE ID = ?"  # nosec B608
+        sql = "DELETE FROM " + t + " WHERE ID = ?"  # nosec B608
         self.cursor.execute(sql, (conversation_id,))
         self.connection.commit()
 
     def update_conversation_info(self, meta_info: dict):
         conversation_id, llm_id, title, description, created, modified, message_count, workflow_count, user_id = unpack(meta_info, "conversation")
         t = self._table_ref(self.conversation_table_name)
-        sql = f"UPDATE {t} SET llmID=?, title=?, description=?, created=?, modified=?, messageCount=?, workflowCount=?, userID=? WHERE ID=?"  # nosec B608
+        sql = "UPDATE " + t + " SET llmID=?, title=?, description=?, created=?, modified=?, messageCount=?, workflowCount=?, userID=? WHERE ID=?"  # nosec B608
         self.cursor.execute(sql, (llm_id, title, description, created, modified, message_count, workflow_count, user_id, conversation_id))
         self.connection.commit()
 
@@ -265,20 +266,20 @@ class DataLoader:
     def delete_conversation(self, conversation_id):
         self.delete_conversation_info(conversation_id)
         t = self._table_ref(self.interaction_table_name)
-        sql = f"DELETE FROM {t} WHERE conversationID = ?"  # nosec B608
+        sql = "DELETE FROM " + t + " WHERE conversationID = ?"  # nosec B608
         self.cursor.execute(sql, (conversation_id,))
         self.connection.commit()
 
     def insert_interaction(self, interaction_info: list, conversation_id: str) -> str:
         t = self._table_ref(self.interaction_table_name)
-        self.cursor.execute(  # nosec B608
-            f"SELECT COUNT(*) FROM {t} WHERE conversationID = ? AND typeMessage != 'internal'",
+        self.cursor.execute(
+            "SELECT COUNT(*) FROM " + t + " WHERE conversationID = ? AND typeMessage != 'internal'",  # nosec B608
             (conversation_id,)
         )
         interaction_index = conversation_id + str(self.cursor.fetchone()[0])
         all_colnames = ", ".join(self.interaction_table_colname)
         placeholders = ", ".join(["?"] * len(self.interaction_table_colname))
-        sql = f"INSERT INTO {t} ({all_colnames}) VALUES ({placeholders})"  # nosec B608
+        sql = "INSERT INTO " + t + " (" + all_colnames + ") VALUES (" + placeholders + ")"  # nosec B608
         interaction = tuple([interaction_index] + interaction_info)
         self.cursor.execute(sql, interaction)
         self.connection.commit()
@@ -287,16 +288,16 @@ class DataLoader:
     def select_interaction(self, conversation_id, columns=None):
         t = self._table_ref(self.interaction_table_name)
         if columns:
-            sql = f"SELECT {', '.join(columns)} FROM {t} WHERE conversationID = ? AND typeMessage = ?"  # nosec B608
+            sql = "SELECT " + ', '.join(columns) + " FROM " + t + " WHERE conversationID = ? AND typeMessage = ?"  # nosec B608
         else:
-            sql = f"SELECT * FROM {t} WHERE conversationID = ? AND typeMessage IN (?, ?)"  # nosec B608
+            sql = "SELECT * FROM " + t + " WHERE conversationID = ? AND typeMessage IN (?, ?)"  # nosec B608
         self.cursor.execute(sql, (conversation_id, "input", "return"))
         return self.cursor.fetchall()
 
     def select_latest_interaction(self, conversation_id, interaction_id=None):
         t = self._table_ref(self.interaction_table_name)
         if interaction_id is not None:
-            sql = f"SELECT * FROM {t} WHERE conversationID = ? AND ID = ?"  # nosec B608
+            sql = "SELECT * FROM " + t + " WHERE conversationID = ? AND ID = ?"  # nosec B608
             self.cursor.execute(sql, (conversation_id, interaction_id))
             row = self.cursor.fetchone()
             if row is not None:
@@ -312,19 +313,19 @@ class DataLoader:
 
     def update_llm_config(self, llm_id, name, endpoint, api_key):
         t = self._table_ref(self.llm_table_name)
-        sql = f"UPDATE {t} SET name=?, endpoint=?, apiKey=? WHERE ID=?"  # nosec B608
+        sql = "UPDATE " + t + " SET name=?, endpoint=?, apiKey=? WHERE ID=?"  # nosec B608
         self.cursor.execute(sql, (name, endpoint, api_key, llm_id))
         self.connection.commit()
 
     def insert_llm_config(self, llm_id, name, endpoint, api_key):
         t = self._table_ref(self.llm_table_name)
-        sql = f"INSERT OR REPLACE INTO {t} (ID, name, endpoint, apiKey) VALUES (?, ?, ?, ?)"  # nosec B608
+        sql = "INSERT OR REPLACE INTO " + t + " (ID, name, endpoint, apiKey) VALUES (?, ?, ?, ?)"  # nosec B608
         self.cursor.execute(sql, (llm_id, name, endpoint, api_key))
         self.connection.commit()
 
     def delete_llm_config(self, llm_id):
         t = self._table_ref(self.llm_table_name)
-        sql = f"DELETE FROM {t} WHERE ID=?"  # nosec B608
+        sql = "DELETE FROM " + t + " WHERE ID=?"  # nosec B608
         self.cursor.execute(sql, (llm_id,))
         self.connection.commit()
 

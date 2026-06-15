@@ -217,11 +217,12 @@ class DocStore:
         for kw in keywords:
             params.extend([f"%{kw}%", f"%{kw}%", f"%{kw}%"])
 
-        rows = conn.execute(f"""  # nosec B608 - conditions built from fixed SQL fragments, values parameterized
-            SELECT * FROM pyqgis_api_docs
-            WHERE {conditions}
-            LIMIT ?
-        """, params + [top_k]).fetchall()
+        query = (
+            "SELECT * FROM pyqgis_api_docs"
+            " WHERE " + conditions +  # nosec B608
+            " LIMIT ?"
+        )
+        rows = conn.execute(query, params + [top_k]).fetchall()
 
         return [dict(row) for row in rows]
 
@@ -322,12 +323,13 @@ class DocStore:
         for kw in keywords:
             params.extend([f"%{kw}%", f"%{kw}%"])
 
-        rows = conn.execute(f"""  # nosec B608 - conditions built from fixed SQL fragments, values parameterized
-            SELECT * FROM cookbook_entries
-            WHERE {conditions}
-            ORDER BY quality_score DESC
-            LIMIT ?
-        """, params + [top_k]).fetchall()
+        query = (
+            "SELECT * FROM cookbook_entries"
+            " WHERE " + conditions +  # nosec B608
+            " ORDER BY quality_score DESC"
+            " LIMIT ?"
+        )
+        rows = conn.execute(query, params + [top_k]).fetchall()
         return [dict(row) for row in rows]
 
     def _get_top_cookbook(self, top_k: int = 3) -> list:
