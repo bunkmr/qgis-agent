@@ -52,6 +52,7 @@ EXCLUDE_PATTERNS = [
     ".pytest_cache",
     "data",  # 运行时生成的数据
     "agent_loop",  # 实验性模块（可选）
+    "rag",  # RAG模块（独立子包，QGIS扫描器会误判为子插件）
     "skills",  # 实验性模块（可选）
     "tests",  # 测试文件
     "scripts",  # 脚本文件
