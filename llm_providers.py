@@ -1,5 +1,4 @@
 import os
-from typing import Optional
 
 import httpx
 from langchain_openai import ChatOpenAI

@@ -234,7 +234,7 @@ class AdaptiveLearning:
             try:
                 with open(self.history_file, 'r') as f:
                     return json.load(f)
-            except:
+            except Exception:
                 pass
 
         return {
@@ -254,7 +254,7 @@ class AdaptiveLearning:
             print(f"Failed to save debug history: {e}")
 
     def record_debug_attempt(self, error_type: str, solution: str, success: bool,
-                           execution_time: float = 0.0):
+                             execution_time: float = 0.0):
         """Record a debugging attempt for learning"""
         entry = {
             "timestamp": datetime.now().isoformat(),

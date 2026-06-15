@@ -1,14 +1,13 @@
-import os
 import html as html_module
 from datetime import datetime
 
-from qgis.PyQt import QtGui, QtWidgets, uic
+from qgis.PyQt import QtWidgets
 from qgis.PyQt.QtCore import pyqtSignal, QEvent, Qt
 from qgis.PyQt.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QLabel, QGroupBox, QPushButton,
-    QSizePolicy, QSpacerItem, QScrollArea, QWidget, QPlainTextEdit, QToolButton
+    QSizePolicy, QSpacerItem, QWidget, QPlainTextEdit
 )
-from qgis.PyQt.QtGui import QFont, QPalette, QIcon
+from qgis.PyQt.QtGui import QFont, QPalette
 
 from .utils import handle_none_conversation, pack, unpack, format_description, create_markdown, set_font_color
 from .qgis_agent_dockwidget_base_ui import Ui_QGISAgentDockWidget

@@ -4,8 +4,7 @@ Executes saved workflow templates in new projects.
 """
 
 import json
-import os
-from typing import Dict, List, Optional, Any
+from typing import Dict
 from datetime import datetime
 
 
@@ -17,7 +16,7 @@ class WorkflowExecutor:
         self.execution_history = []
 
     def execute_workflow(self, template, parameters: Dict = None,
-                       dry_run: bool = False) -> Dict:
+                         dry_run: bool = False) -> Dict:
         """
         Execute a workflow template
 
@@ -75,7 +74,7 @@ class WorkflowExecutor:
                     "result": result
                 })
 
-                print(f"✓ Step completed successfully")
+                print("✓ Step completed successfully")
 
             except Exception as e:
                 results["steps"].append({
@@ -134,7 +133,7 @@ def execute_workflow():
                 code += f"    result_{step.step_id} = processing.run('{step.tool_name}', {{\n"
                 for key, value in step_args.items():
                     code += f"        '{key}': {repr(value)},\n"
-                code += f"    }})\n"
+                code += "    })\n"
                 code += f"    results['{step.step_id}'] = result_{step.step_id}\n\n"
             else:
                 # Custom tool

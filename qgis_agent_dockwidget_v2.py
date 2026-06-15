@@ -8,15 +8,14 @@
 3. 流式更新支持
 """
 
-import os
 import html as html_module
 from datetime import datetime
 
-from qgis.PyQt import QtWidgets, uic
+from qgis.PyQt import QtWidgets
 from qgis.PyQt.QtCore import pyqtSignal, QEvent, Qt
 from qgis.PyQt.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QLabel, QGroupBox, QPushButton,
-    QSizePolicy, QSpacerItem, QScrollArea, QWidget, QPlainTextEdit
+    QSizePolicy, QSpacerItem, QWidget, QPlainTextEdit
 )
 from qgis.PyQt.QtGui import QFont, QPalette
 
@@ -202,7 +201,6 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         """
         # 获取 QGIS 主题颜色
         palette = self.txHistory.palette()
-        bg_color = palette.color(QPalette.Base).name()
         font_color = set_font_color(palette.color(QPalette.Base))
 
         # 构建当前完整 HTML
@@ -250,7 +248,6 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         """
         # 获取 QGIS 主题颜色
         palette = self.txHistory.palette()
-        bg_color = palette.color(QPalette.Base).name()
         font_color = set_font_color(palette.color(QPalette.Base))
 
         current_html = self.txHistory.toHtml() if hasattr(self.txHistory, 'toHtml') else ""
@@ -293,10 +290,6 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
 
     def showToolStatus(self, status_text):
         """在聊天框中显示工具调用状态"""
-        # 获取 QGIS 主题颜色
-        palette = self.txHistory.palette()
-        font_color = set_font_color(palette.color(QPalette.Base))
-
         status_html = f'''
             <div style="margin: 4px 0; padding: 4px 10px; border-left: 3px solid #4A90D9; border-radius: 4px; font-family: Consolas, monospace; font-size: 12px;">
                 <span style="color: #4A90D9;">🔧 {html_module.escape(status_text)}</span>
@@ -529,7 +522,6 @@ body {{
             import tempfile
             import os
 
-            name = workflow_data.get("name", "未命名工作流")
             steps = workflow_data.get("steps", [])
 
             # 创建NetworkX图

@@ -5,7 +5,6 @@ Converts JSON format to TOML and integrates with QGIS Agent
 
 import json
 import os
-from typing import Dict, List
 
 
 def import_tools_from_json(json_path: str, output_dir: str):

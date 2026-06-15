@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
 
 import os
-import sys
 import re
 import html as html_module
 
 from qgis.PyQt.QtCore import (
     QSettings, QTranslator, QCoreApplication, Qt, QTimer
 )
-from qgis.PyQt.QtGui import QIcon, QTextCursor, QClipboard, QPalette
+from qgis.PyQt.QtGui import QIcon, QPalette
 from qgis.PyQt.QtWidgets import (
-    QAction, QDialog, QPushButton, QPlainTextEdit, QLineEdit,
+    QAction, QDialog, QPushButton, QLineEdit,
     QDockWidget, QApplication, QMessageBox, QLabel, QVBoxLayout, QHBoxLayout,
     QComboBox, QTableWidgetItem, QFrame, QToolBar
 )
@@ -149,8 +148,8 @@ class QGISAgent:
                         QMessageBox.information(None, "安装成功", "依赖安装完成，请重启 QGIS 后重新启用插件。")
                     else:
                         QMessageBox.warning(None, "安装失败",
-                            "自动安装失败，请在 OSGeo4W Shell 中手动运行：\n\n"
-                            f"pip install {' '.join(required_modules)}")
+                                            "自动安装失败，请在 OSGeo4W Shell 中手动运行：\n\n"
+                                            f"pip install {' '.join(required_modules)}")
                 else:
                     QMessageBox.information(None, "已就绪", "依赖已安装，请重启 QGIS。")
             return
@@ -170,14 +169,14 @@ class QGISAgent:
         from .utils import (
             generate_unique_id, get_current_timestamp, pack, extract_code, set_font_color
         )
-        from .config import DB_NAME, PLUGIN_NAME
+        from .config import DB_NAME
 
         # 先创建 dockwidget（后续信号连接依赖它）
         if self.dockwidget is None:
             self.dockwidget = QGISAgentDockWidget()
 
         # 在主线程中初始化工具调度桥接器（必须在任何工具调用前完成）
-        from .qgis_tools import _init_main_thread_bridge, set_code_confirm_callback, set_skip_all_confirms
+        from .qgis_tools import _init_main_thread_bridge, set_code_confirm_callback
         _init_main_thread_bridge()
         # 设置全局代码确认回调
         set_code_confirm_callback(self._on_code_confirm_sync)
@@ -279,7 +278,6 @@ class QGISAgent:
     def _get_temperature(self):
         """获取当前 temperature 滑块的值"""
         return self.dockwidget.sliderTemperature.value() / 100.0
-
 
     def _on_new_message_send(self):
         message = self.dockwidget.ptMessage.toPlainText()
@@ -411,7 +409,7 @@ class QGISAgent:
             self.dockwidget.append_execution_log("⚠️ 没有可执行的代码")
             return
 
-        self.dockwidget.append_execution_log(f"▶ 开始执行代码...")
+        self.dockwidget.append_execution_log("▶ 开始执行代码...")
         self.dockwidget.hide_debug_analysis()
 
         # 在工作线程中执行代码
@@ -419,7 +417,7 @@ class QGISAgent:
         result = execute_pyqgis(code)
 
         if result.get("executed"):
-            self.dockwidget.append_execution_log(f"✅ 代码执行成功")
+            self.dockwidget.append_execution_log("✅ 代码执行成功")
             if result.get("stdout"):
                 self.dockwidget.append_execution_log(f"输出:\n{result['stdout']}")
             if result.get("stderr"):
@@ -435,12 +433,12 @@ class QGISAgent:
         """从文件加载代码"""
         code = self.dockwidget.load_code_from_file()
         if code:
-            self.dockwidget.append_execution_log(f"📂 已加载代码文件")
+            self.dockwidget.append_execution_log("📂 已加载代码文件")
 
     def _on_copy_code(self):
         """复制代码到剪贴板"""
         if self.dockwidget.copy_code_to_clipboard():
-            self.dockwidget.append_execution_log(f"📋 代码已复制到剪贴板")
+            self.dockwidget.append_execution_log("📋 代码已复制到剪贴板")
 
     def _on_save_code(self):
         """保存代码到文件"""
@@ -451,7 +449,7 @@ class QGISAgent:
     def _on_clear_code(self):
         """清空代码编辑器"""
         self.dockwidget.clear_code_editor()
-        self.dockwidget.append_execution_log(f"🗑️ 已清空代码编辑器")
+        self.dockwidget.append_execution_log("🗑️ 已清空代码编辑器")
 
     def _on_response_error(self, error_message):
         self.dockwidget.set_sending_state(False)
@@ -469,10 +467,10 @@ class QGISAgent:
 
     def _on_code_confirm(self, tool_name, code_preview, callback):
         """代码执行确认对话框 — 借鉴 QGPT Agent 的安全确认机制。
-        
+
         在 execute_pyqgis 或 execute_processing 执行前弹窗，
         让用户确认或取消代码执行。
-        
+
         Args:
             tool_name: 工具名称 (execute_pyqgis / execute_processing)
             code_preview: 代码预览文本
@@ -488,7 +486,7 @@ class QGISAgent:
         msg.setDefaultButton(QMessageBox.No)
         msg.button(QMessageBox.Yes).setText("执行")
         msg.button(QMessageBox.No).setText("取消")
-        
+
         result = msg.exec_()
         callback(result == QMessageBox.Yes)
 
@@ -504,7 +502,7 @@ class QGISAgent:
         msg.setDefaultButton(QMessageBox.No)
         msg.button(QMessageBox.Yes).setText("执行")
         msg.button(QMessageBox.No).setText("取消")
-        
+
         result = msg.exec_()
         return result == QMessageBox.Yes
 

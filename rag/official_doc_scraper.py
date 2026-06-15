@@ -17,7 +17,6 @@ import urllib.request
 import urllib.parse
 from dataclasses import dataclass
 from typing import Optional
-from pathlib import Path
 from html.parser import HTMLParser
 
 
@@ -98,12 +97,6 @@ class SimpleDocParser:
         method_pattern = re.compile(
             r'<a\s+class="el"\s+href="[^"]*"[^>]*>(\w+)</a>\s*\(([^)]*)\)',
             re.MULTILINE
-        )
-
-        # 提取方法描述
-        desc_pattern = re.compile(
-            r'<div class="memItemRight"[^>]*>(.*?)</div>',
-            re.DOTALL
         )
 
         for match in method_pattern.finditer(html_content):
@@ -372,7 +365,7 @@ class OfficialDocScraper:
             }
             req = urllib.request.Request(url, headers=headers)
 
-            with urllib.request.urlopen(req, timeout=30) as response:
+            with urllib.request.urlopen(req, timeout=30) as response:  # nosec B310 - only http/https URLs from QGIS docs
                 return response.read().decode("utf-8")
         except Exception as e:
             print(f"Failed to fetch {url}: {e}")

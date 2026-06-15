@@ -1,9 +1,8 @@
-import json
 import traceback as tb
 
 from qgis.PyQt.QtCore import QThreadPool, pyqtSignal, QObject
 
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
 from .llm_providers import get_llm_instance
 from .utils import get_current_timestamp, pack
@@ -144,7 +143,7 @@ class Processor(QObject):
     # ── Agent 模式：带工具调用的智能对话 ──
 
     def agent_chat(self, user_input: str, thinking_callback=None, tool_status_callback=None,
-                  workflow_callback=None) -> tuple:
+                   workflow_callback=None) -> tuple:
         """
         Agent 对话：LLM 可以调用 QGIS 工具完成用户请求。
         支持多轮工具调用（观察→操作→反馈循环）。
@@ -170,7 +169,7 @@ class Processor(QObject):
             tuned_query = self.query_tuner.tune_query(user_input, data_overview_text)
             if thinking_callback:
                 thinking_callback(f"[Query Tuning] 优化查询: {tuned_query[:100]}...\n")
-        except Exception as e:
+        except Exception:
             # Query tuning失败不影响主流程
             tuned_query = user_input
 
@@ -249,7 +248,7 @@ class Processor(QObject):
             except (AttributeError, TypeError, NotImplementedError, Exception):
                 # 模型不支持 function calling，直接普通对话
                 if thinking_callback:
-                    thinking_callback(f"[思考中...]\n")
+                    thinking_callback("[思考中...]\n")
                 response = self.llm.invoke(messages)
                 final_response = (response.content if hasattr(response, 'content') and response.content
                                   else str(response))
@@ -258,7 +257,7 @@ class Processor(QObject):
                 break
 
             if thinking_callback:
-                thinking_callback(f"[思考中...]\n")
+                thinking_callback("[思考中...]\n")
 
             # 非流式调用（带 tool_choice="auto"）
             response = llm_with_tools.invoke(messages)
@@ -316,9 +315,8 @@ class Processor(QObject):
                     self.code_update.emit(tool_args["code"])
                     # 延迟发送执行日志，避免频繁更新导致卡顿
                     from qgis.PyQt.QtCore import QTimer
-                    QTimer.singleShot(50, lambda: self.execution_log.emit(f"▶ 执行 PyQGIS 代码..."))
+                    QTimer.singleShot(50, lambda: self.execution_log.emit("▶ 执行 PyQGIS 代码..."))
                 elif tool_name == "execute_processing":
-                    code_snippet = f"processing.run('{tool_name}', {json.dumps(tool_args, indent=2)})"
                     # 延迟发送执行日志，避免频繁更新导致卡顿
                     from qgis.PyQt.QtCore import QTimer
                     QTimer.singleShot(50, lambda: self.execution_log.emit(f"▶ 执行 Processing 算法: {tool_name}"))

@@ -3,12 +3,11 @@ from functools import wraps
 from typing import Literal
 import uuid
 import re
-import os
 
 try:
     from qgis.core import Qgis
-    from qgis.PyQt.QtWidgets import QApplication, QDialog, QLabel, QVBoxLayout, QScrollArea, QWidget
-    from qgis.PyQt.QtGui import QColor
+    from qgis.PyQt.QtWidgets import QApplication, QDialog, QLabel, QVBoxLayout, QScrollArea, QWidget  # noqa: F401
+    from qgis.PyQt.QtGui import QColor  # noqa: F401
     _HAS_QGIS = True
 except ImportError:
     _HAS_QGIS = False
@@ -122,7 +121,6 @@ def create_markdown(markdown_text: str) -> str:
 
     def _protect_code(m):
         placeholder = f"<!--CODEBLOCK_{code_counter[0]}-->"
-        lang = m.group(1) or ""
         code = m.group(2)
         code_blocks[placeholder] = f'<pre style="background-color:#1e1e1e;color:#d4d4d4;padding:10px;border-radius:6px;overflow-x:auto;font-family:Consolas,monospace;font-size:12px;line-height:1.5;"><code>{html_module.escape(code)}</code></pre>'
         code_counter[0] += 1

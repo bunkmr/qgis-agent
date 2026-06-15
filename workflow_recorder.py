@@ -7,7 +7,7 @@ Inspired by SpatialAnalysisAgent's Cookbook and Solution Graph.
 import json
 import os
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Dict, List
 
 
 class WorkflowStep:
@@ -113,8 +113,8 @@ class WorkflowRecorder:
                     print(f"Error loading workflow {filename}: {e}")
 
     def record_from_conversation(self, tool_calls: List[Dict],
-                                workflow_name: str = None,
-                                description: str = None) -> WorkflowTemplate:
+                                 workflow_name: str = None,
+                                 description: str = None) -> WorkflowTemplate:
         """
         Record a workflow from conversation tool calls
 

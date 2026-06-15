@@ -4,7 +4,9 @@ Optimizes user input understanding and provides data context to LLM.
 Inspired by SpatialAnalysisAgent's Query Tuning system.
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Dict
+
+from langchain_core.messages import HumanMessage
 
 
 class QueryTuner:
@@ -105,7 +107,7 @@ class DataOverview:
             Formatted data overview string
         """
         try:
-            from qgis.core import QgsProject, QgsMapLayer
+            from qgis.core import QgsProject
 
             project = QgsProject.instance()
             layers = project.mapLayers()
@@ -126,8 +128,7 @@ class DataOverview:
 
     def _get_layer_info(self, layer) -> str:
         """Get detailed information about a layer"""
-        from qgis.core import QgsMapLayer, QgsVectorLayer, QgsRasterLayer
-
+        from qgis.core import QgsMapLayer
         info_parts = [f"Layer: {layer.name()}"]
         info_parts.append(f"Type: {self._get_layer_type(layer)}")
 
@@ -162,7 +163,7 @@ class DataOverview:
 
     def _get_layer_type(self, layer) -> str:
         """Get human-readable layer type"""
-        from qgis.core import QgsMapLayer, QgsVectorLayer, QgsRasterLayer
+        from qgis.core import QgsMapLayer
 
         if layer.type() == QgsMapLayer.VectorLayer:
             geom_type = layer.geometryType()
@@ -180,7 +181,7 @@ class DataOverview:
     def get_layer_summary(self) -> Dict:
         """Get summary statistics of loaded layers"""
         try:
-            from qgis.core import QgsProject, QgsMapLayer, QgsVectorLayer
+            from qgis.core import QgsProject, QgsMapLayer
 
             project = QgsProject.instance()
             layers = project.mapLayers()

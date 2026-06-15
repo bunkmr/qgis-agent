@@ -1,9 +1,6 @@
-import os
 from typing import Tuple
 
 from qgis.PyQt import QtWidgets
-from qgis.PyQt.QtCore import pyqtSignal, QEvent, Qt
-from qgis.PyQt.QtWidgets import QLineEdit
 
 from .dialog_new_conversation_ui import Ui_NewConversationDialog
 

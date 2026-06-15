@@ -1,7 +1,6 @@
 import uuid
 
 from qgis.PyQt import QtWidgets
-from qgis.PyQt.QtCore import Qt
 
 from .settings_dialog_ui import Ui_SettingsDialog
 

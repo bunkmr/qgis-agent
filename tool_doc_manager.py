@@ -6,7 +6,7 @@ Inspired by SpatialAnalysisAgent's Tools_Documentation system.
 
 import os
 import json
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 
 
 class ToolDocManager:
@@ -61,7 +61,7 @@ class ToolDocManager:
                     "code_example": doc.get("code_example", ""),
                     "file_path": filepath
                 }
-        except Exception as e:
+        except Exception:
             pass  # Skip invalid TOML files
 
     def get_tool_doc(self, tool_id: str) -> Optional[Dict]:
@@ -139,7 +139,7 @@ class ToolDocManager:
         return summary
 
     def add_tool_doc(self, tool_id: str, tool_name: str, description: str,
-                    parameters: str, code_example: str):
+                     parameters: str, code_example: str):
         """Add a new tool documentation"""
         self.tools_index[tool_id] = {
             "tool_ID": tool_id,
@@ -174,7 +174,7 @@ class ToolSelector:
         self.doc_manager = doc_manager
 
     def select_tools(self, user_query: str, data_overview: str = None,
-                    max_tools: int = 3) -> List[Dict]:
+                     max_tools: int = 3) -> List[Dict]:
         """
         Select tools based on user query
 
@@ -192,7 +192,6 @@ class ToolSelector:
         # Filter and rank based on relevance
         selected = []
         for result in search_results[:max_tools]:
-            tool_doc = result["doc"]
             selected.append({
                 "tool_id": result["tool_id"],
                 "tool_name": result["tool_name"],

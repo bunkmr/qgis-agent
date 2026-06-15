@@ -13,7 +13,6 @@ import os
 import sqlite3
 import json
 import threading
-from typing import Optional
 
 
 class DocStore:
@@ -218,7 +217,7 @@ class DocStore:
         for kw in keywords:
             params.extend([f"%{kw}%", f"%{kw}%", f"%{kw}%"])
 
-        rows = conn.execute(f"""
+        rows = conn.execute(f"""  # nosec B608 - conditions built from fixed SQL fragments, values parameterized
             SELECT * FROM pyqgis_api_docs
             WHERE {conditions}
             LIMIT ?
@@ -323,7 +322,7 @@ class DocStore:
         for kw in keywords:
             params.extend([f"%{kw}%", f"%{kw}%"])
 
-        rows = conn.execute(f"""
+        rows = conn.execute(f"""  # nosec B608 - conditions built from fixed SQL fragments, values parameterized
             SELECT * FROM cookbook_entries
             WHERE {conditions}
             ORDER BY quality_score DESC

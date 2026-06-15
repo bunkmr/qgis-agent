@@ -13,17 +13,16 @@ import traceback
 from qgis.core import (
     Qgis, QgsProject, QgsApplication, QgsVectorLayer, QgsRasterLayer,
     QgsMapLayer, QgsCoordinateReferenceSystem, QgsMapSettings,
-    QgsMapRendererParallelJob, QgsMessageLog,
+    QgsMapRendererParallelJob,
     QgsPalLayerSettings, QgsVectorLayerSimpleLabeling, QgsTextFormat
 )
-from qgis.gui import QgsMapCanvas
 from qgis.PyQt.QtCore import QSize, QObject
 from qgis.PyQt.QtGui import QColor
 from qgis.PyQt.QtWidgets import QApplication
 from qgis.utils import iface
 
 # Import SmartDebugger
-from .smart_debugger import SmartDebugger, get_debug_suggestions
+from .smart_debugger import SmartDebugger
 
 
 def _get_layer_type(layer):
@@ -295,7 +294,7 @@ def execute_pyqgis(code: str):
         sys.stderr = stderr_capture
 
         # 预导入常用 QGIS 类型，确保 LLM 生成的代码能直接使用
-        from qgis.core import (
+        from qgis.core import (  # noqa: F401
             QgsPoint, QgsPointXY, QgsGeometry, QgsFeature, QgsField,
             QgsFields, QgsWkbTypes, QgsCoordinateTransform,
             QgsProcessingFeedback, QgsFeatureSink, QgsFeatureRequest,
@@ -341,7 +340,7 @@ def execute_pyqgis(code: str):
             "QgsVectorLayerSimpleLabeling": QgsVectorLayerSimpleLabeling,
             "QgsTextFormat": QgsTextFormat,
         }
-        exec(code, namespace)
+        exec(code, namespace)  # nosec B102 - intentional: executing user PyQGIS code in sandboxed namespace
 
         sys.stdout = original_stdout
         sys.stderr = original_stderr
@@ -535,7 +534,6 @@ def set_layer_labeling(
         layer.setLabelsEnabled(True)
         # 尝试用 setLabeling 的其他重载
         try:
-            from qgis.core import QgsAbstractVectorLayerLabeling
             if hasattr(layer, 'setLabeling'):
                 # 直接传 QgsPalLayerSettings（某些版本接受）
                 layer.setLabeling(settings)
@@ -583,7 +581,7 @@ def render_map(output_path: str, width: int = 800, height: int = 600):
 # 主线程调度器（解决 QGIS API 线程安全问题）
 # ──────────────────────────────────────────────
 
-from qgis.PyQt.QtCore import QObject, pyqtSignal, pyqtSlot, QMutex, QWaitCondition, QThread
+from qgis.PyQt.QtCore import pyqtSignal, pyqtSlot, QMutex, QWaitCondition, QThread  # noqa: E402
 
 # 全局代码确认回调（由 qgis_agent.py 设置）
 _code_confirm_callback = None
@@ -618,10 +616,10 @@ def get_skip_all_confirms() -> bool:
 
 class _MainThreadBridge(QObject):
     """驻留在主线程的桥接器。
-    
+
     工作线程通过发射 execute_request 信号来触发主线程执行工具，
     主线程执行完毕后通过 QWaitCondition 唤醒等待的工作线程。
-    
+
     相比 QMetaObject.invokeMethod，信号/槽方式对参数类型没有限制，
     可以安全传递 Python dict/function 等任意对象。
     """
@@ -989,7 +987,7 @@ def call_tool(tool_name: str, arguments: dict) -> dict:
 
     关键：QGIS API 不是线程安全的，所有工具必须在主线程中执行。
     如果当前不在主线程，通过信号/槽 + QWaitCondition 调度到主线程同步执行。
-    
+
     危险工具（execute_pyqgis, execute_processing）在执行前会通过
     _code_confirm_callback 弹出确认对话框。
     """
@@ -1005,7 +1003,7 @@ def call_tool(tool_name: str, arguments: dict) -> dict:
         elif tool_name == "execute_processing":
             code_preview = f"algorithm: {arguments.get('algorithm', '')}\n"
             code_preview += f"parameters: {json.dumps(arguments.get('parameters', {}), indent=2, ensure_ascii=False)}"
-        
+
         # 确认回调必须在主线程中调用（会弹对话框）
         current_thread = QThread.currentThread()
         try:
@@ -1013,25 +1011,25 @@ def call_tool(tool_name: str, arguments: dict) -> dict:
             main_thread = app.thread() if app else None
         except Exception:
             main_thread = None
-        
+
         if main_thread is not None and current_thread != main_thread:
             # 工作线程中，需要通过信号/槽调度确认
             bridge = _MainThreadBridge._instance
             if bridge is None:
                 return {"error": "QGIS Agent 插件未初始化，请先打开插件面板。"}
-            
+
             wait_cond = QWaitCondition()
             mutex = QMutex()
             confirm_holder = {"confirmed": False, "done": False, "wait_cond": wait_cond, "mutex": mutex}
-            
+
             bridge.confirm_request.emit(tool_name, code_preview, confirm_holder)
-            
+
             mutex.lock()
             timeout_sec = 60
             if not confirm_holder["done"]:
                 wait_cond.wait(mutex, timeout_sec * 1000)
             mutex.unlock()
-            
+
             if not confirm_holder.get("confirmed", False):
                 return {"error": f"用户取消了 {tool_name} 操作。"}
         else:

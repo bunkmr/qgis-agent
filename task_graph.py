@@ -75,7 +75,7 @@ class TaskGraph:
         if self.graph:
             # Add node
             self.graph.add_node(step_id, label=name, description=description,
-                              status="pending", shape="box")
+                                status="pending", shape="box")
 
             # Add edge
             if depends_on:
@@ -86,7 +86,7 @@ class TaskGraph:
         return step
 
     def update_step(self, step_id: str, status: str, result: Any = None,
-                   error: str = None, tool_used: str = None):
+                    error: str = None, tool_used: str = None):
         """Update step status"""
         for step in self.steps:
             if step.step_id == step_id:
@@ -182,7 +182,7 @@ class TaskGraph:
         if not filename:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = os.path.join(self.save_dir,
-                                   f"{self.task_name}_{timestamp}.json")
+                                    f"{self.task_name}_{timestamp}.json")
 
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(self.to_json())

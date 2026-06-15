@@ -4,6 +4,7 @@ import os
 import struct
 import zlib
 
+
 def create_png(width, height, pixels):
     """创建 PNG 图片
 

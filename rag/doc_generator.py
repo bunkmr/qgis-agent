@@ -12,9 +12,6 @@ API 文档生成器 — 从 QGIS 运行时提取 PyQGIS/GDAL API 文档。
 """
 
 import inspect
-import json
-import os
-from typing import Optional
 
 from .doc_store import DocStore
 
