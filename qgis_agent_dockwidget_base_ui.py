@@ -88,7 +88,7 @@ class Ui_QGISAgentDockWidget(object):
         self.lblTempValue = QtWidgets.QLabel("0.0")
         self.lblTempValue.setStyleSheet("font-size: 11px; color: #888; min-width: 24px;")
         self.sliderTemperature.valueChanged.connect(
-            lambda v: self.lblTempValue.setText(f"{v /100:.1f}")
+            lambda v: self.lblTempValue.setText(f"{v / 100:.1f}")
         )
 
         self.pbStop = QtWidgets.QPushButton("⏹ 停止")

@@ -134,7 +134,7 @@ Provide your review in the following JSON format:
         else:
             summary.append("❌ Code review found issues")
 
-        summary.append(f"Confidence: {review['confidence'] *100:.1f}%")
+        summary.append(f"Confidence: {review['confidence'] * 100:.1f}%")
 
         if review["issues"]:
             summary.append("\nIssues found:")
