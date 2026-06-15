@@ -4,7 +4,7 @@ Reviews generated PyQGIS/Processing code for correctness.
 Inspired by SpatialAnalysisAgent's code review system.
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict
 
 
 class CodeReviewer:
@@ -45,7 +45,7 @@ Provide your review in the following JSON format:
         self.llm = llm
 
     def review_code(self, code: str, tool_name: str, tool_id: str,
-                   user_query: str) -> Dict:
+                    user_query: str) -> Dict:
         """
         Review generated code
 
@@ -134,7 +134,7 @@ Provide your review in the following JSON format:
         else:
             summary.append("❌ Code review found issues")
 
-        summary.append(f"Confidence: {review['confidence']*100:.1f}%")
+        summary.append(f"Confidence: {review['confidence'] *100:.1f}%")
 
         if review["issues"]:
             summary.append("\nIssues found:")

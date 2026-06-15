@@ -5,7 +5,7 @@ Makes the agent more interactive and user-friendly.
 """
 
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 
 class ClarificationManager:
@@ -151,35 +151,35 @@ class ClarificationManager:
         return analysis
 
     def _is_parameter_provided(self, user_input: str, category: str,
-                              context: Dict = None) -> bool:
+                               context: Dict = None) -> bool:
         """Check if a parameter is already provided in the request"""
         context = context or {}
 
         if category == "missing_path":
             # Check if path is in user input or context
             return bool(re.search(r'[A-Za-z]:\\', user_input)) or \
-                   bool(re.search(r'/[\w/]+', user_input)) or \
-                   "file_path" in context
+                bool(re.search(r'/[\w/]+', user_input)) or \
+                "file_path" in context
 
         elif category == "missing_layer":
             # Check if layer name is specified
             return bool(re.search(r'图层\s*[\w一-龥]+', user_input)) or \
-                   "layer_name" in context
+                "layer_name" in context
 
         elif category == "missing_distance":
             # Check if distance is specified
             return bool(re.search(r'\d+\s*(米|m|km)', user_input)) or \
-                   "distance" in context
+                "distance" in context
 
         elif category == "missing_field":
             # Check if field is specified
             return bool(re.search(r'字段\s*[\w]+', user_input)) or \
-                   "field_name" in context
+                "field_name" in context
 
         return False
 
     def _calculate_completeness_score(self, user_input: str,
-                                     context: Dict = None) -> float:
+                                      context: Dict = None) -> float:
         """Calculate how complete the user request is"""
         score = 0.0
         context = context or {}
@@ -205,7 +205,7 @@ class ClarificationManager:
 
         # Check for specific action
         action_keywords = ["添加", "删除", "分析", "缓冲", "裁剪", "合并",
-                          "add", "remove", "analyze", "buffer", "clip", "merge"]
+                           "add", "remove", "analyze", "buffer", "clip", "merge"]
         for keyword in action_keywords:
             if keyword in user_input.lower():
                 score += 0.1
@@ -235,7 +235,7 @@ class ClarificationManager:
         return suggestions
 
     def generate_clarification_prompt(self, user_input: str,
-                                     analysis: Dict) -> str:
+                                      analysis: Dict) -> str:
         """Generate a prompt for LLM to ask clarification questions"""
         if analysis["is_complete"]:
             return ""
@@ -258,7 +258,7 @@ class ClarificationManager:
         return prompt
 
     def get_clarification_response(self, user_input: str,
-                                  context: Dict = None) -> Optional[str]:
+                                   context: Dict = None) -> Optional[str]:
         """
         Generate clarification response if needed
 

@@ -1,5 +1,6 @@
 import os
 
+
 def load_env_file(path=None):
     if path is None:
         path = os.path.join(os.path.dirname(__file__), ".env")
@@ -11,9 +12,11 @@ def load_env_file(path=None):
                     key, value = line.split("=", 1)
                     os.environ[key.strip()] = value.strip()
 
+
 load_env_file()
+
 
 DEBUG_MODE = os.environ.get("QGIS_AGENT_DEBUG", "False") == "True"
 DB_NAME = "QGIS_Agent.db"
 PLUGIN_NAME = "QGIS Agent"
-PLUGIN_VERSION = "2.1.0"
+PLUGIN_VERSION = "2.1.1"

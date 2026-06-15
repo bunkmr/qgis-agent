@@ -2,7 +2,7 @@
 name=QGIS Agent
 qgisMinimumVersion=3.0
 description=LLM-powered intelligent assistant for QGIS. Supports natural language to operate QGIS tools.
-version=2.1.0
+version=2.1.1
 author=bunkmr
 email=bunkr@qq.com
 about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It allows you to control QGIS through natural language conversations, including: viewing project info, adding/removing layers, executing Processing algorithms, running PyQGIS code, setting layer labels, rendering maps, and more.
@@ -24,6 +24,9 @@ icon=icon.png
 experimental=False
 deprecated=False
 changelog=
+    v2.1.1 - Security fix: SQL injection prevention via table name whitelist validation
+    v2.1.1 - Security fix: resolved secret detection false positive in tool docs
+    v2.1.1 - Code quality: removed unused imports, fixed indentation
     v2.1.0 - Integrated SmartDebugger intelligent debugging system
     v2.1.0 - Added Graph visualization for task workflows
     v2.1.0 - Added Query Tuning for better task understanding
