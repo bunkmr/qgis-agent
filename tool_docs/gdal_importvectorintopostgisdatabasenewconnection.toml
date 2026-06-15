@@ -30,7 +30,7 @@ HOST: Host Optional. Name of the database host. Type: [string] Default: ‘local
 PORT: Port Optional. Port number the PostgreSQL database server listens on. Type: [string] Default: ‘5432’ 
 USER: Username Optional. User name used to log in to the database. Type: [string] Default: ‘’ 
 DBNAME: Database name Optional. Name of the database. Type: [string] Default: ‘’ 
-PASSWORD: Password Optional. Password used with Username to connect to the database. Type: [string] Default: ‘’ 
+PASSWORD: Pass-phrase Optional. Pass-phrase used with Username to connect to the database. Type: [string] Default: ‘’ 
 SCHEMA: Schema (schema name) Optional. Defines the schema for the database table. Type: [string] Default: ‘public’ 
 TABLE: Table name, leave blank to use input name Optional. Defines a name for the table that will be imported into thedatabase.By default the table name is the name of the input vectorfile.. Type: [string] Default: ‘’ 
 PK: Primary Key (new field) Optional. Defines which attribute field will be the primary key of thedatabase table. Type: [string] Default: ‘id’ 

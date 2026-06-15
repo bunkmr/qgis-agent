@@ -9,6 +9,16 @@ from .utils import get_current_timestamp, pack, unpack, tuple_to_dict, get_syste
 
 
 class DataLoader:
+    # 允许的表名白名单，防止 SQL 注入
+    _ALLOWED_TABLES = frozenset(["llm", "prompt", "conversation", "interaction", "credential"])
+
+    @classmethod
+    def _validate_table_name(cls, name: str) -> str:
+        """验证表名是否在白名单中，防止 SQL 注入"""
+        if name not in cls._ALLOWED_TABLES:
+            raise ValueError(f"Invalid table name: {name}")
+        return name
+
     def __init__(self, database_name: str):
         self.database_name = database_name
         self.connection = None
@@ -36,9 +46,14 @@ class DataLoader:
         self.credential_table_colname = ["ID", "sessionID", "sessionKey"]
 
     def _check_existence(self, table_name):
+        self._validate_table_name(table_name)
         query = "SELECT name FROM sqlite_master WHERE type='table' AND name = ?;"
         self.cursor.execute(query, (table_name,))
         return self.cursor.fetchone() is not None
+
+    def _table_ref(self, table_name: str) -> str:
+        """返回已验证的表名，用于安全构建 SQL"""
+        return self._validate_table_name(table_name)
 
     def connect(self):
         self.connection = sqlite3.connect(self.database_path, check_same_thread=False)
@@ -50,8 +65,9 @@ class DataLoader:
         self._create_credential_table()
 
     def _create_llm_table(self):
+        t = self._table_ref(self.llm_table_name)
         columns = ["ID TEXT NOT NULL PRIMARY KEY", "name TEXT NOT NULL", "endpoint TEXT", "apiKey TEXT"]
-        creation_sql = f"CREATE TABLE IF NOT EXISTS {self.llm_table_name} ({', '.join(columns)})"
+        creation_sql = f"CREATE TABLE IF NOT EXISTS {t} ({', '.join(columns)})"
         self.cursor.execute(creation_sql)
         self.connection.commit()
 
@@ -60,12 +76,14 @@ class DataLoader:
 
     def _create_prompt_table(self):
         if not self._check_existence(self.prompt_table_name):
+            t = self._table_ref(self.prompt_table_name)
+            lt = self._table_ref(self.llm_table_name)
             columns = [
                 "ID TEXT NOT NULL PRIMARY KEY", "llmID TEXT NOT NULL", "version INTEGER NOT NULL",
                 "template TEXT NOT NULL", "promptType TEXT NOT NULL",
-                f"FOREIGN KEY (llmID) REFERENCES {self.llm_table_name}(ID)"
+                f"FOREIGN KEY (llmID) REFERENCES {lt}(ID)"
             ]
-            creation_sql = f"CREATE TABLE IF NOT EXISTS {self.prompt_table_name} ({', '.join(columns)})"
+            creation_sql = f"CREATE TABLE IF NOT EXISTS {t} ({', '.join(columns)})"
             self.cursor.execute(creation_sql)
 
             current_folder = os.path.dirname(os.path.abspath(__file__))
@@ -93,41 +111,46 @@ class DataLoader:
 
                 if rows_to_insert:
                     self.cursor.executemany(f"""
-                        INSERT INTO {self.prompt_table_name} (ID, llmID, version, template, promptType)
+                        INSERT INTO {t} (ID, llmID, version, template, promptType)
                         VALUES (?, ?, ?, ?, ?)
                     """, rows_to_insert)
                     self.connection.commit()
 
     def _create_conversation_table(self):
         if not self._check_existence(self.conversation_table_name):
+            t = self._table_ref(self.conversation_table_name)
+            lt = self._table_ref(self.llm_table_name)
             columns = [
                 "ID TEXT NOT NULL PRIMARY KEY", "llmID TEXT NOT NULL", "title TEXT NOT NULL",
                 "description TEXT NOT NULL", "created TEXT NOT NULL", "modified TEXT NOT NULL",
                 "messageCount INT NOT NULL", "workflowCount INT NOT NULL", "userID TEXT NOT NULL",
-                f"FOREIGN KEY (llmID) REFERENCES {self.llm_table_name}(ID)"
+                f"FOREIGN KEY (llmID) REFERENCES {lt}(ID)"
             ]
-            sql = f"CREATE TABLE IF NOT EXISTS {self.conversation_table_name} ({', '.join(columns)})"
+            sql = f"CREATE TABLE IF NOT EXISTS {t} ({', '.join(columns)})"
             self.cursor.execute(sql)
             self.connection.commit()
 
     def _create_interaction_table(self):
         if not self._check_existence(self.interaction_table_name):
+            t = self._table_ref(self.interaction_table_name)
+            ct = self._table_ref(self.conversation_table_name)
             columns = [
                 "ID TEXT PRIMARY KEY", "conversationID TEXT NOT NULL", "promptID TEXT NOT NULL",
                 "requestText TEXT NOT NULL", "contextText TEXT NOT NULL", "requestTime TEXT NOT NULL",
                 "typeMessage TEXT NOT NULL", "responseText TEXT", "responseTime TEXT",
                 "workflow TEXT", "executionLog TEXT",
-                f"FOREIGN KEY (conversationID) REFERENCES {self.conversation_table_name}(ID)"
+                f"FOREIGN KEY (conversationID) REFERENCES {ct}(ID)"
             ]
-            sql = f"CREATE TABLE IF NOT EXISTS {self.interaction_table_name} ({', '.join(columns)})"
+            sql = f"CREATE TABLE IF NOT EXISTS {t} ({', '.join(columns)})"
             self.cursor.execute(sql)
-            self.cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_conversation_id ON {self.interaction_table_name} (conversationID)")
+            self.cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_conversation_id ON {t} (conversationID)")
             self.connection.commit()
 
     def _create_credential_table(self):
         if not self._check_existence(self.credential_table_name):
+            t = self._table_ref(self.credential_table_name)
             columns = ["ID TEXT PRIMARY KEY", "sessionID TEXT", "sessionKey TEXT"]
-            sql = f"CREATE TABLE IF NOT EXISTS {self.credential_table_name} ({', '.join(columns)})"
+            sql = f"CREATE TABLE IF NOT EXISTS {t} ({', '.join(columns)})"
             self.cursor.execute(sql)
 
     def _load_llm_configs_from_db(self):
@@ -152,7 +175,8 @@ class DataLoader:
         return [row[0] for row in rows]
 
     def fetch_llm_info(self, llm_id):
-        sql = f"SELECT name, endpoint, apiKey FROM {self.llm_table_name} WHERE ID = ?"
+        t = self._table_ref(self.llm_table_name)
+        sql = f"SELECT name, endpoint, apiKey FROM {t} WHERE ID = ?"
         self.cursor.execute(sql, (llm_id,))
         row = self.cursor.fetchone()
         if row:
@@ -167,9 +191,10 @@ class DataLoader:
         return provider, model_name
 
     def insert_conversation_info(self, conversation_info_dict):
+        t = self._table_ref(self.conversation_table_name)
         colnames = ", ".join(self.conversation_table_colname)
         placeholders = ", ".join(["?"] * len(self.conversation_table_colname))
-        sql = f"INSERT INTO {self.conversation_table_name} ({colnames}) VALUES ({placeholders})"
+        sql = f"INSERT INTO {t} ({colnames}) VALUES ({placeholders})"
         self.cursor.execute(sql, unpack(conversation_info_dict, "conversation"))
         self.connection.commit()
 
@@ -177,12 +202,14 @@ class DataLoader:
         _, old_api_key = self.fetch_api_key(llm_id)
         if old_api_key == api_key:
             return
-        sql = f"UPDATE {self.llm_table_name} SET apiKey = ? WHERE ID = ?"
+        t = self._table_ref(self.llm_table_name)
+        sql = f"UPDATE {t} SET apiKey = ? WHERE ID = ?"
         self.cursor.execute(sql, (api_key, llm_id))
         self.connection.commit()
 
     def fetch_api_key(self, llm_id):
-        sql = f"SELECT endpoint, apiKey FROM {self.llm_table_name} WHERE ID = ?"
+        t = self._table_ref(self.llm_table_name)
+        sql = f"SELECT endpoint, apiKey FROM {t} WHERE ID = ?"
         self.cursor.execute(sql, (llm_id,))
         result = self.cursor.fetchone()
         if result:
@@ -190,29 +217,32 @@ class DataLoader:
         raise ValueError(f"未找到ID为 {llm_id} 的记录")
 
     def fetch_all_config(self):
-        sql = f"SELECT * FROM {self.llm_table_name}"
+        t = self._table_ref(self.llm_table_name)
+        sql = f"SELECT * FROM {t}"
         self.cursor.execute(sql)
         return self.cursor.fetchall()
 
     def select_conversation_info(self, conversation_id=None):
+        ct = self._table_ref(self.conversation_table_name)
+        it = self._table_ref(self.interaction_table_name)
         if conversation_id is None:
-            sql = f"SELECT * FROM {self.conversation_table_name}"
+            sql = f"SELECT * FROM {ct}"
             self.cursor.execute(sql)
             rows = tuple_to_dict(self.cursor.fetchall(), "conversation")
         else:
-            sql = f"SELECT * FROM {self.conversation_table_name} WHERE ID = ?"
+            sql = f"SELECT * FROM {ct} WHERE ID = ?"
             self.cursor.execute(sql, (conversation_id,))
             rows = tuple_to_dict(self.cursor.fetchall(), "conversation")
 
         for row in rows:
             cid = row["ID"]
             self.cursor.execute(
-                f"SELECT COUNT(*) FROM {self.interaction_table_name} WHERE conversationID = ? AND typeMessage != 'internal'",
+                f"SELECT COUNT(*) FROM {it} WHERE conversationID = ? AND typeMessage != 'internal'",
                 (cid,)
             )
             row["messageCount"] = self.cursor.fetchone()[0]
             self.cursor.execute(
-                f"SELECT COUNT(*) FROM {self.interaction_table_name} WHERE conversationID = ? AND workflow != 'empty'",
+                f"SELECT COUNT(*) FROM {it} WHERE conversationID = ? AND workflow != 'empty'",
                 (cid,)
             )
             row["workflowCount"] = self.cursor.fetchone()[0]
@@ -220,13 +250,15 @@ class DataLoader:
         return rows if conversation_id is None else rows[0]
 
     def delete_conversation_info(self, conversation_id):
-        sql = f"DELETE FROM {self.conversation_table_name} WHERE ID = ?"
+        t = self._table_ref(self.conversation_table_name)
+        sql = f"DELETE FROM {t} WHERE ID = ?"
         self.cursor.execute(sql, (conversation_id,))
         self.connection.commit()
 
     def update_conversation_info(self, meta_info: dict):
         conversation_id, llm_id, title, description, created, modified, message_count, workflow_count, user_id = unpack(meta_info, "conversation")
-        sql = f"""UPDATE {self.conversation_table_name} SET llmID=?, title=?, description=?, created=?, modified=?, messageCount=?, workflowCount=?, userID=? WHERE ID=?"""
+        t = self._table_ref(self.conversation_table_name)
+        sql = f"UPDATE {t} SET llmID=?, title=?, description=?, created=?, modified=?, messageCount=?, workflowCount=?, userID=? WHERE ID=?"
         self.cursor.execute(sql, (llm_id, title, description, created, modified, message_count, workflow_count, user_id, conversation_id))
         self.connection.commit()
 
@@ -235,35 +267,39 @@ class DataLoader:
 
     def delete_conversation(self, conversation_id):
         self.delete_conversation_info(conversation_id)
-        sql = f"DELETE FROM {self.interaction_table_name} WHERE conversationID = ?"
+        t = self._table_ref(self.interaction_table_name)
+        sql = f"DELETE FROM {t} WHERE conversationID = ?"
         self.cursor.execute(sql, (conversation_id,))
         self.connection.commit()
 
     def insert_interaction(self, interaction_info: list, conversation_id: str) -> str:
+        t = self._table_ref(self.interaction_table_name)
         self.cursor.execute(
-            f"SELECT COUNT(*) FROM {self.interaction_table_name} WHERE conversationID = ? AND typeMessage != 'internal'",
+            f"SELECT COUNT(*) FROM {t} WHERE conversationID = ? AND typeMessage != 'internal'",
             (conversation_id,)
         )
         interaction_index = conversation_id + str(self.cursor.fetchone()[0])
         all_colnames = ", ".join(self.interaction_table_colname)
         placeholders = ", ".join(["?"] * len(self.interaction_table_colname))
-        sql = f"INSERT INTO {self.interaction_table_name} ({all_colnames}) VALUES ({placeholders})"
+        sql = f"INSERT INTO {t} ({all_colnames}) VALUES ({placeholders})"
         interaction = tuple([interaction_index] + interaction_info)
         self.cursor.execute(sql, interaction)
         self.connection.commit()
         return interaction_index
 
     def select_interaction(self, conversation_id, columns=None):
+        t = self._table_ref(self.interaction_table_name)
         if columns:
-            sql = f"SELECT {', '.join(columns)} FROM {self.interaction_table_name} WHERE conversationID = ? AND typeMessage = ?"
+            sql = f"SELECT {', '.join(columns)} FROM {t} WHERE conversationID = ? AND typeMessage = ?"
         else:
-            sql = f"SELECT * FROM {self.interaction_table_name} WHERE conversationID = ? AND typeMessage IN (?, ?)"
+            sql = f"SELECT * FROM {t} WHERE conversationID = ? AND typeMessage IN (?, ?)"
         self.cursor.execute(sql, (conversation_id, "input", "return"))
         return self.cursor.fetchall()
 
     def select_latest_interaction(self, conversation_id, interaction_id=None):
+        t = self._table_ref(self.interaction_table_name)
         if interaction_id is not None:
-            sql = f"SELECT * FROM {self.interaction_table_name} WHERE conversationID = ? AND ID = ?"
+            sql = f"SELECT * FROM {t} WHERE conversationID = ? AND ID = ?"
             self.cursor.execute(sql, (conversation_id, interaction_id))
             row = self.cursor.fetchone()
             if row is not None:
@@ -278,17 +314,20 @@ class DataLoader:
         return sorted_rows[-1][:-1]
 
     def update_llm_config(self, llm_id, name, endpoint, api_key):
-        sql = f"UPDATE {self.llm_table_name} SET name=?, endpoint=?, apiKey=? WHERE ID=?"
+        t = self._table_ref(self.llm_table_name)
+        sql = f"UPDATE {t} SET name=?, endpoint=?, apiKey=? WHERE ID=?"
         self.cursor.execute(sql, (name, endpoint, api_key, llm_id))
         self.connection.commit()
 
     def insert_llm_config(self, llm_id, name, endpoint, api_key):
-        sql = f"INSERT OR REPLACE INTO {self.llm_table_name} (ID, name, endpoint, apiKey) VALUES (?, ?, ?, ?)"
+        t = self._table_ref(self.llm_table_name)
+        sql = f"INSERT OR REPLACE INTO {t} (ID, name, endpoint, apiKey) VALUES (?, ?, ?, ?)"
         self.cursor.execute(sql, (llm_id, name, endpoint, api_key))
         self.connection.commit()
 
     def delete_llm_config(self, llm_id):
-        sql = f"DELETE FROM {self.llm_table_name} WHERE ID=?"
+        t = self._table_ref(self.llm_table_name)
+        sql = f"DELETE FROM {t} WHERE ID=?"
         self.cursor.execute(sql, (llm_id,))
         self.connection.commit()
 

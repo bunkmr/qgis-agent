@@ -4,21 +4,21 @@ qgisMinimumVersion=3.0
 description=LLM-powered intelligent assistant for QGIS. Supports natural language to operate QGIS tools.
 version=2.1.0
 author=bunkmr
-email=bunkmr@example.com
+email=bunkr@qq.com
 about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It allows you to control QGIS through natural language conversations, including: viewing project info, adding/removing layers, executing Processing algorithms, running PyQGIS code, setting layer labels, rendering maps, and more.
 
     Features:
     - Natural language interface for QGIS operations
-    - 15 built-in QGIS tools
+    - 679 built-in QGIS tools
     - RAG-enhanced API documentation retrieval
     - Cookbook self-evolution mechanism
     - Long-term memory support
-    - Multiple LLM providers (DeepSeek, OpenAI, GLM, Gemini, etc.)
+    - Multiple LLM providers (DeepSeek, Mimo, GLM, Gemini, etc.)
 
-tracker=https://github.com/bunkmr/qgis_agent/issues
-repository=https://github.com/bunkmr/qgis_agent
+tracker=https://github.com/bunkmr/qgis-agent/issues
+repository=https://github.com/bunkmr/qgis-agent
 tags=ai,agent,llm,qgis,assistant,automation,deepseek,openai
-homepage=https://github.com/bunkmr/qgis_agent
+homepage=https://github.com/bunkmr/qgis-agent
 category=Analysis
 icon=icon.png
 experimental=False
