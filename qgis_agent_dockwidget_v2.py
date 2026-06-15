@@ -407,7 +407,7 @@ body {{
     background: white;
     padding: 15px;
     border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }}
 .workflow-title {{
     font-size: 16px;
@@ -438,7 +438,7 @@ body {{
     color: white;
     min-width: 250px;
     margin: 5px 0;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }}
 .step-icon {{
     font-size: 20px;
@@ -478,7 +478,7 @@ body {{
         for i, step in enumerate(steps):
             step_status = step.get("status", "pending")
             step_icon = status_icons.get(step_status, "❓")
-            step_name = step.get('name', f'步骤 {i+1}')
+            step_name = step.get('name', f'步骤 {i + 1}')
             tool_name = step.get('tool', 'unknown')
             step_color = status_colors.get(step_status, "#cccccc")
 
@@ -533,8 +533,8 @@ body {{
             # 添加步骤节点和边
             prev_node = "Start"
             for i, step in enumerate(steps):
-                step_id = step.get("id", f"step_{i+1}")
-                step_name = step.get("name", f"步骤 {i+1}")
+                step_id = step.get("id", f"step_{i + 1}")
+                step_name = step.get("name", f"步骤 {i + 1}")
                 step_status = step.get("status", "pending")
                 tool_name = step.get("tool", "unknown")
 
@@ -677,7 +677,7 @@ body {{
     color: white;
     min-width: 200px;
     text-align: center;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
 }}
 .node-start {{
     background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
@@ -743,7 +743,7 @@ body {{
         for i, step in enumerate(steps):
             step_status = step.get("status", "pending")
             step_icon = status_icons.get(step_status, "❓")
-            step_name = step.get('name', f'步骤 {i+1}')
+            step_name = step.get('name', f'步骤 {i + 1}')
             tool_name = step.get('tool', 'unknown')
 
             html += f"""
@@ -818,7 +818,7 @@ body {
         html = f"""
 <div style="font-family: Arial; font-size: 12px;">
     <p><strong>错误类型:</strong> {analysis.get('error_category', 'unknown')}</p>
-    <p><strong>置信度:</strong> {analysis.get('confidence', 0)*100:.1f}%</p>
+    <p><strong>置信度:</strong> {analysis.get('confidence', 0) * 100:.1f}%</p>
     <p><strong>建议:</strong></p>
     <ul>
 """

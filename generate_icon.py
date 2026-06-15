@@ -44,29 +44,29 @@ def generate_icon():
         if 0 <= x < w and 0 <= y < h:
             idx = (y * w + x) * 4
             pixels[idx] = r
-            pixels[idx+1] = g
-            pixels[idx+2] = b
-            pixels[idx+3] = a
+            pixels[idx +1] = g
+            pixels[idx +2] = b
+            pixels[idx +3] = a
 
     def draw_rounded_rect(x1, y1, x2, y2, r, cr, cg, cb):
-        for y in range(y1, y2+1):
-            for x in range(x1, x2+1):
+        for y in range(y1, y2 +1):
+            for x in range(x1, x2 +1):
                 # Check corners
-                if x < x1+r and y < y1+r:
-                    dx, dy = x - (x1+r), y - (y1+r)
-                    if dx*dx + dy*dy > r*r:
+                if x < x1 +r and y < y1 +r:
+                    dx, dy = x - (x1 +r), y - (y1 +r)
+                    if dx *dx + dy *dy > r *r:
                         continue
-                elif x > x2-r and y < y1+r:
-                    dx, dy = x - (x2-r), y - (y1+r)
-                    if dx*dx + dy*dy > r*r:
+                elif x > x2 -r and y < y1 +r:
+                    dx, dy = x - (x2 -r), y - (y1 +r)
+                    if dx *dx + dy *dy > r *r:
                         continue
-                elif x < x1+r and y > y2-r:
-                    dx, dy = x - (x1+r), y - (y2-r)
-                    if dx*dx + dy*dy > r*r:
+                elif x < x1 +r and y > y2 -r:
+                    dx, dy = x - (x1 +r), y - (y2 -r)
+                    if dx *dx + dy *dy > r *r:
                         continue
-                elif x > x2-r and y > y2-r:
-                    dx, dy = x - (x2-r), y - (y2-r)
-                    if dx*dx + dy*dy > r*r:
+                elif x > x2 -r and y > y2 -r:
+                    dx, dy = x - (x2 -r), y - (y2 -r)
+                    if dx *dx + dy *dy > r *r:
                         continue
                 set_pixel(x, y, cr, cg, cb)
 
@@ -77,7 +77,7 @@ def generate_icon():
         if steps == 0:
             set_pixel(x1, y1, r, g, b, a)
             return
-        for i in range(steps+1):
+        for i in range(steps +1):
             x = x1 + dx * i // steps
             y = y1 + dy * i // steps
             set_pixel(x, y, r, g, b, a)
@@ -87,25 +87,25 @@ def generate_icon():
         ys = sorted([(y1, x1), (y2, x2), (y3, x3)], key=lambda p: p[0])
         if ys[0][0] == ys[2][0]:
             return
-        for y in range(ys[0][0], ys[2][0]+1):
+        for y in range(ys[0][0], ys[2][0] +1):
             if y < 0 or y >= h:
                 continue
             xa = xb = 0
             for i in range(2):
-                if y >= ys[i][0] and y <= ys[i+1][0]:
-                    t = (y - ys[i][0]) / (ys[i+1][0] - ys[i][0]) if ys[i+1][0] != ys[i][0] else 0
-                    xa = int(ys[i][1] + t * (ys[i+1][1] - ys[i][1]))
+                if y >= ys[i][0] and y <= ys[i +1][0]:
+                    t = (y - ys[i][0]) / (ys[i +1][0] - ys[i][0]) if ys[i +1][0] != ys[i][0] else 0
+                    xa = int(ys[i][1] + t * (ys[i +1][1] - ys[i][1]))
             if y >= ys[0][0] and y <= ys[2][0]:
                 t = (y - ys[0][0]) / (ys[2][0] - ys[0][0]) if ys[2][0] != ys[0][0] else 0
                 xb = int(ys[0][1] + t * (ys[2][1] - ys[0][1]))
             x_min, x_max = min(xa, xb), max(xa, xb)
-            for x in range(max(0,x_min), min(w,x_max+1)):
+            for x in range(max(0, x_min), min(w, x_max +1)):
                 set_pixel(x, y, r, g, b, a)
 
     def fill_circle(cx, cy, rad, r, g, b, a=255):
-        for y in range(max(0, cy-rad), min(h, cy+rad+1)):
-            for x in range(max(0, cx-rad), min(w, cx+rad+1)):
-                if (x-cx)*(x-cx) + (y-cy)*(y-cy) <= rad*rad:
+        for y in range(max(0, cy -rad), min(h, cy +rad +1)):
+            for x in range(max(0, cx -rad), min(w, cx +rad +1)):
+                if (x -cx) *(x -cx) + (y -cy) *(y -cy) <= rad *rad:
                     set_pixel(x, y, r, g, b, a)
 
     # 背景 (圆角矩形)
@@ -136,14 +136,14 @@ def generate_icon():
 
     # AI 星星 (火花)
     star_cx, star_cy = 38, 18
-    for dx, dy in [(0,-5),(0,5),(-5,0),(5,0),(-3,-3),(3,3),(-3,3),(3,-3)]:
-        fill_circle(star_cx+dx, star_cy+dy, 1, 249, 231, 159)
+    for dx, dy in [(0, -5), (0, 5), (-5, 0), (5, 0), (-3, -3), (3, 3), (-3, 3), (3, -3)]:
+        fill_circle(star_cx +dx, star_cy +dy, 1, 249, 231, 159)
 
     # "AI" 文字 - 简单像素文字
     # A
     for i in range(4):
-        set_pixel(24+i, 52-i, 255, 255, 255, 200)
-        set_pixel(24+i, 52+i, 255, 255, 255, 200)
+        set_pixel(24 +i, 52 -i, 255, 255, 255, 200)
+        set_pixel(24 +i, 52 +i, 255, 255, 255, 200)
     for x in range(24, 28):
         set_pixel(x, 50, 255, 255, 255, 200)
     # I

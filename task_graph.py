@@ -203,7 +203,7 @@ class TaskGraph:
             "completed": completed,
             "failed": failed,
             "pending": pending,
-            "completion_rate": f"{(completed/total*100):.1f}%" if total > 0 else "0%"
+            "completion_rate": f"{(completed /total *100):.1f}%" if total > 0 else "0%"
         }
 
 

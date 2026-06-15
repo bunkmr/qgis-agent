@@ -135,10 +135,10 @@ class WorkflowRecorder:
         steps = []
         for i, call in enumerate(tool_calls):
             step = WorkflowStep(
-                step_id=f"step_{i+1}",
+                step_id=f"step_{i +1}",
                 tool_name=call.get("tool", ""),
                 tool_args=call.get("args", {}),
-                description=f"Step {i+1}: {call.get('tool', 'unknown')}"
+                description=f"Step {i +1}: {call.get('tool', 'unknown')}"
             )
             steps.append(step)
 

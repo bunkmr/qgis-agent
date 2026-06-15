@@ -219,7 +219,7 @@ class QGISAgentDockWidget(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
     def showToolStatus(self, status_text):
         """在聊天框中显示工具调用状态"""
         status_html = f"""
-            <div style="margin:4px 0;padding:4px 8px;background-color:#2d2d2d;border-left:3px solid #4A90D9;border-radius:2px;color:#b0b0b0;font-size:12px;font-family:Consolas,monospace;">
+            <div style="margin:4px 0;padding:4px 8px;background-color:#2d2d2d;border-left:3px solid #4A90D9;border-radius:2px;color:#b0b0b0;font-size:12px;font-family:Consolas, monospace;">
                 {html_module.escape(status_text)}
             </div>
         """
@@ -343,7 +343,7 @@ body {{
     padding: 10px;
     background: white;
     border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }}
 .step-icon {{
     font-size: 24px;
@@ -394,7 +394,7 @@ body {{
     <div class="step-container">
         <div class="step-icon">{step_icon}</div>
         <div class="step-info">
-            <div class="step-name">{step.get('name', f'步骤 {i+1}')}</div>
+            <div class="step-name">{step.get('name', f'步骤 {i + 1}')}</div>
             <div class="step-tool">🔧 {step.get('tool', 'unknown')}</div>
         </div>
         <div class="step-status" style="background-color: {step_color}; color: white;">
@@ -462,7 +462,7 @@ body {
         html = f"""
 <div style="font-family: Arial; font-size: 12px;">
     <p><strong>错误类型:</strong> {analysis.get('error_category', 'unknown')}</p>
-    <p><strong>置信度:</strong> {analysis.get('confidence', 0)*100:.1f}%</p>
+    <p><strong>置信度:</strong> {analysis.get('confidence', 0) * 100:.1f}%</p>
     <p><strong>建议:</strong></p>
     <ul>
 """
