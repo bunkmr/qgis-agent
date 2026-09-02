@@ -1,9 +1,13 @@
 tool_ID = "native:rasterlayerproperties"
 tool_name = "rasterlayerproperties"
-brief_description = """Returns basic properties of the given raster layer, including the extent, size in pixels and dimensions of pixels (in map units), number of bands, and NoData value.
-This algorithm is intended for use as a means of extracting these useful properties to use as the input values to other algorithms in a model - e.g. to allow to pass an existing raster’s pixel sizes over to a GDAL raster algorithm."""
-full_description = """Returns basic properties of the given raster layer, including the extent, size in pixels and dimensions of pixels (in map units), number of bands, and NoData value.
-This algorithm is intended for use as a means of extracting these useful properties to use as the input values to other algorithms in a model - e.g. to allow to pass an existing raster’s pixel sizes over to a GDAL raster algorithm."""
+brief_description = """
+Returns basic properties of the given raster layer, including the extent, size in pixels and dimensions of pixels (in map units), number of bands, and NoData value.
+This algorithm is intended for use as a means of extracting these useful properties to use as the input values to other algorithms in a model - e.g. to allow to pass an existing raster’s pixel sizes over to a GDAL raster algorithm.
+"""
+full_description = """
+Returns basic properties of the given raster layer, including the extent, size in pixels and dimensions of pixels (in map units), number of bands, and NoData value.
+This algorithm is intended for use as a means of extracting these useful properties to use as the input values to other algorithms in a model - e.g. to allow to pass an existing raster’s pixel sizes over to a GDAL raster algorithm.
+"""
 parameters = """
 INPUT: Input layer. Input raster layer. Type: [raster]
 BAND: Band number Optional. Whether to also return properties of a specific band.If a band is specified, the noData value for the selected band is also returned.. Type: [raster band] Default: Not set outputs = 
@@ -22,6 +26,7 @@ X_MAX: Maximum x-coordinate. . Type: [number]
 X_MIN: Minimum x-coordinate. . Type: [number] 
 Y_MAX: Maximum y-coordinate. . Type: [number] 
 Y_MIN: Minimum y-coordinate. . Type: [number]
+
 
 """
 code_example = """
@@ -44,8 +49,9 @@ def rasterlayerproperties():
     })
 
     # Output not loaded into QGIS as it's a properties text file
-    print(f"""Raster properties saved to {output_path}")
+    print(f\"\"\"Raster properties saved to {output_path}\")
 
                       
 rasterlayerproperties()
+
 """

@@ -1,9 +1,13 @@
 tool_ID = "native:exportmeshongrid"
 tool_name = "exportmeshongrid"
-brief_description = """Exports a mesh layer’s dataset values to a gridded point vector layer, with the dataset values on this point as attribute values.
-For data on volume (3D stacked dataset values), the exported dataset values are averaged on faces using the method defined in the mesh layer properties (default is Multi level averaging method). 1D meshes are not supported."""
-full_description = """Exports a mesh layer’s dataset values to a gridded point vector layer, with the dataset values on this point as attribute values.
-For data on volume (3D stacked dataset values), the exported dataset values are averaged on faces using the method defined in the mesh layer properties (default is Multi level averaging method). 1D meshes are not supported."""
+brief_description = """
+Exports a mesh layer’s dataset values to a gridded point vector layer, with the dataset values on this point as attribute values.
+For data on volume (3D stacked dataset values), the exported dataset values are averaged on faces using the method defined in the mesh layer properties (default is Multi level averaging method). 1D meshes are not supported.
+"""
+full_description = """
+Exports a mesh layer’s dataset values to a gridded point vector layer, with the dataset values on this point as attribute values.
+For data on volume (3D stacked dataset values), the exported dataset values are averaged on faces using the method defined in the mesh layer properties (default is Multi level averaging method). 1D meshes are not supported.
+"""
 parameters = """
 INPUT: Input mesh layer. The mesh layer to export data from. Type: [mesh]
 DATASET_GROUPS: Dataset groups. The dataset groups. Type: [layer] [list] 
@@ -16,6 +20,7 @@ OUTPUT: Output vector layer. Specification of the output file. One of: Create Te
 TEMPORARY_OUTPUT ) Save to File… Save to Geopackage… Save to Database Table… The file encoding can also be changed here.. Type: [vector: point] Default: [Create temporary layer] outputs = 
 OUTPUT: Output vector layer. Output vector point layer with dataset values computedfrom the overlaid face.. Type: [vector: point]
 
+
 """
 code_example = """
 import processing
@@ -25,11 +30,11 @@ def export_mesh_on_grid():
     # Define the input and output paths
     input_mesh_path = 'D:/input_mesh_layer.mesh'
     output_dir = 'C:/Users/Output'
-    output_file_name = """exported_mesh_points.shp"
-    output_path = f"{output_dir}/{output_file_name}"
+    output_file_name = \"\"\"exported_mesh_points.shp\"
+    output_path = f\"{output_dir}/{output_file_name}\"
 
                                
-    input_mesh = QgsMeshLayer(input_mesh_path, "Input Mesh Layer", "mesh")
+    input_mesh = QgsMeshLayer(input_mesh_path, \"Input Mesh Layer\", \"mesh\")
 
                                                                    
     parameters = {
@@ -44,7 +49,7 @@ def export_mesh_on_grid():
     }
 
                                            
-    result = processing.run("native:exportmeshongrid", parameters)
+    result = processing.run(\"native:exportmeshongrid\", parameters)
 
                                      
     output_layer = QgsVectorLayer(result['OUTPUT'], 'Exported Mesh Points', 'ogr')
@@ -52,4 +57,5 @@ def export_mesh_on_grid():
 
                       
 export_mesh_on_grid()
+
 """

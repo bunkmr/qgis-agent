@@ -1,7 +1,11 @@
 tool_ID = "native:printlayouttopdf"
 tool_name = "printlayouttopdf"
-brief_description = """Exports a print layout as a PDF file."""
-full_description = """Exports a print layout as a PDF file."""
+brief_description = """
+Exports a print layout as a PDF file.
+"""
+full_description = """
+Exports a print layout as a PDF file.
+"""
 parameters = """
 LAYOUT: Print Layout. Layout to export. Type: [layout]
 OUTPUT: 
@@ -31,6 +35,7 @@ OUTPUT:
 PDF file. 
 PDF file(s) corresponding to the exported print layout. Type: [file]
 
+
 """
 code_example = """
 import processing
@@ -54,10 +59,11 @@ def export_layout_to_pdf(output_path):
         'SEPARATE_LAYERS': False
     }
     # Run the export layout to PDF operation
-    processing.run("""native:printlayouttopdf", parameters)
+    processing.run(\"\"\"native:printlayouttopdf\", parameters)
 
                                     
 output_pdf_path = 'C:/Users/Output/My_Layout_Export.pdf'
                       
 export_layout_to_pdf(output_pdf_path)
+
 """

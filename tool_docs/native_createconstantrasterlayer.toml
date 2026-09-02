@@ -1,9 +1,13 @@
 tool_ID = "native:createconstantrasterlayer"
 tool_name = "createconstantrasterlayer"
-brief_description = """Generates raster layer for given extent and cell size filled with the specified value.
-Additionally an output data type can be specified. The algorithm will abort if a value has been entered that cannot be represented by the selected output raster data type."""
-full_description = """Generates raster layer for given extent and cell size filled with the specified value.
-Additionally an output data type can be specified. The algorithm will abort if a value has been entered that cannot be represented by the selected output raster data type."""
+brief_description = """
+Generates raster layer for given extent and cell size filled with the specified value.
+Additionally an output data type can be specified. The algorithm will abort if a value has been entered that cannot be represented by the selected output raster data type.
+"""
+full_description = """
+Generates raster layer for given extent and cell size filled with the specified value.
+Additionally an output data type can be specified. The algorithm will abort if a value has been entered that cannot be represented by the selected output raster data type.
+"""
 parameters = """
 EXTENT: Desired extent. Specify the spatial extent of the output raster layer.It will internally be extended to a multiple of the tile size. Available methods are: Calculate from layer…: uses extent of a layer loaded in the current project Calculate from layout map…: uses extent of a layout map item in the active project Calculate from bookmark…: uses extent of a saved bookmark Use map canvas extent Draw on canvas: click and drag a rectangle delimiting the area to take into account Enter the coordinates as xmin, xmax, ymin, ymax. Type: [extent]
 TARGET_CRS: Target 
@@ -16,6 +20,7 @@ NUMBER: Constant value. Constant pixel value for the output raster layer.. Type:
 OUTPUT: Constant. Specification of the output raster. One of: Save to a Temporary File Save to File…. Type: [raster] Default: [Save to temporary file] 
 OUTPUT_TYPE Default: 5: Output raster data type. Defines the data type of the output raster file. Options: 0 — Byte 1 — Integer16 2 — Unsigned Integer16 3 — Integer32 4 — Unsigned Integer32 5 — Float32 6 — Float64. Type: [enumeration] outputs = 
 OUTPUT: Constant. Raster covering the desired extent with the specified pixelsize and value.. Type: [raster]
+
 
 """
 code_example = """
@@ -34,13 +39,14 @@ def create_constant_raster_layer(output_path):
     }
     
     # Run the 'create constant raster layer' tool
-    result = processing.run("""native:createconstantrasterlayer", parameters)
+    result = processing.run(\"\"\"native:createconstantrasterlayer\", parameters)
     
                                      
     output_layer = QgsRasterLayer(result['OUTPUT'], 'Constant_Raster', 'gdal')
     QgsProject.instance().addMapLayer(output_layer)
 
                      
-output_path = "D:/workspace_directory/output_raster.tif"
+output_path = \"D:/workspace_directory/output_raster.tif\"
 create_constant_raster_layer(output_path)
+
 """

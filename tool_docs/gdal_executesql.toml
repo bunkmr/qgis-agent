@@ -1,9 +1,13 @@
 tool_ID = "gdal:executesql"
 tool_name = "executesql"
-brief_description = """Runs a simple or complex query with SQL syntax on the source layer. The result of the query will be added as a new layer.
-This algorithm is derived from the GDAL ogr2ogr utility ."""
-full_description = """Runs a simple or complex query with SQL syntax on the source layer. The result of the query will be added as a new layer.
-This algorithm is derived from the GDAL ogr2ogr utility ."""
+brief_description = """
+Runs a simple or complex query with SQL syntax on the source layer. The result of the query will be added as a new layer.
+This algorithm is derived from the GDAL ogr2ogr utility .
+"""
+full_description = """
+Runs a simple or complex query with SQL syntax on the source layer. The result of the query will be added as a new layer.
+This algorithm is derived from the GDAL ogr2ogr utility .
+"""
 parameters = """
 INPUT: Input layer. OGR-supported input vector layer. Type: [vector: any]
 SQL: 
@@ -22,6 +26,7 @@ OPTIONS: Additional creation options Optional. Additional GDAL creation options.
 OUTPUT: 
 SQL result. Vector layer created by the query. Type: [vector: any]
 
+
 """
 code_example = """
 import processing
@@ -33,7 +38,7 @@ def execute_sql_query():
     output_path = 'C:/Users/Output/executed_sql_result.shp'
     
     # Load the input layer
-    input_layer = QgsVectorLayer(input_path, """Input Layer", "ogr")
+    input_layer = QgsVectorLayer(input_path, \"\"\"Input Layer\", \"ogr\")
     
                                    
     sql_params = {
@@ -44,7 +49,7 @@ def execute_sql_query():
         'OPTIONS': '''    }
     
                            
-    result = processing.run("gdal:executesql", sql_params)
+    result = processing.run(\"gdal:executesql\", sql_params)
     
                                          
     sql_result_layer = QgsVectorLayer(result['OUTPUT'], 'SQL_Output', 'ogr')
@@ -52,4 +57,5 @@ def execute_sql_query():
 
                       
 execute_sql_query()
+
 """

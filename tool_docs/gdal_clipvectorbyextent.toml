@@ -1,9 +1,13 @@
 tool_ID = "gdal:clipvectorbyextent"
 tool_name = "clipvectorbyextent"
-brief_description = """Clips any OGR-supported vector file to a given extent.
-This algorithm is derived from the GDAL ogr2ogr utility ."""
-full_description = """Clips any OGR-supported vector file to a given extent.
-This algorithm is derived from the GDAL ogr2ogr utility ."""
+brief_description = """
+Clips any OGR-supported vector file to a given extent.
+This algorithm is derived from the GDAL ogr2ogr utility .
+"""
+full_description = """
+Clips any OGR-supported vector file to a given extent.
+This algorithm is derived from the GDAL ogr2ogr utility .
+"""
 parameters = """
 INPUT: Input layer. The input vector layer. Type: [vector: any]
 EXTENT: Clip extent. Defines the bounding box that should be used for theoutput vector file.It has to be defined in target 
@@ -12,6 +16,7 @@ OUTPUT: Clipped (extent). Specify the output (clipped) layer. One of: Save to a 
 OPTIONS: Additional creation options Optional. Additional GDAL creation options.. Type: [string] Default: ‘’ (no additional options) outputs = 
 OUTPUT: Clipped (extent). The output (clipped) layer.The default format is 
 “ESRI Shapefile”.. Type: [same as input]
+
 
 """
 code_example = """
@@ -22,7 +27,7 @@ def clip_vector_by_extent():
     input_path = 'D:/input_layer.shp'
     output_path = 'C:/Users/Output/clipped_output.shp'
     # Load the input layer
-    input_layer = QgsVectorLayer(input_path, """Input Layer", "ogr")
+    input_layer = QgsVectorLayer(input_path, \"\"\"Input Layer\", \"ogr\")
     
                                     
     parameters = {
@@ -32,7 +37,7 @@ def clip_vector_by_extent():
         'OPTIONS': ''                                    
     }
                                 
-    result = processing.run("gdal:clipvectorbyextent", parameters)
+    result = processing.run(\"gdal:clipvectorbyextent\", parameters)
     
                                       
     clipped_layer = QgsVectorLayer(result['OUTPUT'], 'Clipped_output', 'ogr')
@@ -40,4 +45,5 @@ def clip_vector_by_extent():
 
                       
 clip_vector_by_extent()
+
 """

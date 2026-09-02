@@ -1,9 +1,13 @@
 tool_ID = "native:removeduplicatesbyattribute"
 tool_name = "removeduplicatesbyattribute"
-brief_description = """Deletes duplicate rows by only considering the specified field / fields. The first matching row will be retained, and duplicates will be discarded.
-Optionally, these duplicate records can be saved to a separate output for analysis."""
-full_description = """Deletes duplicate rows by only considering the specified field / fields. The first matching row will be retained, and duplicates will be discarded.
-Optionally, these duplicate records can be saved to a separate output for analysis."""
+brief_description = """
+Deletes duplicate rows by only considering the specified field / fields. The first matching row will be retained, and duplicates will be discarded.
+Optionally, these duplicate records can be saved to a separate output for analysis.
+"""
+full_description = """
+Deletes duplicate rows by only considering the specified field / fields. The first matching row will be retained, and duplicates will be discarded.
+Optionally, these duplicate records can be saved to a separate output for analysis.
+"""
 parameters = """
 INPUT: Input layer. The input layer. Type: [vector: any]
 FIELDS: Fields to match duplicates by. Fields defining duplicates.Features with identical values for all these fields areconsidered duplicates.. Type: [tablefield: any] [list] 
@@ -16,6 +20,7 @@ DUPLICATE_COUNT: Count of discarded duplicate records. Count of discarded duplic
 OUTPUT: Filtered (no duplicates). Vector layer containing the unique features.. Type: [same as input] 
 RETAINED_COUNT: Count of retained records. Count of unique records. Type: [number]
 
+
 """
 code_example = """
 import processing
@@ -25,7 +30,7 @@ def remove_duplicates(input_layer_path):
     output_path = 'C:/output_path/unique_features.shp'
     duplicates_output_path = 'C:/output_path/duplicates_features.shp'
    
-    input_layer = QgsVectorLayer(input_layer_path, """Input Layer", "ogr")
+    input_layer = QgsVectorLayer(input_layer_path, \"\"\"Input Layer\", \"ogr\")
 
     parameters = {
         'INPUT': input_layer,
@@ -43,4 +48,5 @@ def remove_duplicates(input_layer_path):
     QgsProject.instance().addMapLayer(duplicates_layer)
 
 remove_duplicates('C:/input_data/input_layer.shp')
+
 """

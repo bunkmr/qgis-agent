@@ -1,7 +1,11 @@
 tool_ID = "native:exportmeshedges"
 tool_name = "exportmeshedges"
-brief_description = """Exports a mesh layer’s edges to a line vector layer, with the dataset values on edges as attribute values."""
-full_description = """Exports a mesh layer’s edges to a line vector layer, with the dataset values on edges as attribute values."""
+brief_description = """
+Exports a mesh layer’s edges to a line vector layer, with the dataset values on edges as attribute values.
+"""
+full_description = """
+Exports a mesh layer’s edges to a line vector layer, with the dataset values on edges as attribute values.
+"""
 parameters = """
 INPUT: Input mesh layer. The mesh layer to export data from. Type: [mesh]
 DATASET_GROUPS: Dataset groups. The dataset groups. Type: [layer] [list] 
@@ -12,6 +16,7 @@ OUTPUT: Output vector layer. Specification of the output file. One of: Create Te
 TEMPORARY_OUTPUT ) Save to File… Save to Geopackage… Save to Database Table… The file encoding can also be changed here.. Type: [vector: line] Default: [Create temporary layer] outputs = 
 OUTPUT: Output vector layer. Output vector line layer containing the edges of the input meshlayer with associated dataset values. Type: [vector: line]
 
+
 """
 code_example = """
 import processing
@@ -21,7 +26,7 @@ def export_mesh_edges():
     input_mesh_path = '/path/to/your/input/mesh/file.mesh'
     output_path = '/path/to/your/output/vector/layer.shp'
     
-    input_mesh_layer = QgsMeshLayer(input_mesh_path, """Input Mesh Layer", "mdal")
+    input_mesh_layer = QgsMeshLayer(input_mesh_path, \"\"\"Input Mesh Layer\", \"mdal\")
     
     parameters = {
         'INPUT': input_mesh_layer,
@@ -32,10 +37,11 @@ def export_mesh_edges():
         'OUTPUT': output_path
     }
     
-    result = processing.run("native:exportmeshedges", parameters)
+    result = processing.run(\"native:exportmeshedges\", parameters)
     
     output_layer = QgsVectorLayer(output_path, 'Exported Mesh Edges', 'ogr')
     QgsProject.instance().addMapLayer(output_layer)
 
 export_mesh_edges()
+
 """

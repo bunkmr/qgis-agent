@@ -1,11 +1,15 @@
 tool_ID = "native:arrayoffsetlines"
 tool_name = "arrayoffsetlines"
-brief_description = """Creates copies of line features in a layer, by creating multiple offset versions of each feature. Each new version is incrementally offset by a specified distance.
+brief_description = """
+Creates copies of line features in a layer, by creating multiple offset versions of each feature. Each new version is incrementally offset by a specified distance.
 Positive distance will offset lines to the left, and negative distances will offset them to the right.
-Allows features in-place modification of line features"""
-full_description = """Creates copies of line features in a layer, by creating multiple offset versions of each feature. Each new version is incrementally offset by a specified distance.
+Allows features in-place modification of line features
+"""
+full_description = """
+Creates copies of line features in a layer, by creating multiple offset versions of each feature. Each new version is incrementally offset by a specified distance.
 Positive distance will offset lines to the left, and negative distances will offset them to the right.
-Allows features in-place modification of line features"""
+Allows features in-place modification of line features
+"""
 parameters = """
 INPUT: Input layer. Input line vector layer to use for the offsets.. Type: [vector: line]
 COUNT: Number of features to create. Number of offset copies to generate for each feature. Type: [number ] Default: 10 
@@ -18,6 +22,7 @@ MITER_LIMIT: Miter limit. Sets the maximum distance from the offset geometry to 
 A 10m buffer with a limit of 2 and a 10m buffer with a limit of 1 . Type: [number] Default: 2.0 outputs = 
 OUTPUT: Offset lines. Output line layer with offset features.The original features are also copied.. Type: [vector: line]
 
+
 """
 code_example = """
 from qgis.core import QgsVectorLayer, QgsProject
@@ -27,7 +32,7 @@ def offset_lines():
     input_path = 'D:/input_line_layer.shp'
     output_path = 'D:/output_directory/offset_lines.shp'
 
-    input_layer = QgsVectorLayer(input_path, """Input Line Layer", "ogr")
+    input_layer = QgsVectorLayer(input_path, \"\"\"Input Line Layer\", \"ogr\")
 
     parameters = {
         'INPUT': input_path,
@@ -39,10 +44,11 @@ def offset_lines():
         'MITER_LIMIT': 2.0
     }
 
-    result = processing.run("native:arrayoffsetlines", parameters)
+    result = processing.run(\"native:arrayoffsetlines\", parameters)
 
     offset_layer = QgsVectorLayer(result['OUTPUT'], 'Offset Lines', 'ogr')
     QgsProject.instance().addMapLayer(offset_layer)
 
 offset_lines()
+
 """

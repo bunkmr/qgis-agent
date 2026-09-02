@@ -1,9 +1,13 @@
 tool_ID = "native:lessthanfrequency"
 tool_name = "lessthanfrequency"
-brief_description = """Evaluates on a cell-by-cell basis the frequency (number of times) the values of an input stack of rasters are less than the value of a value raster. The output raster extent and resolution is defined by the input raster layer and is always of Int32 type.
-If multiband rasters are used in the data raster stack, the algorithm will always perform the analysis on the first band of the rasters - use GDAL to use other bands in the analysis. The output NoData value can be set manually."""
-full_description = """Evaluates on a cell-by-cell basis the frequency (number of times) the values of an input stack of rasters are less than the value of a value raster. The output raster extent and resolution is defined by the input raster layer and is always of Int32 type.
-If multiband rasters are used in the data raster stack, the algorithm will always perform the analysis on the first band of the rasters - use GDAL to use other bands in the analysis. The output NoData value can be set manually."""
+brief_description = """
+Evaluates on a cell-by-cell basis the frequency (number of times) the values of an input stack of rasters are less than the value of a value raster. The output raster extent and resolution is defined by the input raster layer and is always of Int32 type.
+If multiband rasters are used in the data raster stack, the algorithm will always perform the analysis on the first band of the rasters - use GDAL to use other bands in the analysis. The output NoData value can be set manually.
+"""
+full_description = """
+Evaluates on a cell-by-cell basis the frequency (number of times) the values of an input stack of rasters are less than the value of a value raster. The output raster extent and resolution is defined by the input raster layer and is always of Int32 type.
+If multiband rasters are used in the data raster stack, the algorithm will always perform the analysis on the first band of the rasters - use GDAL to use other bands in the analysis. The output NoData value can be set manually.
+"""
 parameters = """
 INPUT_VALUE_RASTER: Input value raster. The input value layer serves as reference layer for the sample layers. Type: [raster]
 INPUT_VALUE_RASTER_BAND: Value raster band. Select the band you want to use as sample. Type: [raster band] Default: The first band of the raster layer 
@@ -21,6 +25,7 @@ TOTAL_PIXEL_COUNT: Total pixel count. The count of pixels in the output raster l
 MEAN_FREQUENCY_PER_LOCATION: Mean frequency at valid cell locations. . Type: [number] 
 OCCURRENCE_COUNT: Count of value occurrences. . Type: [number] 
 WIDTH_IN_PIXELS: Width in pixels. The number of columns in the output raster layer. Type: [integer]
+
 
 """
 code_example = """
@@ -48,7 +53,7 @@ def lessthanfrequency_algorithm():
     }
 
     # Run the lessthanfrequency algorithm
-    result = processing.run("""native:lessthanfrequency", parameters)
+    result = processing.run(\"\"\"native:lessthanfrequency\", parameters)
     
                                    
     output_layer = QgsRasterLayer(result['OUTPUT'], 'LessThanFrequency Output')
@@ -56,4 +61,5 @@ def lessthanfrequency_algorithm():
 
                       
 lessthanfrequency_algorithm()
+
 """

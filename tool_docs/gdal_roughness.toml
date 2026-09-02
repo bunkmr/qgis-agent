@@ -1,11 +1,15 @@
 tool_ID = "gdal:roughness"
 tool_name = "roughness"
-brief_description = """Outputs a single-band raster with values computed from the elevation. Roughness is the degree of irregularity of the surface. It’s calculated by the largest inter-cell difference of a central pixel and its surrounding cell. The determination of the roughness plays a role in the analysis of terrain elevation data, it’s useful for calculations of the river morphology, in climatology and physical geography in general.
+brief_description = """
+Outputs a single-band raster with values computed from the elevation. Roughness is the degree of irregularity of the surface. It’s calculated by the largest inter-cell difference of a central pixel and its surrounding cell. The determination of the roughness plays a role in the analysis of terrain elevation data, it’s useful for calculations of the river morphology, in climatology and physical geography in general.
 This algorithm is derived from the GDAL DEM utility .
-Default menu: Raster ► Analysis"""
-full_description = """Outputs a single-band raster with values computed from the elevation. Roughness is the degree of irregularity of the surface. It’s calculated by the largest inter-cell difference of a central pixel and its surrounding cell. The determination of the roughness plays a role in the analysis of terrain elevation data, it’s useful for calculations of the river morphology, in climatology and physical geography in general.
+Default menu: Raster ► Analysis
+"""
+full_description = """
+Outputs a single-band raster with values computed from the elevation. Roughness is the degree of irregularity of the surface. It’s calculated by the largest inter-cell difference of a central pixel and its surrounding cell. The determination of the roughness plays a role in the analysis of terrain elevation data, it’s useful for calculations of the river morphology, in climatology and physical geography in general.
 This algorithm is derived from the GDAL DEM utility .
-Default menu: Raster ► Analysis"""
+Default menu: Raster ► Analysis
+"""
 parameters = """
 INPUT: Input layer. Input elevation raster layer. Type: [raster]
 BAND: Band number. The number of the band to use as elevation. Type: [raster band] Default: 1 
@@ -14,6 +18,7 @@ OUTPUT: Roughness. Specify the output raster layer. One of: Save to a Temporary 
 OPTIONS: Additional creation options Optional. For adding one or more creation options that control theraster to be created (colors, block size, filecompression…).For convenience, you can rely on predefined profiles (see GDAL driver options section ). Batch Process and Model Designer: separate multiple options with a pipecharacter ( | ).. Type: [string] Default: ‘’ outputs = 
 OUTPUT: Roughness. Single-band output roughness raster.The value -9999 is used as NoData value.. Type: [raster]
 
+
 """
 code_example = """
 import processing
@@ -21,7 +26,7 @@ from qgis.core import QgsRasterLayer, QgsProject
 
 def compute_roughness(input_raster_path, output_path):
     # Load the raster layer
-    input_layer = QgsRasterLayer(input_raster_path, """Input Elevation")
+    input_layer = QgsRasterLayer(input_raster_path, \"\"\"Input Elevation\")
 
                                                      
     parameters = {
@@ -33,14 +38,15 @@ def compute_roughness(input_raster_path, output_path):
     }
 
                                      
-    result = processing.run("gdal:roughness", parameters)
+    result = processing.run(\"gdal:roughness\", parameters)
 
                                       
     output_layer = QgsRasterLayer(result['OUTPUT'], 'Roughness')
     QgsProject.instance().addMapLayer(output_layer)
 
                       
-input_raster_path = "D:/Data/ElevationData.tif"                                  
+input_raster_path = \"D:/Data/ElevationData.tif\"                                  
 output_path = 'D:/workspace_directory/output_roughness.tif'
 compute_roughness(input_raster_path, output_path)
+
 """

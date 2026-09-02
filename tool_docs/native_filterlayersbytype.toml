@@ -1,13 +1,18 @@
 tool_ID = "native:filterlayersbytype"
 tool_name = "filterlayersbytype"
-brief_description = """Filters layers by their type. Incoming layers will be directed to different outputs based on whether they are a vector or raster layer."""
-full_description = """Filters layers by their type. Incoming layers will be directed to different outputs based on whether they are a vector or raster layer."""
+brief_description = """
+Filters layers by their type. Incoming layers will be directed to different outputs based on whether they are a vector or raster layer.
+"""
+full_description = """
+Filters layers by their type. Incoming layers will be directed to different outputs based on whether they are a vector or raster layer.
+"""
 parameters = """
 INPUT: Input layer. Generic Map Layer. Type: [layer] outputs =
 VECTOR: Vector features Optional. 
 A Vector Layer of the input, if compatible. Type: [vector] 
 RASTER: Raster layer Optional. 
 A Raster Layer of the input, if compatible. Type: [raster]
+
 
 """
 code_example = """
@@ -20,7 +25,7 @@ def filter_layers_by_type():
     output_path = 'D:/output_layer.shp'
     
     # Load the input layer
-    input_layer = QgsVectorLayer(input_layer_path, """Filtered Layer", "ogr")
+    input_layer = QgsVectorLayer(input_layer_path, \"\"\"Filtered Layer\", \"ogr\")
     
                                    
     parameters = {
@@ -30,7 +35,7 @@ def filter_layers_by_type():
     }
     
                                              
-    result = processing.run("native:filterlayersbytype", parameters)
+    result = processing.run(\"native:filterlayersbytype\", parameters)
     
                               
     filtered_layer = QgsVectorLayer(result['OUTPUT'], 'Filtered_output', 'ogr')
@@ -38,4 +43,5 @@ def filter_layers_by_type():
 
                       
 filter_layers_by_type()
+
 """

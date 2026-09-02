@@ -1,11 +1,15 @@
 tool_ID = "gdal:buildvirtualraster"
 tool_name = "buildvirtualraster"
-brief_description = """Builds a VRT (Virtual Dataset) that is a mosaic of the list of input GDAL-supported rasters. With a mosaic you can merge several raster files.
+brief_description = """
+Builds a VRT (Virtual Dataset) that is a mosaic of the list of input GDAL-supported rasters. With a mosaic you can merge several raster files.
 This algorithm is derived from the GDAL buildvrt utility .
-Default menu: Raster ► Miscellaneous"""
-full_description = """Builds a VRT (Virtual Dataset) that is a mosaic of the list of input GDAL-supported rasters. With a mosaic you can merge several raster files.
+Default menu: Raster ► Miscellaneous
+"""
+full_description = """
+Builds a VRT (Virtual Dataset) that is a mosaic of the list of input GDAL-supported rasters. With a mosaic you can merge several raster files.
 This algorithm is derived from the GDAL buildvrt utility .
-Default menu: Raster ► Miscellaneous"""
+Default menu: Raster ► Miscellaneous
+"""
 parameters = """
 INPUT: Input layers. GDAL-supported raster layers.. Type: [raster] [list]
 RESOLUTION: Resolution. The output resolution of the mosaic.By default the average resolution of the raster fileswill be chosen. Options: 0 — Average ( average ) 1 — Highest ( highest ) 2 — Lowest ( lowest ). Type: [enumeration] Default: 0 
@@ -22,6 +26,7 @@ SRC_NODATA: NoData value(s) for input bands (space separated) Optional. Space se
 EXTRA: Additional command-line parameters. Add extra GDAL command line options. Type: [string] Default: None outputs = 
 OUTPUT: Virtual. Output raster layer. Type: [raster]
 
+
 """
 code_example = """
 import processing
@@ -31,8 +36,8 @@ def build_virtual_raster():
     # Define the input and output paths
     input_layers = ['D:/input_raster1.tif', 'D:/input_raster2.tif']  # Example input layers
     output_dir = 'C:/Users/Output'
-    output_file_name = """virtual_raster.vrt"
-    output_path = f"{output_dir}/{output_file_name}"
+    output_file_name = \"\"\"virtual_raster.vrt\"
+    output_path = f\"{output_dir}/{output_file_name}\"
     
                                    
     parameters = {
@@ -49,7 +54,7 @@ def build_virtual_raster():
     }
     
                                             
-    result = processing.run("gdal:buildvirtualraster", parameters)
+    result = processing.run(\"gdal:buildvirtualraster\", parameters)
     
                                        
     virtual_raster_layer = QgsRasterLayer(result['OUTPUT'], 'Virtual_Raster')
@@ -57,4 +62,5 @@ def build_virtual_raster():
 
                       
 build_virtual_raster()
+
 """

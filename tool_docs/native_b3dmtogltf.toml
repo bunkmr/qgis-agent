@@ -1,7 +1,11 @@
 tool_ID = "native:b3dmtogltf"
 tool_name = "b3dmtogltf"
-brief_description = """Converts files from the legacy .B3DM format to .GLTF or .GLB ."""
-full_description = """Converts files from the legacy .B3DM format to .GLTF or .GLB ."""
+brief_description = """
+Converts files from the legacy .B3DM format to .GLTF or .GLB .
+"""
+full_description = """
+Converts files from the legacy .B3DM format to .GLTF or .GLB .
+"""
 parameters = """
 INPUT: Input
 B3DM. Input file to convert.. Type: 
@@ -12,6 +16,7 @@ OUTPUT: Output file. Specify the output
 OUTPUT: Output file. Output layer in 
 .GLTF format.. Type: 
 [3D Tile]
+
 
 """
 code_example = """
@@ -30,8 +35,9 @@ def convert_b3dm_to_gltf():
     }
     
     # Run the 3D Tile conversion
-    result = processing.run("""native:b3dmtogltf", parameters)
+    result = processing.run(\"\"\"native:b3dmtogltf\", parameters)
     
                       
 convert_b3dm_to_gltf()
+
 """

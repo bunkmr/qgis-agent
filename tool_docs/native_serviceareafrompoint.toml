@@ -1,7 +1,11 @@
 tool_ID = "native:serviceareafrompoint"
 tool_name = "serviceareafrompoint"
-brief_description = """Returns all the edges or parts of edges of a network that can be reached within a given distance or time, starting from a point feature. This allows the evaluation of accessibility within a network, e.g. what are the places I can navigate to on a road network without spending a cost greater than a given value (the cost can be distance or time)."""
-full_description = """Returns all the edges or parts of edges of a network that can be reached within a given distance or time, starting from a point feature. This allows the evaluation of accessibility within a network, e.g. what are the places I can navigate to on a road network without spending a cost greater than a given value (the cost can be distance or time)."""
+brief_description = """
+Returns all the edges or parts of edges of a network that can be reached within a given distance or time, starting from a point feature. This allows the evaluation of accessibility within a network, e.g. what are the places I can navigate to on a road network without spending a cost greater than a given value (the cost can be distance or time).
+"""
+full_description = """
+Returns all the edges or parts of edges of a network that can be reached within a given distance or time, starting from a point feature. This allows the evaluation of accessibility within a network, e.g. what are the places I can navigate to on a road network without spending a cost greater than a given value (the cost can be distance or time).
+"""
 parameters = """
 INPUT: Vector layer representing the network. Line vector layer representing the network to be covered. Type: [vector: line]
 START_POINT: Start point (x, y). Coordinate of the point to calculate the servicearea around.. Type: [coordinates] 
@@ -22,6 +26,7 @@ TOLERANCE: Topology tolerance. Two lines with nodes closer than the specifiedtol
 OUTPUT: Service area (boundary nodes). The output point layer with the service area boundarynodes.. Type: [vector: point] 
 OUTPUT_LINES: Service area (lines). Line layer representing the parts of the networkthat can be serviced by the start point, for thegiven cost.. Type: [vector: line]
 
+
 """
 code_example = """
 import processing
@@ -31,7 +36,7 @@ def calculate_service_area():
     input_path = 'path/to/network_layer.shp'
     output_path = 'path/to/output_layer.shp'
 
-    input_layer = QgsVectorLayer(input_path, """Network Layer", "ogr")
+    input_layer = QgsVectorLayer(input_path, \"\"\"Network Layer\", \"ogr\")
     
     parameters = {
         'INPUT': input_path,
@@ -50,10 +55,11 @@ def calculate_service_area():
         'TOLERANCE': 0.0
     }
 
-    result = processing.run("native:serviceareafrompoint", parameters)
+    result = processing.run(\"native:serviceareafrompoint\", parameters)
     
     output_layer = QgsVectorLayer(result['OUTPUT'], 'Service Area Boundary Nodes', 'ogr')
     QgsProject.instance().addMapLayer(output_layer)
 
 calculate_service_area()
+
 """

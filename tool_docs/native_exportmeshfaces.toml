@@ -1,7 +1,11 @@
 tool_ID = "native:exportmeshfaces"
 tool_name = "exportmeshfaces"
-brief_description = """Exports a mesh layer’s faces to a polygon vector layer, with the dataset values on faces as attribute values."""
-full_description = """Exports a mesh layer’s faces to a polygon vector layer, with the dataset values on faces as attribute values."""
+brief_description = """
+Exports a mesh layer’s faces to a polygon vector layer, with the dataset values on faces as attribute values.
+"""
+full_description = """
+Exports a mesh layer’s faces to a polygon vector layer, with the dataset values on faces as attribute values.
+"""
 parameters = """
 INPUT: Input mesh layer. The mesh layer to export data from. Type: [mesh]
 DATASET_GROUPS: Dataset groups. The dataset groups. Type: [layer] [list] 
@@ -12,16 +16,17 @@ OUTPUT: Output vector layer. Specification of the output file. One of: Create Te
 TEMPORARY_OUTPUT ) Save to File… Save to Geopackage… Save to Database Table… The file encoding can also be changed here.. Type: [vector: polygon] Default: [Create temporary layer] outputs = 
 OUTPUT: Output vector layer. Output vector polygon layer containing the faces of the input meshlayer with associated dataset values. Type: [vector: polygon]
 
+
 """
 code_example = """
 import processing
 from qgis.core import QgsProject, QgsMeshLayer
 
 def export_mesh_faces(output_path):
-    input_path = """path/to/your/input/mesh.layer"                                            
+    input_path = \"\"\"path/to/your/input/mesh.layer\"                                            
 
                                
-    input_layer = QgsMeshLayer(input_path, "Input Mesh Layer", "mdal")
+    input_layer = QgsMeshLayer(input_path, \"Input Mesh Layer\", \"mdal\")
 
                                                 
     parameters = {
@@ -34,13 +39,14 @@ def export_mesh_faces(output_path):
     }
 
                                          
-    result = processing.run("native:exportmeshfaces", parameters)
+    result = processing.run(\"native:exportmeshfaces\", parameters)
 
                                                          
     output_layer = QgsMeshLayer(result['OUTPUT'], 'Exported Mesh Faces', 'mdal')
     QgsProject.instance().addMapLayer(output_layer)
 
                                                    
-output_path = "path/to/save/output/vector_layer.shp"
+output_path = \"path/to/save/output/vector_layer.shp\"
 export_mesh_faces(output_path)
+
 """

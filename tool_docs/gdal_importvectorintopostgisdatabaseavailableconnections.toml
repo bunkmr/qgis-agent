@@ -1,9 +1,13 @@
 tool_ID = "gdal:importvectorintopostgisdatabaseavailableconnections"
 tool_name = "importvectorintopostgisdatabaseavailableconnections"
-brief_description = """Imports vector layers inside a PostgreSQL database on the basis of an available connection. The connection has to be defined properly beforehand. Be aware that the checkboxes ‘Save Username’ and ‘Save Password’ are activated. Then you can use the algorithm.
-This algorithm is derived from the GDAL ogr2ogr utility ."""
-full_description = """Imports vector layers inside a PostgreSQL database on the basis of an available connection. The connection has to be defined properly beforehand. Be aware that the checkboxes ‘Save Username’ and ‘Save Password’ are activated. Then you can use the algorithm.
-This algorithm is derived from the GDAL ogr2ogr utility ."""
+brief_description = """
+Imports vector layers inside a PostgreSQL database on the basis of an available connection. The connection has to be defined properly beforehand. Be aware that the checkboxes ‘Save Username’ and ‘Save Password’ are activated. Then you can use the algorithm.
+This algorithm is derived from the GDAL ogr2ogr utility .
+"""
+full_description = """
+Imports vector layers inside a PostgreSQL database on the basis of an available connection. The connection has to be defined properly beforehand. Be aware that the checkboxes ‘Save Username’ and ‘Save Password’ are activated. Then you can use the algorithm.
+This algorithm is derived from the GDAL ogr2ogr utility .
+"""
 parameters = """
 DATABASE: Database (connection name). The PostgreSQL database to connect to. Type: [string]
 INPUT: Input layer. OGR-supported vector layer to export to the database. Type: [vector: any] 
@@ -59,6 +63,7 @@ PROMOTETOMULTI: Promote to Multipart Optional. Casts features geometry type to m
 PRECISION: Keep width and precision of input attributes Optional. Avoids modifying column attributes to comply with input data. Type: [boolean] Default: True 
 OPTIONS: Additional creation options Optional. Additional GDAL creation options.. Type: [string] Default: ‘’ (no additional options) outputs =
 
+
 """
 code_example = """
 import processing
@@ -66,7 +71,7 @@ from qgis.core import QgsVectorLayer, QgsProject
 
 def import_vector_to_postgis():
     input_layer_path = 'path/to/your/vectorfile.shp'
-    input_layer = QgsVectorLayer(input_layer_path, """Input Layer", "ogr")
+    input_layer = QgsVectorLayer(input_layer_path, \"\"\"Input Layer\", \"ogr\")
     
     parameters = {
         'DATABASE': '',                                     
@@ -100,8 +105,9 @@ def import_vector_to_postgis():
         'OUTPUT': ''                                     
     }
 
-    result = processing.run("gdal:importvectorintopostgisdatabaseavailableconnections", parameters)
+    result = processing.run(\"gdal:importvectorintopostgisdatabaseavailableconnections\", parameters)
 
                       
 import_vector_to_postgis()
+
 """

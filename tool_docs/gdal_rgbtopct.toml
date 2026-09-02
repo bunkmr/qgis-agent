@@ -1,13 +1,17 @@
 tool_ID = "gdal:rgbtopct"
 tool_name = "rgbtopct"
-brief_description = """Converts a 24 bit RGB image into a 8 bit paletted. Computes an optimal pseudo-color table for the given RGB-image using a median cut algorithm on a downsampled RGB histogram. Then it converts the image into a pseudo-colored image using the color table. This conversion utilizes Floyd-Steinberg dithering (error diffusion) to maximize output image visual quality.
+brief_description = """
+Converts a 24 bit RGB image into a 8 bit paletted. Computes an optimal pseudo-color table for the given RGB-image using a median cut algorithm on a downsampled RGB histogram. Then it converts the image into a pseudo-colored image using the color table. This conversion utilizes Floyd-Steinberg dithering (error diffusion) to maximize output image visual quality.
 If you want to classify a raster map and want to reduce the number of classes it can be helpful to downsample your image with this algorithm before.
 This algorithm is derived from the GDAL rgb2pct utility .
-Default menu: Raster ► Conversion"""
-full_description = """Converts a 24 bit RGB image into a 8 bit paletted. Computes an optimal pseudo-color table for the given RGB-image using a median cut algorithm on a downsampled RGB histogram. Then it converts the image into a pseudo-colored image using the color table. This conversion utilizes Floyd-Steinberg dithering (error diffusion) to maximize output image visual quality.
+Default menu: Raster ► Conversion
+"""
+full_description = """
+Converts a 24 bit RGB image into a 8 bit paletted. Computes an optimal pseudo-color table for the given RGB-image using a median cut algorithm on a downsampled RGB histogram. Then it converts the image into a pseudo-colored image using the color table. This conversion utilizes Floyd-Steinberg dithering (error diffusion) to maximize output image visual quality.
 If you want to classify a raster map and want to reduce the number of classes it can be helpful to downsample your image with this algorithm before.
 This algorithm is derived from the GDAL rgb2pct utility .
-Default menu: Raster ► Conversion"""
+Default menu: Raster ► Conversion
+"""
 parameters = """
 INPUT: Input layer. Input
 (RGB) raster layer. Type: [raster] 
@@ -18,6 +22,7 @@ PCT. Specification of the output raster. One of: Save to a Temporary File Save t
 OUTPUT: 
 RGB to 
 PCT. Output raster layer.. Type: [raster]
+
 
 """
 code_example = """
@@ -30,7 +35,7 @@ def rgb_to_pct():
     output_path = 'C:/Users/Output/RGB_to_PCT.tif'
     
     # Load the input layer
-    input_layer = QgsRasterLayer(input_path, """Input RGB Raster")
+    input_layer = QgsRasterLayer(input_path, \"\"\"Input RGB Raster\")
     
                                           
     parameters = {
@@ -40,10 +45,11 @@ def rgb_to_pct():
     }
     
                               
-    result = processing.run("gdal:rgbtopct", parameters)
+    result = processing.run(\"gdal:rgbtopct\", parameters)
     
                                                                            
 
                       
 rgb_to_pct()
+
 """

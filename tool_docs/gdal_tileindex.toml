@@ -1,11 +1,15 @@
 tool_ID = "gdal:tileindex"
 tool_name = "tileindex"
-brief_description = """Builds a vector layer with a record for each input raster file, an attribute containing the filename, and a polygon geometry outlining the raster. This output is suitable for use with MapServer as a raster tileindex.
+brief_description = """
+Builds a vector layer with a record for each input raster file, an attribute containing the filename, and a polygon geometry outlining the raster. This output is suitable for use with MapServer as a raster tileindex.
 This algorithm is derived from the GDAL Tile Index utility .
-Default menu: Raster ► Miscellaneous"""
-full_description = """Builds a vector layer with a record for each input raster file, an attribute containing the filename, and a polygon geometry outlining the raster. This output is suitable for use with MapServer as a raster tileindex.
+Default menu: Raster ► Miscellaneous
+"""
+full_description = """
+Builds a vector layer with a record for each input raster file, an attribute containing the filename, and a polygon geometry outlining the raster. This output is suitable for use with MapServer as a raster tileindex.
 This algorithm is derived from the GDAL Tile Index utility .
-Default menu: Raster ► Miscellaneous"""
+Default menu: Raster ► Miscellaneous
+"""
 parameters = """
 LAYERS: Input files. The input raster files. Can be multiple files.. Type: [raster] [list]
 PATH_FIELD_NAME Optional: Field name to hold the file path to the indexed rasters. The output field name to hold the file path/location to theindexed rasters.. Type: [string] Default: ‘location’ 
@@ -27,6 +31,7 @@ EPSG ) 3 – Proj.4 (
 PROJ ). Type: [enumeration] Default: 0 outputs = 
 OUTPUT: Tile index. The polygon vector layer with the tile index.. Type: [vector: polygon]
 
+
 """
 code_example = """
 import processing
@@ -47,9 +52,10 @@ def create_tile_index():
         'CRS_FORMAT': 0  # 0: 'AUTO', 1: 'WKT', 2: 'EPSG', 3: 'PROJ'
     }
     
-    result = processing.run("""gdal:tileindex", parameters)
+    result = processing.run(\"\"\"gdal:tileindex\", parameters)
     tile_index_layer = QgsVectorLayer(result['OUTPUT'], 'Tile Index', 'ogr')
     QgsProject.instance().addMapLayer(tile_index_layer)
 
 create_tile_index()
+
 """

@@ -1,7 +1,11 @@
 tool_ID = "gdal:onesidebuffer"
 tool_name = "onesidebuffer"
-brief_description = """Creates a buffer on one side (right or left) of the lines in a line vector layer."""
-full_description = """Creates a buffer on one side (right or left) of the lines in a line vector layer."""
+brief_description = """
+Creates a buffer on one side (right or left) of the lines in a line vector layer.
+"""
+full_description = """
+Creates a buffer on one side (right or left) of the lines in a line vector layer.
+"""
 parameters = """
 INPUT: Input layer. The input line layer. Type: [vector: line]
 GEOMETRY: Geometry column name. The name of the input layer geometry column to use. Type: [string] Default: ‘geometry’ 
@@ -14,6 +18,7 @@ OUTPUT: One-sided buffer. Specify the output buffer layer. One of: Save to a Tem
 OPTIONS: Additional creation options Optional. Additional GDAL creation options.. Type: [string] Default: ‘’ (no additional options) outputs = 
 OUTPUT: One-sided buffer. The output buffer layer. Type: [vector: polygon]
 
+
 """
 code_example = """
 from qgis.core import QgsVectorLayer, QgsProject
@@ -25,7 +30,7 @@ def create_one_sided_buffer():
     output_path = 'D:/output_one_sided_buffer.shp'
 
     # Load the input layer
-    input_layer = QgsVectorLayer(input_path, """Input Line Layer", "ogr")
+    input_layer = QgsVectorLayer(input_path, \"\"\"Input Line Layer\", \"ogr\")
     
                                       
     buffer_params = {
@@ -40,7 +45,7 @@ def create_one_sided_buffer():
         'OPTIONS': '''    }
     
                           
-    result = processing.run("gdal:onesidebuffer", buffer_params)
+    result = processing.run(\"gdal:onesidebuffer\", buffer_params)
     
                                        
     buffer_layer = QgsVectorLayer(result['OUTPUT'], 'One_sided_buffer', 'ogr')
@@ -48,4 +53,5 @@ def create_one_sided_buffer():
 
                       
 create_one_sided_buffer()
+
 """

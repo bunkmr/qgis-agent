@@ -1,7 +1,11 @@
 tool_ID = "native:uploadgpsdata"
 tool_name = "uploadgpsdata"
-brief_description = """Uses the GPSBabel tool to upload data to a GPS device from the GPX standard format."""
-full_description = """Uses the GPSBabel tool to upload data to a GPS device from the GPX standard format."""
+brief_description = """
+Uses the GPSBabel tool to upload data to a GPS device from the GPX standard format.
+"""
+full_description = """
+Uses the GPSBabel tool to upload data to a GPS device from the GPX standard format.
+"""
 parameters = """
 INPUT: Input file.
 .GPX file containing the data to upload. Type: [file] 
@@ -11,6 +15,7 @@ GPS Settings dialog.. Type: [enumeration] Default: Garmin serial
 PORT: Port. The port the device is connected to.Available ports depend on the 
 OS.. Type: [enumeration] 
 FEATURE_TYPE: Feature type. The type of data to upload 0 — Waypoints 1 — Routes 2 — Tracks. Type: [enumeration] Default: 0 outputs =
+
 
 """
 code_example = """
@@ -27,7 +32,8 @@ def upload_gps_data():
         'OUTPUT': output_path
     }
     
-    result = processing.run("""native:uploadgpsdata", parameters)
+    result = processing.run(\"\"\"native:uploadgpsdata\", parameters)
 
 upload_gps_data()
+
 """

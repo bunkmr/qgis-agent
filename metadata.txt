@@ -1,19 +1,24 @@
 [general]
 name=QGIS Agent
 qgisMinimumVersion=3.0
+qgisMaximumVersion=4.99
 description=LLM-powered intelligent assistant for QGIS. Supports natural language to operate QGIS tools.
-version=2.1.1
+version=2.1.3
 author=bunkmr
 email=bunkr@qq.com
 about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It allows you to control QGIS through natural language conversations, including: viewing project info, adding/removing layers, executing Processing algorithms, running PyQGIS code, setting layer labels, rendering maps, and more.
 
     Features:
     - Natural language interface for QGIS operations
-    - 679 built-in QGIS tools
+    - 15 built-in QGIS tools driven by natural language (PyQGIS / Processing)
+    - Bundled reference catalog of 679 QGIS tool & API definitions (tool_docs/)
     - RAG-enhanced API documentation retrieval
     - Cookbook self-evolution mechanism
     - Long-term memory support
     - Multiple LLM providers (DeepSeek, Mimo, GLM, Gemini, etc.)
+
+    External dependencies (install via pip before use):
+    langchain_core, langchain_openai, langchain_deepseek, httpx, psutil
 
 tracker=https://github.com/bunkmr/qgis-agent/issues
 repository=https://github.com/bunkmr/qgis-agent
@@ -24,6 +29,23 @@ icon=icon.png
 experimental=False
 deprecated=False
 changelog=
+    v2.1.3 - Fixed AgentLoop short-term memory never loading (history was always empty)
+    v2.1.3 - Fixed AgentLoopProcessor worker result unpacking (3-value vs 2-value signal mismatch)
+    v2.1.3 - Fixed AgentLoop interaction persistence (dict passed where list expected)
+    v2.1.3 - Removed unused streaming_llm; cleaned dead except-branch; fixed QTimer lambda late-binding
+    v2.1.3 - Consolidated duplicate build scripts; packaging now uses explicit include whitelist
+    v2.1.3 - Added missing httpx to dependencies; declared external pip deps in about
+    v2.1.3 - Added .gitattributes to normalize line endings
+    v2.1.3 - QGIS 4 (PyQt6) compatibility: scoped PyQt6 enums (QHeaderView/QEvent/QPalette/etc.)
+    v2.1.3 - Auto-create conversation when none active; auto title from first 20 chars
+    v2.1.3 - Send-chain hardening: visible red errors on worker crash; LLM timeout=180, max_retries=1
+    v2.1.3 - RAG components degrade gracefully if construction fails (no silent block)
+    v2.1.3 - Self-hosted models: API Key optional; browser User-Agent to bypass Cloudflare 403
+    v2.1.2 - Fixed ModuleNotFoundError for rag module in QGIS ZIP install
+    v2.1.2 - Removed __init__.py from rag/agent_loop/skills to avoid sub-plugin detection
+    v2.1.2 - Changed relative imports to absolute imports for sub-packages
+    v2.1.2 - Cleaned up unused dependencies (requests, langchain)
+    v2.1.2 - Updated packaging to include rag, agent_loop, skills in ZIP
     v2.1.1 - Security fix: SQL injection prevention via table name whitelist validation
     v2.1.1 - Security fix: resolved secret detection false positive in tool docs
     v2.1.1 - Code quality: removed unused imports, fixed indentation

@@ -1,7 +1,11 @@
 tool_ID = "native:downloadgpsdata"
 tool_name = "downloadgpsdata"
-brief_description = """Uses the GPSBabel tool to download data from a GPS device into the GPX standard format."""
-full_description = """Uses the GPSBabel tool to download data from a GPS device into the GPX standard format."""
+brief_description = """
+Uses the GPSBabel tool to download data from a GPS device into the GPX standard format.
+"""
+full_description = """
+Uses the GPSBabel tool to download data from a GPS device into the GPX standard format.
+"""
 parameters = """
 DEVICE: Device. The
 GPS device used to create the data.Must be declared in 
@@ -13,6 +17,7 @@ OUTPUT: Output. Specification of the output file. One of: Save to a Temporary Fi
 OUTPUT_LAYER: Output layer. Output layer with data in 
 GPX standard format. Type: [vector: any]
 
+
 """
 code_example = """
 # Import necessary modules
@@ -21,7 +26,7 @@ import processing
 
 def download_gps_data():
     # Define the output path
-    output_path = """D:/output/downloaded_gps_data.shp"
+    output_path = \"\"\"D:/output/downloaded_gps_data.shp\"
 
                                
     gps_params = {
@@ -32,7 +37,7 @@ def download_gps_data():
     }
     
                                          
-    result = processing.run("native:downloadgpsdata", gps_params)
+    result = processing.run(\"native:downloadgpsdata\", gps_params)
 
                               
     gps_layer = QgsVectorLayer(result['OUTPUT'], 'Downloaded_GPS_Data', 'ogr')
@@ -40,4 +45,5 @@ def download_gps_data():
 
                       
 download_gps_data()
+
 """

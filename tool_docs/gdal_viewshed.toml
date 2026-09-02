@@ -1,7 +1,11 @@
 tool_ID = "gdal:viewshed"
 tool_name = "viewshed"
-brief_description = """Calculates a viewshed raster from an input raster DEM using method defined in Wang2000 for a user defined point."""
-full_description = """Calculates a viewshed raster from an input raster DEM using method defined in Wang2000 for a user defined point."""
+brief_description = """
+Calculates a viewshed raster from an input raster DEM using method defined in Wang2000 for a user defined point.
+"""
+full_description = """
+Calculates a viewshed raster from an input raster DEM using method defined in Wang2000 for a user defined point.
+"""
 parameters = """
 INPUT: Input layer. Input elevation raster layer. Type: [raster]
 BAND: Band number. The number of the band to use as elevation. Type: [raster band] Default: 1 
@@ -17,6 +21,7 @@ OPTIONS: Additional creation options Optional. For adding one or more creation o
 EXTRA: Additional command-line parameters. Add extra GDAL command line options. Type: [string] Default: None outputs = 
 OUTPUT: Output. The raster layer displaying the viewshed.. Type: [raster]
 
+
 """
 code_example = """
 from qgis.core import QgsProject, QgsRasterLayer, QgsPointXY
@@ -28,7 +33,7 @@ def compute_viewshed():
     output_path = 'D:/output_viewshed.tif'
     
     # Load the input raster layer
-    input_raster = QgsRasterLayer(input_raster_path, """Elevation Raster")
+    input_raster = QgsRasterLayer(input_raster_path, \"\"\"Elevation Raster\")
 
                               
     observer_location = QgsPointXY(500000, 2000000)                       
@@ -47,7 +52,7 @@ def compute_viewshed():
     }
     
                                
-    result = processing.run("gdal:viewshed", parameters)
+    result = processing.run(\"gdal:viewshed\", parameters)
     
                                        
     viewshed_layer = QgsRasterLayer(result['OUTPUT'], 'Viewshed Output')
@@ -55,4 +60,5 @@ def compute_viewshed():
 
                       
 compute_viewshed()
+
 """

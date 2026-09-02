@@ -1,5 +1,35 @@
 # 更新日志
 
+## [2.1.3] - 2026-09-02
+
+### 新增
+- 🆕 **QGIS 4（PyQt6）兼容**：PyQt5 / PyQt6 双兼容，插件可在 QGIS 3.x 与 4.x（含 macOS QGIS 4）中加载运行
+- 🆕 **本地 / 自托管模型免密**：自定义 OpenAI 兼容端点的 API Key 可留空（Ollama / vLLM / llama.cpp 等）
+- 🛡️ **Cloudflare 403 自动规避**：调用 LLM 时自动附加浏览器 `User-Agent`，绕过 Cloudflare Bot 防护对 Python 客户端的拦截
+
+### 修复
+- 🐛 修复「点击发送无反应」：无活动对话时自动创建对话；主线程构造异常与 LLM 调用超时被改为可见红字提示，不再被 Qt 静默吞掉
+- 🐛 修复 PyQt6 枚举未限定（QHeaderView / QEvent / QPalette / QDialog / QMessageBox 等）导致的 DockWidget 崩溃
+- 🐛 修复 pydantic-core 版本冲突（用户 site 遮蔽 QGIS 自带版本）导致插件无法加载
+- 🐛 修复 `QPalette.Base` 等属性缺失报错
+
+### 改进
+- 💬 对话名称默认取首条消息前 20 字，不再强制弹窗要求命名
+- 🧠 RAG 组件（DocStore / Retriever / Cookbook 等）构造失败时优雅降级为 None，不阻塞对话
+- ⏱️ LLM 调用统一设置 `timeout=180, max_retries=1`，避免端点不通时 worker 永久挂起
+- 📦 打包脚本改用显式包含白名单；ZIP 顶层为标准 `qgis_agent/` 目录
+
+## [2.1.2] - 2026-06-19
+
+### 修复
+- 🐛 **修复 RAG 模块导入错误**: 解决 ZIP 安装后 `ModuleNotFoundError: No module named 'qgis_agent.rag'` 问题
+- 🐛 **修复子插件误判**: 移除 `rag/`、`agent_loop/`、`skills/` 目录的 `__init__.py`，避免 QGIS 扫描器将其误判为子插件
+
+### 改进
+- 将子包的相对导入改为绝对导入（`from .rag` → `from qgis_agent.rag`）
+- 清理不必要的依赖（移除 `requests`、`langchain`）
+- 更新打包脚本，ZIP 包现在包含 `rag/`、`agent_loop/`、`skills/` 模块
+
 ## [1.2.0] - 2026-06-06
 
 ### 新增

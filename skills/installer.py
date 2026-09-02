@@ -9,15 +9,23 @@
 """
 
 import os
-import json
 import shutil
 import urllib.request
 import zipfile
 import tempfile
-from pathlib import Path
-from typing import Optional
 
-from .skill_manager import Skill, SkillManager, get_skill_manager
+from .skill_manager import SkillManager, get_skill_manager
+
+# 允许的 URL scheme（防止 file:// 等危险协议）
+_ALLOWED_SCHEMES = {"http", "https"}
+
+
+def _validate_url_scheme(url: str):
+    """校验 URL scheme，只允许 http/https"""
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    if parsed.scheme.lower() not in _ALLOWED_SCHEMES:
+        raise ValueError(f"URL scheme not allowed: {parsed.scheme!r} (only http/https)")
 
 
 class SkillInstaller:
@@ -100,7 +108,8 @@ class SkillInstaller:
     def _install_python_file(self, url: str, name: str = None) -> dict:
         """安装 Python 技能文件"""
         # 下载文件
-        response = urllib.request.urlopen(url, timeout=30)
+        _validate_url_scheme(url)
+        response = urllib.request.urlopen(url, timeout=30)  # nosec B310 - scheme validated above
         content = response.read().decode("utf-8")
 
         # 确定文件名
@@ -120,7 +129,8 @@ class SkillInstaller:
     def _install_zip_file(self, url: str, name: str = None) -> dict:
         """安装 ZIP 技能包"""
         # 下载 ZIP 文件
-        response = urllib.request.urlopen(url, timeout=30)
+        _validate_url_scheme(url)
+        response = urllib.request.urlopen(url, timeout=30)  # nosec B310 - scheme validated above
         zip_data = response.read()
 
         # 保存到临时文件
@@ -202,7 +212,7 @@ EXAMPLE_SKILL_TEMPLATE = '''# -*- coding: utf-8 -*-
 {{SKILL_NAME}} - {{DESCRIPTION}}
 """
 
-from skills.skill_manager import Skill, SkillResult
+from .skill_manager import Skill, SkillResult
 
 
 def handler(**kwargs):

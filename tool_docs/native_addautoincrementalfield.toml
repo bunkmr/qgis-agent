@@ -1,11 +1,15 @@
 tool_ID = "native:addautoincrementalfield"
 tool_name = "addautoincrementalfield"
-brief_description = """Adds a new integer field to a vector layer, with a sequential value for each feature.
+brief_description = """
+Adds a new integer field to a vector layer, with a sequential value for each feature.
 This field can be used as a unique ID for features in the layer. The new attribute is not added to the input layer but a new layer is generated instead.
-The initial starting value for the incremental series can be specified. Optionally, the incremental series can be based on grouping fields and a sort order for features can also be specified."""
-full_description = """Adds a new integer field to a vector layer, with a sequential value for each feature.
+The initial starting value for the incremental series can be specified. Optionally, the incremental series can be based on grouping fields and a sort order for features can also be specified.
+"""
+full_description = """
+Adds a new integer field to a vector layer, with a sequential value for each feature.
 This field can be used as a unique ID for features in the layer. The new attribute is not added to the input layer but a new layer is generated instead.
-The initial starting value for the incremental series can be specified. Optionally, the incremental series can be based on grouping fields and a sort order for features can also be specified."""
+The initial starting value for the incremental series can be specified. Optionally, the incremental series can be based on grouping fields and a sort order for features can also be specified.
+"""
 parameters = """
 INPUT: Input layer. The input vector layer.. Type: [vector: any]
 FIELD_NAME: Field name. Name of the field with autoincremental values. Type: [string] Default: 
@@ -20,6 +24,7 @@ OUTPUT: Incremented. Specify the output vector layer with the auto incrementfiel
 TEMPORARY_OUTPUT ) Save to File… Save to Geopackage… Save to Database Table… Append to Layer… The file encoding can also be changed here.. Type: [same as input] Default: [Create temporary layer] outputs = 
 OUTPUT: Incremented. Vector layer with auto incremental field. Type: [same as input]
 
+
 """
 code_example = """
 from qgis.core import QgsVectorLayer, QgsProject
@@ -28,7 +33,7 @@ import processing
 def add_auto_incremental_field():
     input_path = 'D:/input_vector_layer.shp'
     output_path = 'D:/output_layer.shp'
-    input_layer = QgsVectorLayer(input_path, """Input Layer", "ogr")
+    input_layer = QgsVectorLayer(input_path, \"\"\"Input Layer\", \"ogr\")
     
     parameters = {
         'INPUT': input_path,
@@ -42,9 +47,10 @@ def add_auto_incremental_field():
         'OUTPUT': output_path
     }
     
-    result = processing.run("native:addautoincrementalfield", parameters)
+    result = processing.run(\"native:addautoincrementalfield\", parameters)
     output_layer = QgsVectorLayer(result['OUTPUT'], 'Incremented Layer', 'ogr')
     QgsProject.instance().addMapLayer(output_layer)
 
 add_auto_incremental_field()
+
 """

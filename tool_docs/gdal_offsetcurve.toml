@@ -1,7 +1,11 @@
 tool_ID = "gdal:offsetcurve"
 tool_name = "offsetcurve"
-brief_description = """Offsets lines by a specified distance. Positive distances will offset lines to the left, and negative distances will offset them to the right."""
-full_description = """Offsets lines by a specified distance. Positive distances will offset lines to the left, and negative distances will offset them to the right."""
+brief_description = """
+Offsets lines by a specified distance. Positive distances will offset lines to the left, and negative distances will offset them to the right.
+"""
+full_description = """
+Offsets lines by a specified distance. Positive distances will offset lines to the left, and negative distances will offset them to the right.
+"""
 parameters = """
 INPUT: Input layer. The input line layer. Type: [vector: line]
 GEOMETRY: Geometry column name. The name of the input layer geometry column to use. Type: [string] Default: ‘geometry’ 
@@ -10,17 +14,18 @@ OUTPUT: Offset curve. Specify the output line layer. One of: Save to a Temporary
 OPTIONS: Additional creation options Optional. Additional GDAL creation options.. Type: [string] Default: ‘’ (no additional options) outputs = 
 OUTPUT: Offset curve. The output offset curve layer. Type: [vector: line]
 
+
 """
 code_example = """
 import processing
 from qgis.core import QgsVectorLayer, QgsProject
 
 def create_offset_curve():
-    input_path = """D:/input_line_layer.shp"
-    output_path = "D:/output_curve.shp"
+    input_path = \"\"\"D:/input_line_layer.shp\"
+    output_path = \"D:/output_curve.shp\"
     
                           
-    input_layer = QgsVectorLayer(input_path, "Input Line Layer", "ogr")
+    input_layer = QgsVectorLayer(input_path, \"Input Line Layer\", \"ogr\")
 
                                                 
     parameters = {
@@ -31,7 +36,7 @@ def create_offset_curve():
         'OPTIONS': '''    }
     
                                     
-    result = processing.run("gdal:offsetcurve", parameters)
+    result = processing.run(\"gdal:offsetcurve\", parameters)
     
                                            
     offset_curve_layer = QgsVectorLayer(result['OUTPUT'], 'Offset Curve', 'ogr')
@@ -39,4 +44,5 @@ def create_offset_curve():
 
                       
 create_offset_curve()
+
 """

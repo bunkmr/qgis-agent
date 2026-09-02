@@ -15,7 +15,7 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, Tool
 from ..llm_providers import get_llm_instance
 from ..utils import get_current_timestamp
 from .state import AgentState, StepResult, ToolCall, LoopStatus
-from .tools import Tool, ToolResult, ToolRegistry, get_tool_registry
+from .tools import ToolResult, get_tool_registry
 from .memory import MemoryManager
 from .rag import RAGEngine
 
@@ -286,8 +286,8 @@ class AgentLoop:
         self._state.system_prompt = system_prompt
         self._state.messages = [SystemMessage(content=system_prompt)]
 
-        # 加载历史消息
-        history = self.memory.short_term.get_messages()
+        # 加载历史消息（load() 从数据库读取历史并填充 _messages，否则多轮对话历史恒为空）
+        history = self.memory.short_term.load()
         for msg in history:
             if msg["role"] == "user":
                 self._state.messages.append(HumanMessage(content=msg["content"]))
@@ -338,34 +338,41 @@ class AgentLoop:
         return ""
 
     def _save_interaction(self, user_input: str, response: str, workflow: str):
-        """保存交互记录到数据库"""
+        """保存交互记录到数据库
+
+        注意: dataloader.insert_interaction(interaction_info: list, conversation_id) 要求
+        传入按列顺序排列的值列表（ID 由方法内部基于 conversationID 计数生成），而非字典。
+        """
         try:
-            from ..utils import generate_unique_id
+            # 列顺序: conversationID, promptID, requestText, contextText, requestTime,
+            #         typeMessage, responseText, responseTime, workflow, executionLog
+            interaction_row_input = [
+                self.conversation_id,
+                "",
+                user_input,
+                "",
+                get_current_timestamp(),
+                "input",
+                "",
+                "",
+                workflow,
+                "",
+            ]
+            self.dataloader.insert_interaction(interaction_row_input, self.conversation_id)
 
-            interaction_id = f"{self.conversation_id}_{generate_unique_id()}"
-            self.dataloader.insert_interaction({
-                "ID": interaction_id,
-                "conversationID": self.conversation_id,
-                "promptID": "",
-                "typeMessage": "input",
-                "requestText": user_input,
-                "responseText": "",
-                "workflow": workflow,
-                "executionLog": "",
-                "created": get_current_timestamp(),
-            })
-
-            self.dataloader.insert_interaction({
-                "ID": f"{interaction_id}_response",
-                "conversationID": self.conversation_id,
-                "promptID": "",
-                "typeMessage": "return",
-                "requestText": "",
-                "responseText": response,
-                "workflow": workflow,
-                "executionLog": "",
-                "created": get_current_timestamp(),
-            })
+            interaction_row_response = [
+                self.conversation_id,
+                "",
+                "",
+                "",
+                "",
+                "return",
+                response,
+                get_current_timestamp(),
+                workflow,
+                "",
+            ]
+            self.dataloader.insert_interaction(interaction_row_response, self.conversation_id)
         except Exception as e:
             logger.error(f"Failed to save interaction: {e}")
 

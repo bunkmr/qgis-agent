@@ -8,10 +8,8 @@
 import logging
 from qgis.PyQt.QtCore import QThreadPool, pyqtSignal, QObject
 
-from ..llm_providers import get_llm_instance
-from ..utils import get_current_timestamp, pack
+from ..utils import get_current_timestamp
 from ..response_worker import ToolAgentWorker
-from ..qgis_tools import TOOL_DEFINITIONS, call_tool
 
 from .loop import AgentLoop
 from .tools import get_tool_registry
@@ -66,7 +64,7 @@ class AgentLoopProcessor(QObject):
     def _init_rag(self):
         """初始化 RAG 组件"""
         try:
-            from ..rag import DocStore, init_retriever, generate_pyqgis_docs
+            from ..rag import DocStore, init_retriever
 
             self.doc_store = DocStore()
             init_retriever(self.doc_store)
@@ -130,8 +128,6 @@ class AgentLoopProcessor(QObject):
 
     def async_response(self, user_input: str):
         """异步响应入口"""
-        from ..response_worker import ToolAgentWorker
-
         worker = ToolAgentWorker(self, user_input)
         worker.signals.finished.connect(self._on_worker_finished)
         worker.signals.error.connect(self._on_worker_error)
@@ -140,9 +136,13 @@ class AgentLoopProcessor(QObject):
         self.threadpool.start(worker)
 
     def _on_worker_finished(self, result):
-        """Worker 完成回调"""
-        response, workflow, model_path = result
-        self.response_ready.emit(response, workflow, model_path, get_current_timestamp())
+        """Worker 完成回调
+
+        ToolAgentSignals.finished 为两参信号 (response, workflow)，此处必须解包两值。
+        response_ready 信号第 3 个参数 model_path 当前新架构未使用，传空串占位。
+        """
+        response, workflow = result
+        self.response_ready.emit(response, workflow, "", get_current_timestamp())
 
     def _on_worker_error(self, error):
         """Worker 错误回调"""

@@ -1,17 +1,21 @@
 tool_ID = "native:aggregate"
 tool_name = "aggregate"
-brief_description = """Takes a vector or table layer and creates a new layer by aggregating features based on a groupby expression.
+brief_description = """
+Takes a vector or table layer and creates a new layer by aggregating features based on a groupby expression.
 Features for which groupby expression returns the same value are grouped together.
 It is possible to group all source features together using constant value in groupby parameter, example: NULL.
 It is also possible to group features by multiple fields using Array function, example: Array(“Field1”, “Field2”).
 Geometries (if present) are combined into one multipart geometry for each group. Output attributes are computed depending on each given aggregate definition.
-This algorithm allows to use the default aggregates functions of the QGIS Expression engine."""
-full_description = """Takes a vector or table layer and creates a new layer by aggregating features based on a groupby expression.
+This algorithm allows to use the default aggregates functions of the QGIS Expression engine.
+"""
+full_description = """
+Takes a vector or table layer and creates a new layer by aggregating features based on a groupby expression.
 Features for which groupby expression returns the same value are grouped together.
 It is possible to group all source features together using constant value in groupby parameter, example: NULL.
 It is also possible to group features by multiple fields using Array function, example: Array(“Field1”, “Field2”).
 Geometries (if present) are combined into one multipart geometry for each group. Output attributes are computed depending on each given aggregate definition.
-This algorithm allows to use the default aggregates functions of the QGIS Expression engine."""
+This algorithm allows to use the default aggregates functions of the QGIS Expression engine.
+"""
 parameters = """
 INPUT: Input layer. Input vector layer. Type: [vector: any]
 GROUP_BY: Group by expression. Choose the grouping field.If 
@@ -24,6 +28,7 @@ OUTPUT: Aggregated. Specify the output (aggregate) layerOne of: Create Temporary
 TEMPORARY_OUTPUT ) Save to File… Save to Geopackage… Save to Database Table… The file encoding can also be changed here.. Type: [same as input] Default: [Create temporary layer] outputs = 
 OUTPUT: Aggregated. Multigeometry vector layer with the aggregated values. Type: [same as input]
 
+
 """
 code_example = """
 import processing
@@ -31,7 +36,7 @@ from qgis.core import QgsProject, QgsVectorLayer
 
 def aggregate_geometry(input_layer_path, output_path):
     # Define the parameters
-    input_layer = QgsVectorLayer(input_layer_path, """Input Layer", "ogr")
+    input_layer = QgsVectorLayer(input_layer_path, \"\"\"Input Layer\", \"ogr\")
 
     parameters = {
         'INPUT': input_layer_path,
@@ -51,7 +56,7 @@ def aggregate_geometry(input_layer_path, output_path):
     }
 
                                      
-    result = processing.run("native:aggregate", parameters)
+    result = processing.run(\"native:aggregate\", parameters)
 
                                      
     output_layer = QgsVectorLayer(result['OUTPUT'], 'Aggregated Layer', 'ogr')
@@ -63,4 +68,5 @@ output_path = 'D:/workspace_directory/output_aggregated.shp'
 
                       
 aggregate_geometry(input_layer_path, output_path)
+
 """

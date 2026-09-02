@@ -1,7 +1,11 @@
 tool_ID = "native:rasterlayerzonalstats"
 tool_name = "rasterlayerzonalstats"
-brief_description = """Calculates statistics for a raster layer’s values, categorized by zones defined in another raster layer."""
-full_description = """Calculates statistics for a raster layer’s values, categorized by zones defined in another raster layer."""
+brief_description = """
+Calculates statistics for a raster layer’s values, categorized by zones defined in another raster layer.
+"""
+full_description = """
+Calculates statistics for a raster layer’s values, categorized by zones defined in another raster layer.
+"""
 parameters = """
 INPUT: Input Layer. Input raster layer. Type: [raster]
 BAND: Band number. If the raster is multiband choose the band for which you wantto calculate the statistics.. Type: [raster band] Default: The first band of the raster layer 
@@ -18,6 +22,7 @@ NODATA_PIXEL_COUNT: NoData pixel count. The number of NoData pixels in the outpu
 OUTPUT_TABLE: Statistics. The output layer contains the following information for each zone : Area: the area in square raster units in the zone; Sum: the total sum of the pixel values in the zone; Count: the number of pixels in the zone; Min: the minimum pixel value in the zone; Max: the maximum pixel value in the zone; Mean: the mean of the pixel values in the zone;. Type: [table] 
 TOTAL_PIXEL_COUNT: Total pixel count. The count of pixels in the output raster layer. Type: [number] 
 WIDTH_IN_PIXELS: Width in pixels. The number of columns in the output raster layer. Type: [number]
+
 
 """
 code_example = """
@@ -45,7 +50,7 @@ def raster_layer_zonal_stats():
     }
 
     # Perform the raster layer zonal statistics operation
-    result = processing.run("""native:rasterlayerzonalstats", parameters)
+    result = processing.run(\"\"\"native:rasterlayerzonalstats\", parameters)
 
                                                                       
     output_layer = QgsVectorLayer(result['OUTPUT_TABLE'], 'Zonal Statistics', 'ogr')
@@ -53,4 +58,5 @@ def raster_layer_zonal_stats():
 
                       
 raster_layer_zonal_stats()
+
 """

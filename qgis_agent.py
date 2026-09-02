@@ -18,11 +18,9 @@ from qgis.utils import iface
 from .package_manager import PackageManager
 
 required_modules = [
-    "langchain",
     "langchain_core",
     "langchain_openai",
     "langchain_deepseek",
-    "requests",
 ]
 package_manager = PackageManager(required_modules)
 
@@ -138,9 +136,9 @@ class QGISAgent:
             msg.setText("QGIS Agent 需要安装以下 Python 库：")
             detail = "\n".join(f"• {m}" for m in required_modules)
             msg.setInformativeText(detail + "\n\n是否尝试自动安装？")
-            msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-            msg.setDefaultButton(QMessageBox.Yes)
-            if msg.exec_() == QMessageBox.Yes:
+            msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            msg.setDefaultButton(QMessageBox.StandardButton.Yes)
+            if msg.exec() == QMessageBox.StandardButton.Yes:
                 missing = package_manager.check_dependencies()
                 if missing:
                     ok = package_manager.install_missing()
@@ -186,10 +184,10 @@ class QGISAgent:
         self.dockwidget.cbSkipConfirmSettings.stateChanged.connect(self._on_skip_confirm_changed)
         # 互相联动
         self.dockwidget.cbSkipConfirm.stateChanged.connect(
-            lambda state: self.dockwidget.cbSkipConfirmSettings.setChecked(state == Qt.Checked)
+            lambda state: self.dockwidget.cbSkipConfirmSettings.setChecked(state == Qt.CheckState.Checked)
         )
         self.dockwidget.cbSkipConfirmSettings.stateChanged.connect(
-            lambda state: self.dockwidget.cbSkipConfirm.setChecked(state == Qt.Checked)
+            lambda state: self.dockwidget.cbSkipConfirm.setChecked(state == Qt.CheckState.Checked)
         )
 
         # ── 恢复保存的设置 ──
@@ -199,7 +197,7 @@ class QGISAgent:
         self._init_rag_index()
 
         self.dockwidget.closingPlugin.connect(self.onClosePlugin)
-        self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
+        self.iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dockwidget)
         self.dockwidget.show()
 
         self.dataloader = DataLoader(DB_NAME)
@@ -285,8 +283,41 @@ class QGISAgent:
             return
 
         if self.live_conversation is None:
-            self._on_new_conversation()
-            if self.live_conversation is None:
+            # 没有活动对话时，自动用当前选中模型创建对话，避免发送时反复弹出"新建对话"对话框
+            try:
+                llm_id = self._get_selected_llm_id()
+                if not llm_id:
+                    QMessageBox.warning(
+                        None, "无可用模型",
+                        "请先在「模型配置」标签页中添加 LLM 模型，或使用「+ 新建对话」指定模型。",
+                    )
+                    self.dockwidget.twTabs.setCurrentWidget(self.dockwidget.tbSettings)
+                    return
+                self.live_conversation_id = self._generate_unique_id()
+                created = self._get_current_timestamp()
+                title = message.strip().replace("\n", " ")[:20] or "新对话"
+                meta_info = self._pack(
+                    (self.live_conversation_id, llm_id, title, "", created, created, 0, 0, "local"),
+                    "conversation",
+                )
+                self.dataloader.create_conversation(meta_info)
+                self.live_conversation = self._Conversation(self.live_conversation_id, self.dataloader)
+                self.live_conversation.processor.temperature = self._get_temperature()
+                self.live_conversation.processor._code_confirm_callback = self._on_code_confirm
+                self.dockwidget.twTabs.setCurrentWidget(self.dockwidget.tbMessages)
+                self.dockwidget.updateConversation(self.live_conversation)
+                self.dockwidget.updateGeneralInfo(self.live_conversation)
+                slot_funcs = [
+                    self._on_conversation_load,
+                    self._on_conversation_delete,
+                    self._on_conversation_edit,
+                ]
+                self.dockwidget.addConversationCard(meta_info, slot_funcs)
+            except Exception as e:
+                # 建对话失败（如 RAG/模型组件构造异常）不要再静默吞掉，直接在聊天框红字提示
+                self.dockwidget.txHistory.append(
+                    f"<p style='color:red'>错误: 创建对话失败: {html_module.escape(str(e))}</p>"
+                )
                 return
 
         self.dockwidget.ptMessage.clear()
@@ -317,7 +348,7 @@ class QGISAgent:
 
         if self.live_conversation is not None:
             # 先显示用户消息
-            font_color = self._set_font_color(self.dockwidget.txHistory.palette().color(QPalette.Base))
+            font_color = self._set_font_color(self.dockwidget.txHistory.palette().color(QPalette.ColorRole.Base))
             safe_message = html_module.escape(message)
             user_html = f"""
                 <div style="margin:0;padding:0;line-height:1;text-align:right;color:#6baad1;">
@@ -481,13 +512,13 @@ class QGISAgent:
         msg.setText(f"即将执行 {tool_name}，是否继续？")
         msg.setInformativeText("请检查代码是否正确，确认无误后点击「执行」。")
         msg.setDetailedText(code_preview)
-        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-        msg.setDefaultButton(QMessageBox.No)
-        msg.button(QMessageBox.Yes).setText("执行")
-        msg.button(QMessageBox.No).setText("取消")
+        msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        msg.setDefaultButton(QMessageBox.StandardButton.No)
+        msg.button(QMessageBox.StandardButton.Yes).setText("执行")
+        msg.button(QMessageBox.StandardButton.No).setText("取消")
 
-        result = msg.exec_()
-        callback(result == QMessageBox.Yes)
+        result = msg.exec()
+        callback(result == QMessageBox.StandardButton.Yes)
 
     def _on_code_confirm_sync(self, tool_name, code_preview):
         """同步版本的代码确认（用于全局回调，返回 bool）"""
@@ -497,21 +528,21 @@ class QGISAgent:
         msg.setText(f"即将执行 {tool_name}，是否继续？")
         msg.setInformativeText("请检查代码是否正确，确认无误后点击「执行」。")
         msg.setDetailedText(code_preview)
-        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-        msg.setDefaultButton(QMessageBox.No)
-        msg.button(QMessageBox.Yes).setText("执行")
-        msg.button(QMessageBox.No).setText("取消")
+        msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        msg.setDefaultButton(QMessageBox.StandardButton.No)
+        msg.button(QMessageBox.StandardButton.Yes).setText("执行")
+        msg.button(QMessageBox.StandardButton.No).setText("取消")
 
-        result = msg.exec_()
-        return result == QMessageBox.Yes
+        result = msg.exec()
+        return result == QMessageBox.StandardButton.Yes
 
     def _on_skip_confirm_changed(self, state):
         """当"跳过确认"checkbox 状态变化时更新全局开关并保存"""
         from .qgis_tools import set_skip_all_confirms
-        set_skip_all_confirms(state == Qt.Checked)
+        set_skip_all_confirms(state == Qt.CheckState.Checked)
         # 保存设置
         settings = QSettings("QGIS", "QGISAgent")
-        settings.setValue("skipConfirm", state == Qt.Checked)
+        settings.setValue("skipConfirm", state == Qt.CheckState.Checked)
 
     def _load_saved_settings(self):
         """加载保存的设置"""
@@ -546,9 +577,9 @@ class QGISAgent:
                         None, "QGIS Agent",
                         "首次使用需要构建 PyQGIS API 文档索引（约 10-30 秒），\n"
                         "这将显著提升代码生成的准确性。是否立即构建？",
-                        QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
+                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes
                     )
-                    if reply == QMessageBox.Yes:
+                    if reply == QMessageBox.StandardButton.Yes:
                         generate_pyqgis_docs(store)
                         new_stats = store.get_stats()
                         QMessageBox.information(
@@ -588,7 +619,7 @@ class QGISAgent:
 
             self.edit_dialog = NewEditDialog(self.dataloader, llm_id=llm_id)
             self.edit_dialog.show()
-            if self.edit_dialog.exec_() == QDialog.Accepted:
+            if self.edit_dialog.exec() == QDialog.DialogCode.Accepted:
                 title, description, api_key = (
                     self.edit_dialog.get_metadata()
                 )
@@ -684,7 +715,7 @@ class QGISAgent:
             )
             self.edit_dialog.show()
 
-            if self.edit_dialog.exec_() == QDialog.Accepted:
+            if self.edit_dialog.exec() == QDialog.DialogCode.Accepted:
                 new_title, new_description, api_key = self.edit_dialog.get_metadata()
 
                 # 更新 meta_info 中的字段
@@ -802,7 +833,7 @@ class QGISAgent:
 
         # 第2列：API Key（密码模式，使用 QLineEdit 设置为密码模式）
         key_widget = QLineEdit()
-        key_widget.setEchoMode(QLineEdit.Password)
+        key_widget.setEchoMode(QLineEdit.EchoMode.Password)
         key_widget.setText(api_key)
         key_widget.setPlaceholderText("输入 API Key")
         key_widget.setStyleSheet("QLineEdit { border: none; padding: 2px; }")
@@ -823,7 +854,7 @@ class QGISAgent:
         """添加新模型行 — 弹出参考信息对话框"""
         # 弹出参考信息对话框
         ref_dlg = AddModelReferenceDialog(self.dockwidget)
-        if ref_dlg.exec_() == QDialog.Accepted:
+        if ref_dlg.exec() == QDialog.DialogCode.Accepted:
             name, endpoint, api_key = ref_dlg.get_values()
         else:
             return  # 用户取消
@@ -983,7 +1014,7 @@ class AddModelReferenceDialog(QDialog):
 
         # 分隔线
         line = QFrame()
-        line.setFrameShape(QFrame.HLine)
+        line.setFrameShape(QFrame.Shape.HLine)
         line.setStyleSheet("color: #ddd;")
         layout.addWidget(line)
 
@@ -1002,7 +1033,7 @@ class AddModelReferenceDialog(QDialog):
         # API Key（密码模式）
         layout.addWidget(QLabel("API Key:"))
         self.ptApiKey = QLineEdit()
-        self.ptApiKey.setEchoMode(QLineEdit.Password)
+        self.ptApiKey.setEchoMode(QLineEdit.EchoMode.Password)
         self.ptApiKey.setPlaceholderText("输入 API Key")
         layout.addWidget(self.ptApiKey)
 

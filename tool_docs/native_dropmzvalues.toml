@@ -1,7 +1,11 @@
 tool_ID = "native:dropmzvalues"
 tool_name = "dropmzvalues"
-brief_description = """Removes M (measure) or Z (altitude) values from input geometries."""
-full_description = """Removes M (measure) or Z (altitude) values from input geometries."""
+brief_description = """
+Removes M (measure) or Z (altitude) values from input geometries.
+"""
+full_description = """
+Removes M (measure) or Z (altitude) values from input geometries.
+"""
 parameters = """
 INPUT: Input layer. Input vector layer with
 M or 
@@ -20,6 +24,7 @@ Z/M Dropped. The output vector layer (identical to the input layer,except that t
 M and/or 
 Z dimensions have been removedfrom the geometries).. Type: [same as input]
 
+
 """
 code_example = """
 from qgis.core import QgsVectorLayer, QgsProject
@@ -29,7 +34,7 @@ def drop_mz_values():
     input_path = 'D:/path/to/your/input_layer.shp'
     output_path = 'D:/path/to/your/output_layer.shp'
     
-    input_layer = QgsVectorLayer(input_path, """Input Layer", "ogr")
+    input_layer = QgsVectorLayer(input_path, \"\"\"Input Layer\", \"ogr\")
     
     parameters = {
         'INPUT': input_path,
@@ -44,4 +49,5 @@ def drop_mz_values():
     QgsProject.instance().addMapLayer(output_layer)
 
 drop_mz_values()
+
 """

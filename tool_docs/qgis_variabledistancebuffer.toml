@@ -1,9 +1,13 @@
 tool_ID = "qgis:variabledistancebuffer"
 tool_name = "variabledistancebuffer"
-brief_description = """Computes a buffer area for all the features in an input layer.
-The size of the buffer for a given feature is defined by an attribute, so it allows different features to have different buffer sizes."""
-full_description = """Computes a buffer area for all the features in an input layer.
-The size of the buffer for a given feature is defined by an attribute, so it allows different features to have different buffer sizes."""
+brief_description = """
+Computes a buffer area for all the features in an input layer.
+The size of the buffer for a given feature is defined by an attribute, so it allows different features to have different buffer sizes.
+"""
+full_description = """
+Computes a buffer area for all the features in an input layer.
+The size of the buffer for a given feature is defined by an attribute, so it allows different features to have different buffer sizes.
+"""
 parameters = """
 INPUT: Input layer. Input vector layer. Type: [vector: any]
 DISTANCE: Distance field. Attribute for the distance radius of the buffer. Type: [tablefield: numeric] 
@@ -14,16 +18,17 @@ JOIN_STYLE: Join style. Specifies whether round, miter or beveled joins should b
 MITER_LIMIT: Miter limit. Only applicable for mitered join styles, and controls themaximum distance from the offset curve to use when creating amitered join.. Type: [number] Default: 2.0 outputs = 
 OUTPUT: Buffer. Buffer polygon vector layer.. Type: [vector: polygon]
 
+
 """
 code_example = """
 import processing
 from qgis.core import QgsProject, QgsVectorLayer
 
 def variable_distance_buffer():
-    input_path = """D:/input_layer.shp"
-    output_path = "D:/workspace_directory/output_buffered.shp"
+    input_path = \"\"\"D:/input_layer.shp\"
+    output_path = \"D:/workspace_directory/output_buffered.shp\"
     
-    input_layer = QgsVectorLayer(input_path, "Input Layer", "ogr")
+    input_layer = QgsVectorLayer(input_path, \"Input Layer\", \"ogr\")
     
     buffer_params = {
         'INPUT': input_path,
@@ -36,10 +41,11 @@ def variable_distance_buffer():
         'OUTPUT': output_path
     }
     
-    result = processing.run("qgis:variabledistancebuffer", buffer_params)
+    result = processing.run(\"qgis:variabledistancebuffer\", buffer_params)
     
     buffered_layer = QgsVectorLayer(output_path, 'Buffered_output', 'ogr')
     QgsProject.instance().addMapLayer(buffered_layer)
 
 variable_distance_buffer()
+
 """

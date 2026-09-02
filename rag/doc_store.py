@@ -10,9 +10,15 @@ SQLite FTS5 文档存储 — 零额外依赖的本地全文检索。
 """
 
 import os
+import re
 import sqlite3
 import json
 import threading
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python < 3.11 时回退到 tomli
+    import tomli as tomllib
 
 
 class DocStore:
@@ -114,6 +120,29 @@ class DocStore:
             )
         """)
 
+        # tool_docs：Processing 算法参考目录（679 条，来自 tool_docs/*.toml）
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS tool_docs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tool_id TEXT NOT NULL UNIQUE,
+                tool_name TEXT DEFAULT '',
+                brief_description TEXT DEFAULT '',
+                full_description TEXT DEFAULT '',
+                parameters TEXT DEFAULT '',
+                code_example TEXT DEFAULT '',
+                created_at TEXT DEFAULT (datetime('now'))
+            )
+        """)
+
+        conn.execute("""
+            CREATE VIRTUAL TABLE IF NOT EXISTS tool_docs_fts USING fts5(
+                tool_id, tool_name, brief_description, full_description, parameters, code_example,
+                content='tool_docs',
+                content_rowid='id',
+                tokenize='unicode61 remove_diacritics 1'
+            )
+        """)
+
         conn.commit()
 
     # ── API 文档 CRUD ──
@@ -167,6 +196,174 @@ class DocStore:
         conn = self.get_connection()
         return conn.execute("SELECT COUNT(*) FROM pyqgis_api_docs").fetchone()[0]
 
+    # ── tool_docs（Processing 算法参考目录）──
+
+    def get_tool_docs_count(self) -> int:
+        """获取 tool_docs 索引条数"""
+        conn = self.get_connection()
+        try:
+            return conn.execute("SELECT COUNT(*) FROM tool_docs").fetchone()[0]
+        except sqlite3.OperationalError:
+            return 0
+
+    @staticmethod
+    def _read_text(path: str) -> str:
+        """以容错方式读取文本：依次尝试 utf-8 / gbk / latin-1，最后用替换兜底。"""
+        for enc in ("utf-8", "gbk", "latin-1"):
+            try:
+                with open(path, "r", encoding=enc) as f:
+                    return f.read()
+            except (UnicodeDecodeError, UnicodeError):
+                continue
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            return f.read()
+
+    @staticmethod
+    def _lenient_parse_toml(text: str) -> dict:
+        """宽松解析 tool_docs TOML。
+
+        生成脚本把 code_example 中的三重引号直接写入，导致标准 TOML 解析失败。
+        这里按字段名定位多行字符串块（以 name = 三个双引号 开头），
+        截取到下一个字段或文件末尾，从而在不依赖严格语法的情况下提取全部字段。
+        """
+        fields = {}
+        # 单行基础字符串字段（tool_ID / tool_name）
+        for key in ("tool_ID", "tool_name"):
+            m = re.search(rf'^{key}\s*=\s*"([^"\n]*)"', text, re.M)
+            if m:
+                fields[key] = m.group(1)
+
+        # 多行三重引号块
+        pattern = re.compile(r'^([A-Za-z_]+)\s*=\s"""', re.M)
+        matches = list(pattern.finditer(text))
+        for i, m in enumerate(matches):
+            name = m.group(1)
+            start = m.end()
+            end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+            content = text[start:end]
+            content = content.lstrip("\n")
+            # 去掉结尾可能残留的闭合三重引号
+            if content.rstrip().endswith('"""'):
+                content = content.rstrip()[:-3]
+            fields[name] = content
+
+        return fields
+
+    def ingest_tool_docs(self, tool_docs_dir: str = None) -> int:
+        """将 tool_docs/*.toml 批量导入 FTS5 索引。
+
+        Args:
+            tool_docs_dir: TOML 目录；默认取插件根目录下的 tool_docs/
+
+        Returns:
+            成功导入的条数
+        """
+        if tool_docs_dir is None:
+            plugin_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            tool_docs_dir = os.path.join(plugin_dir, "tool_docs")
+        if not os.path.isdir(tool_docs_dir):
+            return 0
+
+        conn = self.get_connection()
+        count = 0
+        for filename in os.listdir(tool_docs_dir):
+            if not filename.endswith(".toml"):
+                continue
+            filepath = os.path.join(tool_docs_dir, filename)
+            try:
+                with open(filepath, "rb") as f:
+                    doc = tomllib.load(f)
+            except Exception:
+                # 容错：部分 TOML 因 code_example 内含 """ 或编码问题而非法，用宽松解析兜底
+                try:
+                    doc = self._lenient_parse_toml(self._read_text(filepath))
+                except Exception:
+                    doc = None
+                if not doc:
+                    continue
+
+            tool_id = doc.get("tool_ID", "")
+            if not tool_id:
+                continue
+            try:
+                conn.execute("""
+                    INSERT INTO tool_docs
+                        (tool_id, tool_name, brief_description, full_description, parameters, code_example)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(tool_id) DO UPDATE SET
+                        tool_name=excluded.tool_name,
+                        brief_description=excluded.brief_description,
+                        full_description=excluded.full_description,
+                        parameters=excluded.parameters,
+                        code_example=excluded.code_example
+                """, (
+                    tool_id,
+                    doc.get("tool_name", ""),
+                    doc.get("brief_description", ""),
+                    doc.get("full_description", ""),
+                    doc.get("parameters", ""),
+                    doc.get("code_example", ""),
+                ))
+                count += 1
+            except Exception:
+                continue
+        conn.commit()
+        # 重建 FTS5 索引
+        try:
+            conn.execute("INSERT INTO tool_docs_fts(tool_docs_fts) VALUES('rebuild')")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass
+        return count
+
+    def ensure_tool_docs(self, tool_docs_dir: str = None):
+        """若 tool_docs 索引为空则自动入库（幂等）。"""
+        if self.get_tool_docs_count() > 0:
+            return
+        self.ingest_tool_docs(tool_docs_dir)
+
+    def search_tool_docs(self, query: str, top_k: int = 5) -> list:
+        """检索 tool_docs 中的 Processing 算法参考。
+
+        先按 tool_id 精确匹配（最快，execute_processing 传入的 algorithm 即 tool_id），
+        未命中再做 FTS5 全文检索。
+        """
+        conn = self.get_connection()
+        q = (query or "").strip()
+        if not q:
+            return []
+
+        results = []
+        try:
+            row = conn.execute("SELECT * FROM tool_docs WHERE tool_id = ?", (q,)).fetchone()
+            if row:
+                results.append(dict(row))
+        except sqlite3.OperationalError:
+            pass
+
+        # FTS5 全文检索：清理 FTS 特殊字符（如冒号）
+        safe = re.sub(r"[^0-9a-zA-Z一-鿿]+", " ", q).strip()
+        if safe:
+            try:
+                rows = conn.execute("""
+                    SELECT d.tool_id, d.tool_name, d.brief_description, d.full_description,
+                           d.parameters, d.code_example
+                    FROM tool_docs_fts f
+                    JOIN tool_docs d ON f.rowid = d.id
+                    WHERE tool_docs_fts MATCH ?
+                    ORDER BY rank
+                    LIMIT ?
+                """, (safe, top_k)).fetchall()
+                seen = {r["tool_id"] for r in results}
+                for r in rows:
+                    if r["tool_id"] not in seen:
+                        results.append(dict(r))
+                        seen.add(r["tool_id"])
+            except sqlite3.OperationalError:
+                pass
+
+        return results[:top_k]
+
     # ── FTS5 检索 ──
 
     def search_fts(self, query: str, top_k: int = 5) -> list:
@@ -219,8 +416,8 @@ class DocStore:
 
         query = (
             "SELECT * FROM pyqgis_api_docs"
-            " WHERE " + conditions +  # nosec B608
-            " LIMIT ?"
+            " WHERE " + conditions  # nosec B608
+            + " LIMIT ?"  # noqa: W503
         )
         rows = conn.execute(query, params + [top_k]).fetchall()
 
@@ -257,7 +454,7 @@ class DocStore:
         if quality_score == 0.0:
             quality_score = (
                 entry.get("success_rating", 5)
-                * entry.get("complexity_rating", 3)
+                * entry.get("complexity_rating", 3)  # noqa: W503
             )
 
         conn.execute("""
@@ -325,9 +522,9 @@ class DocStore:
 
         query = (
             "SELECT * FROM cookbook_entries"
-            " WHERE " + conditions +  # nosec B608
-            " ORDER BY quality_score DESC"
-            " LIMIT ?"
+            " WHERE " + conditions  # nosec B608
+            + " ORDER BY quality_score DESC"  # noqa: W503
+            + " LIMIT ?"  # noqa: W503
         )
         rows = conn.execute(query, params + [top_k]).fetchall()
         return [dict(row) for row in rows]
@@ -360,9 +557,11 @@ class DocStore:
         conn = self.get_connection()
         api_count = conn.execute("SELECT COUNT(*) FROM pyqgis_api_docs").fetchone()[0]
         cookbook_count = conn.execute("SELECT COUNT(*) FROM cookbook_entries").fetchone()[0]
+        tool_docs_count = self.get_tool_docs_count()
         return {
             "api_docs": api_count,
             "cookbook_entries": cookbook_count,
+            "tool_docs": tool_docs_count,
             "db_path": self.db_path,
         }
 

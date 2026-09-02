@@ -1,11 +1,15 @@
 tool_ID = "native:aspect"
 tool_name = "aspect"
-brief_description = """Creates copies of features in a layer by creating multiple translated versions of each. Each copy is incrementally displaced by a preset amount in the X, Y and/or Z axis.
+brief_description = """
+Creates copies of features in a layer by creating multiple translated versions of each. Each copy is incrementally displaced by a preset amount in the X, Y and/or Z axis.
 M values present in the geometry can also be translated.
-Allows features in-place modification of point, line, and polygon features"""
-full_description = """Creates copies of features in a layer by creating multiple translated versions of each. Each copy is incrementally displaced by a preset amount in the X, Y and/or Z axis.
+Allows features in-place modification of point, line, and polygon features
+"""
+full_description = """
+Creates copies of features in a layer by creating multiple translated versions of each. Each copy is incrementally displaced by a preset amount in the X, Y and/or Z axis.
 M values present in the geometry can also be translated.
-Allows features in-place modification of point, line, and polygon features"""
+Allows features in-place modification of point, line, and polygon features
+"""
 parameters = """
 INPUT: Input layer. Input vector layer to translate. Type: [vector: any]
 COUNT: Number of features to create. Number of copies to generate for each feature. Type: [number ] Default: 10 
@@ -21,6 +25,7 @@ OUTPUT: Translated. Output vector layer with translated (moved) copiesof the fea
 TEMPORARY_OUTPUT ) Save to File… Save to Geopackage… Save to Database Table… Append to Layer… The file encoding can also be changed here.. Type: [same as input] Default: [Create temporary layer] outputs = 
 OUTPUT: Translated. Output vector layer with translated (moved)copies of the features.The original features are also copied.. Type: [same as input]
 
+
 """
 code_example = """
 from qgis.core import QgsVectorLayer, QgsProject
@@ -30,7 +35,7 @@ def translate_features():
     input_layer_path = 'D:/path_to_input_layer.shp'
     output_path = 'C:/Users/Output/translated_features.shp'
     
-    input_layer = QgsVectorLayer(input_layer_path, """Input Layer", "ogr")
+    input_layer = QgsVectorLayer(input_layer_path, \"\"\"Input Layer\", \"ogr\")
     
     parameters = {
         'INPUT': input_layer_path,
@@ -42,10 +47,11 @@ def translate_features():
         'OUTPUT': output_path                                                                                                                         
     }
     
-    result = processing.run("native:arraytranslatedfeatures", parameters)
+    result = processing.run(\"native:arraytranslatedfeatures\", parameters)
     
     translated_layer = QgsVectorLayer(result['OUTPUT'], 'Translated Features', 'ogr')
     QgsProject.instance().addMapLayer(translated_layer)
 
 translate_features()
+
 """

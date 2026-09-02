@@ -1,15 +1,20 @@
 tool_ID = "qgis:generatepointspixelcentroidsalongline"
 tool_name = "generatepointspixelcentroidsalongline"
-brief_description = """Generates a point vector layer from an input raster and line layer.
-The points correspond to the pixel centroids that intersect the line layer."""
-full_description = """Generates a point vector layer from an input raster and line layer.
-The points correspond to the pixel centroids that intersect the line layer."""
+brief_description = """
+Generates a point vector layer from an input raster and line layer.
+The points correspond to the pixel centroids that intersect the line layer.
+"""
+full_description = """
+Generates a point vector layer from an input raster and line layer.
+The points correspond to the pixel centroids that intersect the line layer.
+"""
 parameters = """
 INPUT_RASTER: Raster layer. Input raster layer. Type: [raster]
 INPUT_VECTOR: Vector layer. Input line vector layer. Type: [vector: line] 
 OUTPUT: Points along line. Resulting point layer with pixel centroids. One of: Create Temporary Layer ( 
 TEMPORARY_OUTPUT ) Save to File… Save to Geopackage… Save to Database Table… The file encoding can also be changed here.. Type: [vector: point] Default: [Create temporary layer] outputs = 
 OUTPUT: Points along line. Resulting point layer with pixel centroids. Type: [vector: point]
+
 
 """
 code_example = """
@@ -24,8 +29,8 @@ def generate_points_along_line():
     output_path = 'C:/Users/Output/points_along_line.shp'
 
     # Load the input layers
-    input_raster = QgsRasterLayer(input_raster_path, """Input Raster")
-    input_vector = QgsVectorLayer(input_vector_path, "Input Line", "ogr")
+    input_raster = QgsRasterLayer(input_raster_path, \"\"\"Input Raster\")
+    input_vector = QgsVectorLayer(input_vector_path, \"Input Line\", \"ogr\")
 
                                             
     parameters = {
@@ -35,7 +40,7 @@ def generate_points_along_line():
     }
 
                              
-    result = processing.run("qgis:generatepointspixelcentroidsalongline", parameters)
+    result = processing.run(\"qgis:generatepointspixelcentroidsalongline\", parameters)
 
                                      
     points_layer = QgsVectorLayer(result['OUTPUT'], 'Points_Along_Line', 'ogr')
@@ -43,4 +48,5 @@ def generate_points_along_line():
 
                       
 generate_points_along_line()
+
 """

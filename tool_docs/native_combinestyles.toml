@@ -1,7 +1,11 @@
 tool_ID = "native:combinestyles"
 tool_name = "combinestyles"
-brief_description = """Combines multiple QGIS style databases into a single style database. If items of the same type with the same name exist in different source databases these will be renamed to have unique names in the output combined database."""
-full_description = """Combines multiple QGIS style databases into a single style database. If items of the same type with the same name exist in different source databases these will be renamed to have unique names in the output combined database."""
+brief_description = """
+Combines multiple QGIS style databases into a single style database. If items of the same type with the same name exist in different source databases these will be renamed to have unique names in the output combined database.
+"""
+full_description = """
+Combines multiple QGIS style databases into a single style database. If items of the same type with the same name exist in different source databases these will be renamed to have unique names in the output combined database.
+"""
 parameters = """
 INPUT: Input databases. Files containing
 QGIS style items. Type: [file] [list] 
@@ -14,6 +18,7 @@ OUTPUT: Output style database. Output
 .XML file combining the selected style items. Type: [file] 
 SYMBOLS: Symbol count. . Type: [number] 
 TEXTFORMATS: Text format count. . Type: [number]
+
 
 """
 code_example = """
@@ -30,7 +35,8 @@ def combine_styles():
         'OUTPUT': output_path
     }
 
-    result = processing.run("""native:combinestyles", parameters)
+    result = processing.run(\"\"\"native:combinestyles\", parameters)
 
 combine_styles()
+
 """

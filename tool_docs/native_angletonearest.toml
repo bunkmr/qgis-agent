@@ -1,11 +1,15 @@
 tool_ID = "native:angletonearest"
 tool_name = "angletonearest"
-brief_description = """Calculates the rotation required to align point features with their nearest feature from another reference layer. A new field is added to the output layer which is filled with the angle (in degrees, clockwise) to the nearest reference feature.
+brief_description = """
+Calculates the rotation required to align point features with their nearest feature from another reference layer. A new field is added to the output layer which is filled with the angle (in degrees, clockwise) to the nearest reference feature.
 Optionally, the output layer’s symbology can be set to automatically use the calculated rotation field to rotate marker symbols. If desired, a maximum distance to use when aligning points can be set, to avoid aligning isolated points to distant features.
-Allows features in-place modification of point features"""
-full_description = """Calculates the rotation required to align point features with their nearest feature from another reference layer. A new field is added to the output layer which is filled with the angle (in degrees, clockwise) to the nearest reference feature.
+Allows features in-place modification of point features
+"""
+full_description = """
+Calculates the rotation required to align point features with their nearest feature from another reference layer. A new field is added to the output layer which is filled with the angle (in degrees, clockwise) to the nearest reference feature.
 Optionally, the output layer’s symbology can be set to automatically use the calculated rotation field to rotate marker symbols. If desired, a maximum distance to use when aligning points can be set, to avoid aligning isolated points to distant features.
-Allows features in-place modification of point features"""
+Allows features in-place modification of point features
+"""
 parameters = """
 INPUT: Input layer. Point features to calculate the rotation for. Type: [vector: point]
 REFERENCE_LAYER: Reference layer. Layer to find the closest feature from for rotation calculation. Type: [vector: any] 
@@ -16,6 +20,7 @@ OUTPUT: Aligned layer. Specify the rotated output vector layer. One of: Create T
 TEMPORARY_OUTPUT ) Save to File… Save to Geopackage… Save to Database Table… The file encoding can also be changed here.. Type: [vector: point] Default: [Save to temporary file] outputs = 
 OUTPUT: Aligned layer. The point layer appended with a rotation field.If loaded to 
 QGIS, it is applied by default the input layer symbology,with a data-defined rotation of its marker symbol.. Type: [vector: point]
+
 
 """
 code_example = """
@@ -28,8 +33,8 @@ def rotate_points_to_nearest():
     output_path = 'D:/output_aligned.shp'
 
     # Load input and reference layers
-    input_layer = QgsVectorLayer(input_path, """Input Points", "ogr")
-    reference_layer = QgsVectorLayer(reference_path, "Reference Layer", "ogr")
+    input_layer = QgsVectorLayer(input_path, \"\"\"Input Points\", \"ogr\")
+    reference_layer = QgsVectorLayer(reference_path, \"Reference Layer\", \"ogr\")
     
                                                      
     parameters = {
@@ -42,7 +47,7 @@ def rotate_points_to_nearest():
     }
     
                   
-    result = processing.run("native:angletonearest", parameters)
+    result = processing.run(\"native:angletonearest\", parameters)
     
                                       
     output_layer = QgsVectorLayer(result['OUTPUT'], 'Aligned Output', 'ogr')
@@ -51,4 +56,5 @@ def rotate_points_to_nearest():
                        
 rotate_points_to_nearest()
 ```
+
 """

@@ -1,11 +1,15 @@
 tool_ID = "qgis:randompointsinlayerbounds"
 tool_name = "randompointsinlayerbounds"
-brief_description = """Creates a new point layer with a given number of random points, all of them within the extent of a given layer.
+brief_description = """
+Creates a new point layer with a given number of random points, all of them within the extent of a given layer.
 A minimum distance can be specified, to avoid points being too close to each other.
-Default menu: Vector ► Research Tools"""
-full_description = """Creates a new point layer with a given number of random points, all of them within the extent of a given layer.
+Default menu: Vector ► Research Tools
+"""
+full_description = """
+Creates a new point layer with a given number of random points, all of them within the extent of a given layer.
 A minimum distance can be specified, to avoid points being too close to each other.
-Default menu: Vector ► Research Tools"""
+Default menu: Vector ► Research Tools
+"""
 parameters = """
 INPUT: Input layer. Input polygon layer defining the area. Type: [vector: polygon]
 POINTS_NUMBER: Number of points. Number of points to create. Type: [number] Default: 1 
@@ -13,6 +17,7 @@ MIN_DISTANCE: Minimum distance between points. The minimum distance between poin
 OUTPUT: Random points. The output random points. One of: Create Temporary Layer ( 
 TEMPORARY_OUTPUT ) Save to File… Save to Geopackage… Save to Database Table… The file encoding can also be changed here.. Type: [vector: point] Default: [Create temporary layer] outputs = 
 OUTPUT: Random points. The output random points layer.. Type: [vector: point]
+
 
 """
 code_example = """
@@ -23,7 +28,7 @@ def generate_random_points():
     input_layer_path = 'D:/input_polygon_layer.shp'
     output_path = 'D:/output_random_points.shp'
     
-    input_layer = QgsVectorLayer(input_layer_path, """Input Polygon Layer", "ogr")
+    input_layer = QgsVectorLayer(input_layer_path, \"\"\"Input Polygon Layer\", \"ogr\")
 
     parameters = {
         'INPUT': input_layer_path,
@@ -38,4 +43,5 @@ def generate_random_points():
     QgsProject.instance().addMapLayer(random_points_layer)
 
 generate_random_points()
+
 """

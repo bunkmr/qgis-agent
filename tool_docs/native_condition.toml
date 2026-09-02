@@ -1,10 +1,15 @@
 tool_ID = "native:condition"
 tool_name = "condition"
-brief_description = """Adds a conditional branch into a model, allowing parts of the model to be executed based on the result of an expression evaluation. Mostly by using tool dependencies to control the flow of a model."""
-full_description = """Adds a conditional branch into a model, allowing parts of the model to be executed based on the result of an expression evaluation. Mostly by using tool dependencies to control the flow of a model."""
+brief_description = """
+Adds a conditional branch into a model, allowing parts of the model to be executed based on the result of an expression evaluation. Mostly by using tool dependencies to control the flow of a model.
+"""
+full_description = """
+Adds a conditional branch into a model, allowing parts of the model to be executed based on the result of an expression evaluation. Mostly by using tool dependencies to control the flow of a model.
+"""
 parameters = """
 BRANCH: Field. Name of the condition. Type: [string]
 CONDITION: Field. Expression to evaluate. Type: [expression] outputs =
+
 
 """
 code_example = """
@@ -16,7 +21,7 @@ def apply_condition():
     output_path = 'C:/Users/Output/output_layer.shp'
     
     # Load the input layer
-    input_layer = QgsVectorLayer(input_path, """Input Layer", "ogr")
+    input_layer = QgsVectorLayer(input_path, \"\"\"Input Layer\", \"ogr\")
     
                                          
     condition_params = {
@@ -26,7 +31,7 @@ def apply_condition():
     }
     
                              
-    result = processing.run("native:condition", condition_params)
+    result = processing.run(\"native:condition\", condition_params)
     
                                                        
     condition_layer = QgsVectorLayer(result['OUTPUT'], 'Condition_output', 'ogr')
@@ -34,4 +39,5 @@ def apply_condition():
 
                       
 apply_condition()
+
 """

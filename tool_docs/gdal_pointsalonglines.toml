@@ -1,7 +1,11 @@
 tool_ID = "gdal:pointsalonglines"
 tool_name = "pointsalonglines"
-brief_description = """Generates a point on each line of a line vector layer at a distance from start. The distance is provided as a fraction of the line length."""
-full_description = """Generates a point on each line of a line vector layer at a distance from start. The distance is provided as a fraction of the line length."""
+brief_description = """
+Generates a point on each line of a line vector layer at a distance from start. The distance is provided as a fraction of the line length.
+"""
+full_description = """
+Generates a point on each line of a line vector layer at a distance from start. The distance is provided as a fraction of the line length.
+"""
 parameters = """
 INPUT: Input layer. The input line layer. Type: [vector: line]
 GEOMETRY: Geometry column name. The name of the input layer geometry column to use. Type: [string] Default: ‘geometry’ 
@@ -9,6 +13,7 @@ DISTANCE: Distance from line start represented as a fraction of line length. . T
 OUTPUT: Points along lines. Specify the output point layer.One of: Save to a Temporary File Save to File…. Type: [vector: point] Default: [Save to temporary file] 
 OPTIONS: Additional creation options Optional. Additional GDAL creation options.. Type: [string] Default: ‘’ (no additional options) outputs = 
 OUTPUT: Points along line. The output point layer. Type: [vector: point]
+
 
 """
 code_example = """
@@ -21,7 +26,7 @@ def points_along_lines():
     output_path = 'D:/output_points.shp'
     
     # Load the input line layer
-    input_layer = QgsVectorLayer(input_path, """Input Line Layer", "ogr")
+    input_layer = QgsVectorLayer(input_path, \"\"\"Input Line Layer\", \"ogr\")
     
                                  
     parameters = {
@@ -33,7 +38,7 @@ def points_along_lines():
     }
     
                                                          
-    result = processing.run("gdal:pointsalonglines", parameters)
+    result = processing.run(\"gdal:pointsalonglines\", parameters)
     
                                   
     output_layer = QgsVectorLayer(output_path, 'Points Along Lines', 'ogr')
@@ -41,4 +46,5 @@ def points_along_lines():
 
                       
 points_along_lines()
+
 """

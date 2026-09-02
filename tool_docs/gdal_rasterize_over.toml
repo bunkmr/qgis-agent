@@ -1,9 +1,13 @@
 tool_ID = "gdal:rasterize_over"
 tool_name = "rasterize_over"
-brief_description = """Overwrites a raster layer with values from a vector layer. New values are assigned based on the attribute value of the overlapping vector feature.
-This algorithm is derived from the GDAL rasterize utility ."""
-full_description = """Overwrites a raster layer with values from a vector layer. New values are assigned based on the attribute value of the overlapping vector feature.
-This algorithm is derived from the GDAL rasterize utility ."""
+brief_description = """
+Overwrites a raster layer with values from a vector layer. New values are assigned based on the attribute value of the overlapping vector feature.
+This algorithm is derived from the GDAL rasterize utility .
+"""
+full_description = """
+Overwrites a raster layer with values from a vector layer. New values are assigned based on the attribute value of the overlapping vector feature.
+This algorithm is derived from the GDAL rasterize utility .
+"""
 parameters = """
 INPUT: Input layer. Input vector layer. Type: [vector: any]
 INPUT_RASTER: Input raster layer. Input raster layer. Type: [raster] 
@@ -11,6 +15,7 @@ FIELD: Field to use for a burn-in value Optional. Defines the attribute field to
 ADD: Add burn in values to existing raster values. If False, pixels are assigned the selected field’s value.If True, the selected field’s value is added to the valueof the input raster layer.. Type: [boolean] Default: False 
 EXTRA: Additional command-line parameters Optional. Add extra GDAL command line options. Type: [string] Default: ‘’ outputs = 
 OUTPUT: Rasterized. The overwritten input raster layer. Type: [raster]
+
 
 """
 code_example = """
@@ -30,7 +35,8 @@ def rasterize_over():
         'OUTPUT': output_path
     }
     
-    result = processing.run("""gdal:rasterize_over", parameters)
+    result = processing.run(\"\"\"gdal:rasterize_over\", parameters)
 
 rasterize_over()
+
 """

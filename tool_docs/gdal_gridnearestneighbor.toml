@@ -1,11 +1,15 @@
 tool_ID = "gdal:gridnearestneighbor"
 tool_name = "gridnearestneighbor"
-brief_description = """The Nearest Neighbor method doesn’t perform any interpolation or smoothing, it just takes the value of nearest point found in grid node search ellipse and returns it as a result. If there are no points found, the specified NoData value will be returned.
+brief_description = """
+The Nearest Neighbor method doesn’t perform any interpolation or smoothing, it just takes the value of nearest point found in grid node search ellipse and returns it as a result. If there are no points found, the specified NoData value will be returned.
 This algorithm is derived from the GDAL grid utility .
-Default menu: Raster ► Analysis"""
-full_description = """The Nearest Neighbor method doesn’t perform any interpolation or smoothing, it just takes the value of nearest point found in grid node search ellipse and returns it as a result. If there are no points found, the specified NoData value will be returned.
+Default menu: Raster ► Analysis
+"""
+full_description = """
+The Nearest Neighbor method doesn’t perform any interpolation or smoothing, it just takes the value of nearest point found in grid node search ellipse and returns it as a result. If there are no points found, the specified NoData value will be returned.
 This algorithm is derived from the GDAL grid utility .
-Default menu: Raster ► Analysis"""
+Default menu: Raster ► Analysis
+"""
 parameters = """
 INPUT: Point layer. Input point vector layer. Type: [vector: point]
 RADIUS_1: The first radius of search ellipse. The first radius 
@@ -21,6 +25,7 @@ OPTIONS: Additional creation options Optional. For adding one or more creation o
 EXTRA: Additional command-line parameters Optional. Add extra GDAL command line options. Type: [string] Default: None 
 DATA_TYPE: Output data type. Defines the data type of the output raster file.Options: 0 — Byte (Eight bit unsigned integer (quint8)) 1 — Int16 (Sixteen bit signed integer (qint16)) 2 — UInt16 (Sixteen bit unsigned integer (quint16)) 3 — UInt32 (Thirty two bit unsigned integer (quint32)) 4 — Int32 (Thirty two bit signed integer (qint32)) 5 — Float32 (Thirty two bit floating point (float)) 6 — Float64 (Sixty four bit floating point (double)) 7 — CInt16 (Complex Int16) 8 — CInt32 (Complex Int32) 9 — CFloat32 (Complex Float32) 10 — CFloat64 (Complex Float64) 11 — Int8 (Eight bit signed integer (qint8)) Available options depend on the GDAL version built with QGIS(see Help ► About menu). Type: [enumeration] Default: 5 outputs = 
 OUTPUT: Interpolated (Nearest neighbour). Output raster with interpolated values. Type: [raster]
+
 
 """
 code_example = """
@@ -46,14 +51,15 @@ def nearest_neighbor_interpolation(input_path, output_path):
     }
 
     # Perform the nearest neighbor interpolation
-    result = processing.run("""gdal:gridnearestneighbor", parameters)
+    result = processing.run(\"\"\"gdal:gridnearestneighbor\", parameters)
 
                                           
     interpolated_layer = QgsRasterLayer(result['OUTPUT'], 'Interpolated (Nearest neighbour)')
     QgsProject.instance().addMapLayer(interpolated_layer)
 
                       
-input_path = "D:/Data/InputPoints.shp"
-output_path = "C:/output_path/interpolated_raster.tif"
+input_path = \"D:/Data/InputPoints.shp\"
+output_path = \"C:/output_path/interpolated_raster.tif\"
 nearest_neighbor_interpolation(input_path, output_path)
+
 """

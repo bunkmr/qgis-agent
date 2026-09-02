@@ -2,39 +2,32 @@
 """
 QGIS 插件打包脚本
 
-按照 QGIS 插件标准格式打包 ZIP 安装包。
+按 QGIS 官方插件标准格式打包 ZIP 安装包。
+QGIS 插件 ZIP 格式要求：ZIP 根目录直接包含一个与插件同名的文件夹（如 qgis_agent/），
+插件文件在该文件夹内。
 
-QGIS 插件 ZIP 格式要求：
-- ZIP 根目录直接包含插件文件（不要有额外的父目录）
-- 文件结构清晰
+过滤策略（两层）：
+- EXCLUDE_PATTERNS：明确排除的目录 / 文件 / 通配符（测试、运行时数据、安装脚本等）。
+- INCLUDE_PATTERNS：扩展名白名单，仅允许这些类型的文件进入包体，防止误打包临时 / 二进制文件。
+- NO_EXT_ALLOW：无扩展名但必须打包的文件（如 LICENSE）。
 """
 
 import os
 import zipfile
-import shutil
-from pathlib import Path
 from datetime import datetime
 
 
-# 插件名称
+# 插件名称（同时作为 ZIP 内的顶层文件夹名）
 PLUGIN_NAME = "qgis_agent"
 
-# 要包含的文件和目录
+# 允许打包的文件扩展名（白名单）
 INCLUDE_PATTERNS = [
-    # Python 文件
-    "*.py",
-    # 资源文件
-    "*.json",
-    "*.png",
-    "*.svg",
-    "*.ui",
-    # 文档
-    "*.md",
-    "*.txt",
-    # 配置
-    "*.cfg",
-    "*.ini",
+    "*.py", "*.json", "*.png", "*.svg", "*.ui", "*.qrc", "*.qm",
+    "*.md", "*.txt", "*.toml", "*.html", "*.ico", "*.cfg", "*.ini",
 ]
+
+# 无扩展名但允许打包的文件
+NO_EXT_ALLOW = {"LICENSE"}
 
 # 要排除的文件和目录
 EXCLUDE_PATTERNS = [
@@ -46,62 +39,66 @@ EXCLUDE_PATTERNS = [
     ".vscode",
     ".idea",
     ".claude",
+    "._*",  # macOS AppleDouble 元数据文件
     "*.egg-info",
     "build",
     "dist",
     ".pytest_cache",
     "data",  # 运行时生成的数据
-    "agent_loop",  # 实验性模块（可选）
-    "rag",  # RAG模块（独立子包，QGIS扫描器会误判为子插件）
-    "skills",  # 实验性模块（可选）
     "tests",  # 测试文件
     "scripts",  # 脚本文件
-    "help",  # 帮助文档
-    "i18n",  # 翻译文件（如果不需要）
-    # ZIP 文件
+    "help",  # 帮助文档源（rst/Makefile）
+    "i18n",  # 翻译源文件
+    # ZIP / 旧版本文件
     "*.zip",
-    # 旧版本文件
-    "qgis_agent_v*.zip",
-    # 安装脚本
+    "qgis_agent_v*",
+    # 安装 / 构建脚本
     "install_to_qgis.bat",
     "install_to_qgis.ps1",
     "install_v2.py",
     "build_plugin.py",
     "test_official_docs.py",
+    # 开发期文档（不随插件发布）
     "TEST_INSTRUCTIONS.md",
     "THINKING_DISPLAY_README.md",
-    "requirements.txt",  # 使用 setup.py 或 pyproject.toml 代替
-    # 文档文件（可选，根据需要包含）
+    "requirements.txt",
     "V2.1_OPTIMIZATIONS.md",
     "RAG_SYSTEMS.md",
     "INTERACTIVE_FEATURES.md",
+    "PLAN_*",  # 发布方案文档（如 PLAN_v2.1.3_RELEASE.md）
+    "CLAUDE.md",  # 开发期项目说明（不随插件发布）
+    "import_tool_docs.py",  # 开发期工具文档导入脚本
 ]
 
 
 def should_include(filepath: str) -> bool:
-    """判断文件是否应该包含"""
+    """判断文件是否应该包含进包体
+
+    先按 EXCLUDE_PATTERNS 排除，再按 INCLUDE_PATTERNS 白名单放行。
+    """
     filename = os.path.basename(filepath)
 
-    # 检查排除模式
+    # 1) 排除模式优先
     for pattern in EXCLUDE_PATTERNS:
         if pattern.startswith("*"):
-            # 通配符模式，如 *.pyc
+            # 通配符后缀，如 *.pyc
             if filename.endswith(pattern[1:]):
                 return False
         elif pattern.endswith("*"):
-            # 前缀匹配，如 qgis_agent_v*
-            prefix = pattern[:-1]
-            if filename.startswith(prefix):
+            # 前缀匹配，如 qgis_agent_v* / PLAN_
+            if filename.startswith(pattern[:-1]):
                 return False
         else:
-            # 精确匹配文件名
-            if filename == pattern:
-                return False
-            # 或者目录名匹配
-            if pattern in filepath.split(os.sep):
+            # 精确匹配文件名，或目录名出现在路径中
+            if filename == pattern or pattern in filepath.split(os.sep):
                 return False
 
-    return True
+    # 2) 无扩展名文件仅允许白名单中的（如 LICENSE）
+    if "." not in filename:
+        return filename in NO_EXT_ALLOW
+
+    # 3) 其余文件必须匹配扩展名白名单
+    return any(filename.endswith(p[1:]) for p in INCLUDE_PATTERNS if p.startswith("*"))
 
 
 def get_version() -> str:
@@ -119,19 +116,16 @@ def get_version() -> str:
 
 
 def build_plugin_zip():
-    """构建插件 ZIP 包"""
-    # 获取版本号
+    """构建插件 ZIP 包（QGIS 标准格式：顶层含插件名文件夹）"""
     version = get_version()
     timestamp = datetime.now().strftime("%Y%m%d")
 
-    # 输出文件名
     output_file = f"{PLUGIN_NAME}_v{version}_{timestamp}.zip"
 
     print(f"Building QGIS plugin: {PLUGIN_NAME} v{version}")
     print(f"Output: {output_file}")
     print("-" * 50)
 
-    # 收集要打包的文件
     plugin_dir = os.path.dirname(os.path.abspath(__file__))
     files_to_pack = []
 
@@ -148,13 +142,11 @@ def build_plugin_zip():
 
     print(f"Files to pack: {len(files_to_pack)}")
 
-    # 创建 ZIP 文件
     with zipfile.ZipFile(output_file, "w", zipfile.ZIP_DEFLATED) as zipf:
         for filepath in sorted(files_to_pack):
-            # 在 ZIP 中的路径（直接在根目录下）
+            # ZIP 内路径：插件名/文件路径
             zip_path = f"{PLUGIN_NAME}/{filepath}"
             full_path = os.path.join(plugin_dir, filepath)
-
             zipf.write(full_path, zip_path)
             print(f"  + {zip_path}")
 
@@ -166,56 +158,12 @@ def build_plugin_zip():
 
 
 def build_plugin_zip_flat():
+    """向后兼容别名。
+
+    本项目只产出标准 QGIS 格式（顶层包含与插件同名的文件夹），
+    原先的 flat / 非 flat 两份产物内容完全一致，故合并为单一入口。
     """
-    构建 QGIS 标准格式的 ZIP 包
-
-    QGIS 插件 ZIP 格式要求：
-    - ZIP 根目录包含一个与插件同名的文件夹
-    - 插件文件在该文件夹内
-    """
-    # 获取版本号
-    version = get_version()
-    timestamp = datetime.now().strftime("%Y%m%d")
-
-    # 输出文件名
-    output_file = f"{PLUGIN_NAME}_v{version}_{timestamp}_flat.zip"
-
-    print(f"Building QGIS plugin (standard format): {PLUGIN_NAME} v{version}")
-    print(f"Output: {output_file}")
-    print("-" * 50)
-
-    # 收集要打包的文件
-    plugin_dir = os.path.dirname(os.path.abspath(__file__))
-    files_to_pack = []
-
-    for root, dirs, files in os.walk(plugin_dir):
-        # 跳过排除的目录
-        dirs[:] = [d for d in dirs if d not in EXCLUDE_PATTERNS]
-
-        for filename in files:
-            filepath = os.path.join(root, filename)
-            rel_path = os.path.relpath(filepath, plugin_dir)
-
-            if should_include(rel_path):
-                files_to_pack.append(rel_path)
-
-    print(f"Files to pack: {len(files_to_pack)}")
-
-    # 创建 ZIP 文件（QGIS 标准格式：根目录包含插件名文件夹）
-    with zipfile.ZipFile(output_file, "w", zipfile.ZIP_DEFLATED) as zipf:
-        for filepath in sorted(files_to_pack):
-            # 在 ZIP 中的路径：插件名/文件路径
-            zip_path = f"{PLUGIN_NAME}/{filepath}"
-            full_path = os.path.join(plugin_dir, filepath)
-
-            zipf.write(full_path, zip_path)
-            print(f"  + {zip_path}")
-
-    print("-" * 50)
-    print(f"Build complete: {output_file}")
-    print(f"Size: {os.path.getsize(output_file) / 1024:.1f} KB")
-
-    return output_file
+    return build_plugin_zip()
 
 
 if __name__ == "__main__":
@@ -224,10 +172,7 @@ if __name__ == "__main__":
     print("=" * 50)
     print()
 
-    # 构建两种格式
-    zip1 = build_plugin_zip()
-    print()
-    zip2 = build_plugin_zip_flat()
+    zip_path = build_plugin_zip()
 
     print()
     print("=" * 50)
@@ -238,4 +183,4 @@ if __name__ == "__main__":
     print("1. Open QGIS")
     print("2. Go to Plugins -> Manage and Install Plugins")
     print("3. Click 'Install from ZIP'")
-    print(f"4. Select {zip2}")
+    print(f"4. Select {zip_path}")

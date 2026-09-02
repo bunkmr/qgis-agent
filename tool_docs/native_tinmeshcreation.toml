@@ -1,7 +1,11 @@
 tool_ID = "native:tinmeshcreation"
 tool_name = "tinmeshcreation"
-brief_description = """Creates a TIN mesh layer from vector layers. The TIN mesh is created using a Delaunay triangulation."""
-full_description = """Creates a TIN mesh layer from vector layers. The TIN mesh is created using a Delaunay triangulation."""
+brief_description = """
+Creates a TIN mesh layer from vector layers. The TIN mesh is created using a Delaunay triangulation.
+"""
+full_description = """
+Creates a TIN mesh layer from vector layers. The TIN mesh is created using a Delaunay triangulation.
+"""
 parameters = """
 SOURCE_DATA: Input layers. Vector layers to combine to generate the mesh layer. Type: [vector: any] [list]
 GUI 
@@ -24,6 +28,7 @@ CRS_OUTPUT: Output coordinate system Optional. Coordinate Reference System to as
 OUTPUT_MESH: Output file. Specification of the output file. One of: Save to a Temporary File Save to File…. Type: [mesh] Default: [Save to temporary file] outputs = 
 OUTPUT_MESH: Output file. Output mesh layer with dataset values computedfrom the vector layers.. Type: [mesh]
 
+
 """
 code_example = """
 import processing
@@ -32,10 +37,10 @@ from qgis.core import QgsVectorLayer, QgsProject
 def create_mesh():
     # Define the input and output paths
     input_layers = ['path/to/input1.shp', 'path/to/input2.shp']
-    output_path = """path/to/output_mesh.mesh"
+    output_path = \"\"\"path/to/output_mesh.mesh\"
 
                            
-    input_layer_objects = [QgsVectorLayer(path, "Input Layer", "ogr") for path in input_layers]
+    input_layer_objects = [QgsVectorLayer(path, \"Input Layer\", \"ogr\") for path in input_layers]
     
                                            
     mesh_params = {
@@ -48,7 +53,7 @@ def create_mesh():
     }
 
                                    
-    result = processing.run("native:tinmeshcreation", mesh_params)
+    result = processing.run(\"native:tinmeshcreation\", mesh_params)
 
                                  
     mesh_layer = QgsVectorLayer(output_path, 'Mesh Output', 'ogr')
@@ -56,4 +61,5 @@ def create_mesh():
 
                   
 create_mesh()
+
 """

@@ -1,9 +1,13 @@
 tool_ID = "native:meshexportcrosssection"
 tool_name = "meshexportcrosssection"
-brief_description = """Extracts a mesh dataset’s values from lines contained in a vector layer.
-Each line is discretized with a resolution distance parameter for extraction of values on its vertices."""
-full_description = """Extracts a mesh dataset’s values from lines contained in a vector layer.
-Each line is discretized with a resolution distance parameter for extraction of values on its vertices."""
+brief_description = """
+Extracts a mesh dataset’s values from lines contained in a vector layer.
+Each line is discretized with a resolution distance parameter for extraction of values on its vertices.
+"""
+full_description = """
+Extracts a mesh dataset’s values from lines contained in a vector layer.
+Each line is discretized with a resolution distance parameter for extraction of values on its vertices.
+"""
 parameters = """
 INPUT: Input mesh layer. The mesh layer to export data from. Type: [mesh]
 DATASET_GROUPS: Dataset groups. The dataset groups. Type: [layer] [list] 
@@ -15,6 +19,7 @@ OUTPUT: Exported data
 CSV file. Specification of the output file. One of: Save to a Temporary File Save to File…. Type: [file] Default: [Save to temporary file] outputs = 
 OUTPUT: Exported data 
 CSV file. . Type: [file]
+
 
 """
 code_example = """
@@ -28,8 +33,8 @@ def export_mesh_cross_section():
     input_lines_path = 'D:/path_to_lines_layer.shp'
     output_path = 'D:/output_directory/exported_data.csv'
     
-    input_mesh = QgsMeshLayer(input_mesh_path, """Input Mesh Layer", "ogr")
-    input_lines = QgsVectorLayer(input_lines_path, "Input Lines Layer", "ogr")
+    input_mesh = QgsMeshLayer(input_mesh_path, \"\"\"Input Mesh Layer\", \"ogr\")
+    input_lines = QgsVectorLayer(input_lines_path, \"Input Lines Layer\", \"ogr\")
     
     parameters = {
         'INPUT': input_mesh,
@@ -41,7 +46,8 @@ def export_mesh_cross_section():
         'OUTPUT': output_path
     }
     
-    result = processing.run("native:meshexportcrosssection", parameters)
+    result = processing.run(\"native:meshexportcrosssection\", parameters)
     
 export_mesh_cross_section()
+
 """

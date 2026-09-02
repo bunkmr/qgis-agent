@@ -1,9 +1,13 @@
 tool_ID = "gdal:importvectorintopostgisdatabasenewconnection"
 tool_name = "importvectorintopostgisdatabasenewconnection"
-brief_description = """Imports vector layers inside a PostgreSQL database. A new connection to the PostGIS database must be created.
-This algorithm is derived from the GDAL ogr2ogr utility ."""
-full_description = """Imports vector layers inside a PostgreSQL database. A new connection to the PostGIS database must be created.
-This algorithm is derived from the GDAL ogr2ogr utility ."""
+brief_description = """
+Imports vector layers inside a PostgreSQL database. A new connection to the PostGIS database must be created.
+This algorithm is derived from the GDAL ogr2ogr utility .
+"""
+full_description = """
+Imports vector layers inside a PostgreSQL database. A new connection to the PostGIS database must be created.
+This algorithm is derived from the GDAL ogr2ogr utility .
+"""
 parameters = """
 INPUT: Input layer. OGR-supported vector layer to export to the database. Type: [vector: any]
 SHAPE_ENCODING: Shape encoding Optional. Sets the encoding to apply to the data. Type: [string] Default: ‘’ 
@@ -66,6 +70,7 @@ PROMOTETOMULTI: Promote to Multipart Optional. Casts features geometry type to m
 PRECISION: Keep width and precision of input attributes Optional. Avoids modifying column attributes to comply with input data. Type: [boolean] Default: True 
 OPTIONS: Additional creation options Optional. Additional GDAL creation options.. Type: [string] Default: ‘’ (no additional options) outputs =
 
+
 """
 code_example = """
 import processing
@@ -77,7 +82,7 @@ def import_vector_to_postgis():
     output_path = 'database_table_name'
     
     # Load the input layer
-    input_layer = QgsVectorLayer(input_path, """Input Layer", "ogr")
+    input_layer = QgsVectorLayer(input_path, \"\"\"Input Layer\", \"ogr\")
     
                                   
     parameters = {
@@ -118,8 +123,9 @@ def import_vector_to_postgis():
     }
     
                                   
-    result = processing.run("gdal:importvectorintopostgisdatabasenewconnection", parameters)
+    result = processing.run(\"gdal:importvectorintopostgisdatabasenewconnection\", parameters)
     
                       
 import_vector_to_postgis()
+
 """

@@ -1,9 +1,13 @@
 tool_ID = "gdal:rastercalculator"
 tool_name = "rastercalculator"
-brief_description = """Command line raster calculator with numpy syntax. Use any basic arithmetic supported by numpy arrays, such as +, -, *, and / along with logical operators, such as >. Note that all input rasters must have the same dimensions, but no projection checking is performed.
-See the GDAL Raster Calculator utility docs ."""
-full_description = """Command line raster calculator with numpy syntax. Use any basic arithmetic supported by numpy arrays, such as +, -, *, and / along with logical operators, such as >. Note that all input rasters must have the same dimensions, but no projection checking is performed.
-See the GDAL Raster Calculator utility docs ."""
+brief_description = """
+Command line raster calculator with numpy syntax. Use any basic arithmetic supported by numpy arrays, such as +, -, *, and / along with logical operators, such as >. Note that all input rasters must have the same dimensions, but no projection checking is performed.
+See the GDAL Raster Calculator utility docs .
+"""
+full_description = """
+Command line raster calculator with numpy syntax. Use any basic arithmetic supported by numpy arrays, such as +, -, *, and / along with logical operators, such as >. Note that all input rasters must have the same dimensions, but no projection checking is performed.
+See the GDAL Raster Calculator utility docs .
+"""
 parameters = """
 INPUT_A: Input layer
 A. First input raster layer (mandatory). Type: [raster] 
@@ -55,6 +59,7 @@ OPTIONS: Additional creation options Optional. For adding one or more creation o
 EXTRA: Additional command-line parameters Optional. Add extra GDAL command line options. Type: [string] Default: ‘’ outputs = 
 OUTPUT: Calculated. Output (calculated) raster layer. Type: [raster]
 
+
 """
 code_example = """
 import processing
@@ -64,7 +69,7 @@ def raster_calculator():
     input_a_path = 'D:/input_a.tif'
     output_path = 'D:/output_calculated.tif'
     
-    input_a = QgsRasterLayer(input_a_path, """Input A", "gdal")
+    input_a = QgsRasterLayer(input_a_path, \"\"\"Input A\", \"gdal\")
     
     parameters = {
         'INPUT_A': input_a_path,
@@ -90,7 +95,7 @@ def raster_calculator():
     }
     
                            
-    result = processing.run("gdal:rastercalculator", parameters)
+    result = processing.run(\"gdal:rastercalculator\", parameters)
     
                               
     calculated_layer = QgsRasterLayer(result['OUTPUT'], 'Calculated Output', 'gdal')
@@ -98,4 +103,5 @@ def raster_calculator():
 
                       
 raster_calculator()
+
 """

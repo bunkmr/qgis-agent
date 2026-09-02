@@ -1,9 +1,13 @@
 tool_ID = "native:createrandomgammarasterlayer"
 tool_name = "createrandomgammarasterlayer"
-brief_description = """Generates a raster layer for given extent and cell size filled with gamma distributed random values.
-By default, the values will be chosen given an alpha and beta value of 1.0. This can be overridden by using the advanced parameter for alpha and beta. The raster data type is set to Float32 by default as the gamma distribution random values are floating point numbers."""
-full_description = """Generates a raster layer for given extent and cell size filled with gamma distributed random values.
-By default, the values will be chosen given an alpha and beta value of 1.0. This can be overridden by using the advanced parameter for alpha and beta. The raster data type is set to Float32 by default as the gamma distribution random values are floating point numbers."""
+brief_description = """
+Generates a raster layer for given extent and cell size filled with gamma distributed random values.
+By default, the values will be chosen given an alpha and beta value of 1.0. This can be overridden by using the advanced parameter for alpha and beta. The raster data type is set to Float32 by default as the gamma distribution random values are floating point numbers.
+"""
+full_description = """
+Generates a raster layer for given extent and cell size filled with gamma distributed random values.
+By default, the values will be chosen given an alpha and beta value of 1.0. This can be overridden by using the advanced parameter for alpha and beta. The raster data type is set to Float32 by default as the gamma distribution random values are floating point numbers.
+"""
 parameters = """
 EXTENT: Desired extent. Specify the spatial extent of the output raster layer.It will internally be extended to a multiple of the tile size. Available methods are: Calculate from layer…: uses extent of a layer loaded in the current project Calculate from layout map…: uses extent of a layout map item in the active project Calculate from bookmark…: uses extent of a saved bookmark Use map canvas extent Draw on canvas: click and drag a rectangle delimiting the area to take into account Enter the coordinates as xmin, xmax, ymin, ymax. Type: [extent]
 TARGET_CRS: Target 
@@ -17,6 +21,7 @@ OUTPUT_TYPE Default: 0: Output raster data type. Defines the data type of the ou
 ALPHA: Alpha. . Type: [number] Default: 1.0 
 BETA: Beta. . Type: [number] Default: 1.0 outputs = 
 OUTPUT: Output raster. Raster covering the desired extent with the cellsize filled with randomly distributed values. Type: [raster]
+
 
 """
 code_example = """
@@ -36,7 +41,7 @@ def create_random_gamma_raster(output_path):
     }
 
     # Run the algorithm
-    result = processing.run("""native:createrandomgammarasterlayer", parameters)
+    result = processing.run(\"\"\"native:createrandomgammarasterlayer\", parameters)
                             
     output_layer = QgsRasterLayer(result['OUTPUT'], 'Random_Gamma_Raster')
     QgsProject.instance().addMapLayer(output_layer)
@@ -44,4 +49,5 @@ def create_random_gamma_raster(output_path):
                          
 output_path = 'D:/Output/random_gamma_raster.tif'
 create_random_gamma_raster(output_path)
+
 """

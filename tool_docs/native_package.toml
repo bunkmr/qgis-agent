@@ -1,9 +1,13 @@
 tool_ID = "native:package"
 tool_name = "package"
-brief_description = """Adds layers to a GeoPackage.
-If the GeoPackage exists and OverwriteexistingGeoPackage is checked, it will be overwritten (removed and recreated). If the GeoPackage exists and OverwriteexistingGeoPackage is not checked, the layer will be appended."""
-full_description = """Adds layers to a GeoPackage.
-If the GeoPackage exists and OverwriteexistingGeoPackage is checked, it will be overwritten (removed and recreated). If the GeoPackage exists and OverwriteexistingGeoPackage is not checked, the layer will be appended."""
+brief_description = """
+Adds layers to a GeoPackage.
+If the GeoPackage exists and OverwriteexistingGeoPackage is checked, it will be overwritten (removed and recreated). If the GeoPackage exists and OverwriteexistingGeoPackage is not checked, the layer will be appended.
+"""
+full_description = """
+Adds layers to a GeoPackage.
+If the GeoPackage exists and OverwriteexistingGeoPackage is checked, it will be overwritten (removed and recreated). If the GeoPackage exists and OverwriteexistingGeoPackage is not checked, the layer will be appended.
+"""
 parameters = """
 LAYERS: Input layers. The (vector) layers to import into the GeoPackage.Raster layers are not supported. If a raster layer isadded, a QgsProcessingException will be thrown.. Type: [vector: any] [list]
 OVERWRITE: Overwrite existing GeoPackage. If the specified GeoPackage exists, setting this option to True will make sure that it is deleted and a new onewill be created before the layers are added.If set to False , layers will be appended.. Type: [boolean] Default: False 
@@ -12,6 +16,7 @@ SELECTED_FEATURES_ONLY: Save only selected features. If a layer has a selection,
 EXPORT_RELATED_LAYERS: Export related layers following relations defined in the project. If an input layer has relations set in the project,setting this option to True will result in exporting also its related layer(s).If the layer has features selected, then only their related features will be exportedunless the related layer was also an input layer.. Type: [boolean] Default: False 
 OUTPUT: Destination GeoPackage. Specify where to store the GeoPackage file. One of Save to a Temporary File Save to File…. Type: [file] Default: [Save to temporary file] outputs = 
 OUTPUT_LAYERS: Layers within new package. The list of layers added to the GeoPackage.. Type: [string] [list]
+
 
 """
 code_example = """
@@ -36,7 +41,7 @@ def export_to_geopackage():
     }
 
     # Invoke the processing tool
-    result = processing.run("""native:package", parameters)
+    result = processing.run(\"\"\"native:package\", parameters)
 
                                               
     output_gpkg_layer = QgsVectorLayer(output_path, 'GeoPackage_output', 'ogr')
@@ -44,4 +49,5 @@ def export_to_geopackage():
 
                       
 export_to_geopackage()
+
 """

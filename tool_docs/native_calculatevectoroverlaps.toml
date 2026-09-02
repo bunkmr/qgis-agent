@@ -1,9 +1,13 @@
 tool_ID = "native:calculatevectoroverlaps"
 tool_name = "calculatevectoroverlaps"
-brief_description = """Calculates the area and percentage cover by which features from an input layer are overlapped by features from a selection of overlay layers.
-New attributes are added to the output layer reporting the total area of overlap and percentage of the input feature overlapped by each of the selected overlay layers."""
-full_description = """Calculates the area and percentage cover by which features from an input layer are overlapped by features from a selection of overlay layers.
-New attributes are added to the output layer reporting the total area of overlap and percentage of the input feature overlapped by each of the selected overlay layers."""
+brief_description = """
+Calculates the area and percentage cover by which features from an input layer are overlapped by features from a selection of overlay layers.
+New attributes are added to the output layer reporting the total area of overlap and percentage of the input feature overlapped by each of the selected overlay layers.
+"""
+full_description = """
+Calculates the area and percentage cover by which features from an input layer are overlapped by features from a selection of overlay layers.
+New attributes are added to the output layer reporting the total area of overlap and percentage of the input feature overlapped by each of the selected overlay layers.
+"""
 parameters = """
 INPUT: Input layer. The input layer.. Type: [vector: any]
 LAYERS: Overlap layers. The overlay layers.. Type: [vector: any] [list] 
@@ -13,14 +17,15 @@ GRID_SIZE: Grid size Optional. If provided, the input geometries are snapped to 
 GEOS 3.9.0 or higher.. Type: [number] Default: Not set outputs = 
 OUTPUT: Overlap. The output layer with additional fields reporting theoverlap (in map units and percentage) of the input featureoverlapped by each of the selected layers.. Type: [same as input]
 
+
 """
 code_example = """
 from qgis.core import QgsVectorLayer, QgsProject
 import processing
 
 def calculate_vector_overlaps(input_layer_path, overlap_layers_paths, output_path, grid_size=None):
-    input_layer = QgsVectorLayer(input_layer_path, """Input Layer", "ogr")
-    overlap_layers = [QgsVectorLayer(path, "Overlap Layer", "ogr") for path in overlap_layers_paths]
+    input_layer = QgsVectorLayer(input_layer_path, \"\"\"Input Layer\", \"ogr\")
+    overlap_layers = [QgsVectorLayer(path, \"Overlap Layer\", \"ogr\") for path in overlap_layers_paths]
 
     parameters = {
         'INPUT': input_layer_path,
@@ -42,4 +47,5 @@ output_path = 'D:/workspace_directory/output_layer.shp'
 grid_size = 0.02
 
 calculate_vector_overlaps(input_layer_path, overlap_layers_paths, output_path, grid_size)
+
 """

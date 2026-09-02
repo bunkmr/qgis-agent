@@ -1,9 +1,13 @@
 tool_ID = "gdal:retile"
 tool_name = "retile"
-brief_description = """Retiles a set of input tiles. All the input tiles must be georeferenced in the same coordinate system and have a matching number of bands. Optionally pyramid levels are generated.
-This algorithm is derived from the GDAL Retile utility ."""
-full_description = """Retiles a set of input tiles. All the input tiles must be georeferenced in the same coordinate system and have a matching number of bands. Optionally pyramid levels are generated.
-This algorithm is derived from the GDAL Retile utility ."""
+brief_description = """
+Retiles a set of input tiles. All the input tiles must be georeferenced in the same coordinate system and have a matching number of bands. Optionally pyramid levels are generated.
+This algorithm is derived from the GDAL Retile utility .
+"""
+full_description = """
+Retiles a set of input tiles. All the input tiles must be georeferenced in the same coordinate system and have a matching number of bands. Optionally pyramid levels are generated.
+This algorithm is derived from the GDAL Retile utility .
+"""
 parameters = """
 INPUT: Input files. The input raster files. Type: [raster] [list]
 TILE_SIZE_X: Tile width. Width of the tiles in pixels (minimum 0). Type: [number] Default: 256 
@@ -27,6 +31,7 @@ OUTPUT: Output directory. The output folder for the tiles.. Type: [folder]
 OUTPUT_CSV: 
 CSV file containing the tile(s) georeferencing information. The 
 CSV file with georeferencing information for the tiles.. Type: [file]
+
 
 """
 code_example = """
@@ -58,8 +63,9 @@ def re_tile_layers():
     }
 
     # Run the retile algorithm
-    processing.run("""gdal:retile", params)
+    processing.run(\"\"\"gdal:retile\", params)
 
                       
 re_tile_layers()
+
 """

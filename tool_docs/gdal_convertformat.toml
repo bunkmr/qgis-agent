@@ -1,9 +1,13 @@
 tool_ID = "gdal:convertformat"
 tool_name = "convertformat"
-brief_description = """Converts any OGR-supported vector layer into another OGR-supported format.
-This algorithm is derived from the ogr2ogr utility ."""
-full_description = """Converts any OGR-supported vector layer into another OGR-supported format.
-This algorithm is derived from the ogr2ogr utility ."""
+brief_description = """
+Converts any OGR-supported vector layer into another OGR-supported format.
+This algorithm is derived from the ogr2ogr utility .
+"""
+full_description = """
+Converts any OGR-supported vector layer into another OGR-supported format.
+This algorithm is derived from the ogr2ogr utility .
+"""
 parameters = """
 INPUT: Input layer. Input vector layer. Type: [vector: any]
 CONVERT_ALL_LAYERS: Convert all layers from dataset. Converts the whole dataset.Supported output formats for this option are 
@@ -13,6 +17,7 @@ OUTPUT: Converted. Specification of the output vector layer.One of: Save to a Te
 QGIS default vector formatwill be used.. Type: [same as input] 
 OPTIONS: Additional creation options Optional. Additional GDAL creation options.. Type: [string] Default: ‘’ (no additional options) outputs = 
 OUTPUT: Converted. The output vector layer. Type: [same as input]
+
 
 """
 code_example = """
@@ -25,7 +30,7 @@ def convert_layer_format():
     output_path = 'D:/output_layer.gpkg'  # For Save to File
 
     # Load the input layer
-    input_layer = QgsVectorLayer(input_path, """Input Layer", "ogr")
+    input_layer = QgsVectorLayer(input_path, \"\"\"Input Layer\", \"ogr\")
 
                                           
     convert_params = {
@@ -35,7 +40,7 @@ def convert_layer_format():
         'OPTIONS': '''    }
 
                     
-    result = processing.run("gdal:convertformat", convert_params)
+    result = processing.run(\"gdal:convertformat\", convert_params)
 
                               
     converted_layer = QgsVectorLayer(result['OUTPUT'], 'Converted_Layer', 'ogr')
@@ -43,4 +48,5 @@ def convert_layer_format():
 
                       
 convert_layer_format()
+
 """

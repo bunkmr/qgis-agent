@@ -1,7 +1,11 @@
 tool_ID = "native:gltftovector"
 tool_name = "gltftovector"
-brief_description = """Converts .GLTF or .GLB file contents to standard vector layer formats."""
-full_description = """Converts .GLTF or .GLB file contents to standard vector layer formats."""
+brief_description = """
+Converts .GLTF or .GLB file contents to standard vector layer formats.
+"""
+full_description = """
+Converts .GLTF or .GLB file contents to standard vector layer formats.
+"""
 parameters = """
 INPUT: Input
 GLTF. Input file to convert.. Type: 
@@ -15,6 +19,7 @@ A vector layer storing the polygon features in input layer.. Type: [vector: poly
 OUTPUT_LINES: Output lines. 
 A vector layer storing the line features in input layer.. Type: [vector: line]
 
+
 """
 code_example = """
 import processing
@@ -23,7 +28,7 @@ from qgis.core import QgsProject, QgsVectorLayer
 def convert_gltf_to_vector():
     input_gltf_path = 'D:/input_model.gltf'
     # Load the input GLTF file
-    input_layer = QgsVectorLayer(input_gltf_path, """Input GLTF", "3dmodel")
+    input_layer = QgsVectorLayer(input_gltf_path, \"\"\"Input GLTF\", \"3dmodel\")
 
                            
     parameters = {
@@ -33,7 +38,7 @@ def convert_gltf_to_vector():
     }
 
                                            
-    result = processing.run("native:gltftovector", parameters)
+    result = processing.run(\"native:gltftovector\", parameters)
 
                                   
     output_polygons_layer = QgsVectorLayer(result['OUTPUT_POLYGONS'], 'Polygons', 'ogr')
@@ -44,4 +49,5 @@ def convert_gltf_to_vector():
 
                       
 convert_gltf_to_vector()
+
 """

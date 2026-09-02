@@ -4,7 +4,7 @@
 
 [![QGIS](https://img.shields.io/badge/QGIS-3.0+-589632?logo=qgis&style=flat-square)](https://qgis.org/)
 [![Python](https://img.shields.io/badge/Python-3.7+-3776AB?logo=python&style=flat-square)](https://www.python.org/)
-[![Version](https://img.shields.io/badge/version-2.1.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.1.3-blue?style=flat-square)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
 ---
@@ -19,19 +19,19 @@ QGIS Agent 是 QGIS 的 AI 原生插件——用自然语言直接操控 QGIS，
 |------|------|
 | 📚 **RAG API 文档检索** | 本地 SQLite FTS5 全文引擎，执行代码前自动查询 PyQGIS API 签名和参数 |
 | 🧬 **Cookbook 自我进化** | 成功任务自动归档为案例，下次执行前检索相似案例注入上下文 |
-| 📖 **官方 API 文档** | 内置 71 条官方 API 文档，覆盖核心类的完整方法签名 |
+| 📖 **官方 API 文档** | 首次运行时自动构建 API 文档索引（含官方 API 文档源，覆盖核心类完整方法签名） |
 | 🔒 **代码安全确认** | 执行 PyQGIS/Processing 前弹窗确认，杜绝误操作 |
 | 🧵 **线程安全** | LLM 调用在工作线程执行，QGIS API 操作通过 QTimer 调度回主线程 |
 | 🧠 **多模型** | 支持 DeepSeek、OpenAI、GLM、Gemini、MiMo 等所有 OpenAI 兼容 API |
-| 🔌 **Skills 系统** | 可扩展的技能插件架构，支持网络搜索、GIS 数据查询等功能 |
-| 🐛 **SmartDebugger** | 智能调试系统，20+种错误模式识别，自动提供修复建议 |
-| 📊 **Task Graph** | 任务流程图可视化，NetworkX + PyVis 支持 |
-| 🎯 **Query Tuning** | 用户查询优化，自动分解 GIS 任务 |
-| 📋 **Tool Docs** | TOML 格式工具文档，支持 RAG 检索 |
-| 🔍 **Code Review** | 代码审查机制，确保生成代码正确性 |
-| 🔄 **Workflow Recorder** | 记录对话中的工具调用序列，保存为可重用工作流 |
-| 🚀 **Workflow Executor** | 在新工程中直接执行保存的工作流 |
-| ❓ **Clarification Manager** | 识别模糊请求，主动向用户澄清 |
+| 🔌 **Skills 系统** *(实验性)* | 可扩展的技能插件架构，支持网络搜索、GIS 数据查询等功能（尚未接入主对话链路） |
+| 🐛 **SmartDebugger** *(实验性)* | 智能调试系统，错误模式识别与修复建议（尚未接入主对话链路） |
+| 📊 **Task Graph** *(实验性)* | 任务流程图可视化，NetworkX + PyVis 支持（尚未接入主对话链路） |
+| 🎯 **Query Tuning** | 用户查询优化，自动分解 GIS 任务（已接入） |
+| 📋 **Tool Docs** | 679 条 QGIS Processing 算法参考（TOML），已接入 RAG，执行 Processing 时自动检索算法签名 |
+| 🔍 **Code Review** *(实验性)* | 代码审查机制（尚未接入主对话链路） |
+| 🔄 **Workflow Recorder** *(实验性)* | 记录对话中的工具调用序列，保存为可重用工作流（尚未接入主对话链路） |
+| 🚀 **Workflow Executor** *(实验性)* | 在新工程中直接执行保存的工作流（尚未接入主对话链路） |
+| ❓ **Clarification Manager** *(实验性)* | 识别模糊请求，主动向用户澄清（尚未接入主对话链路） |
 
 ## 🏗️ 架构概览
 
@@ -84,6 +84,19 @@ graph TB
     E -->|finished 信号| A
 ```
 
+## 🆕 v2.1.3 重要更新
+
+> 本版本重点解决 **QGIS 4 / macOS** 的加载与运行问题，并让**本地部署模型**开箱即用：
+
+- ✅ **QGIS 4 兼容**：PyQt5 / PyQt6 双兼容，可在 QGIS 3.x 与 4.x（含 macOS QGIS 4）加载
+- ✅ **本地模型免密**：自托管 OpenAI 兼容服务（Ollama / vLLM / llama.cpp）API Key 可留空
+- ✅ **Cloudflare 403 规避**：自动附加浏览器 User-Agent 绕过 Bot 防护
+- 🐛 修复「点击发送无反应」（自动建对话 + 主线程异常/LLM 超时改为可见红字）
+- 🐛 修复 PyQt6 枚举缺失导致的 DockWidget 崩溃、pydantic-core 版本冲突
+- 💬 对话名默认取首条消息前 20 字，不再强制弹窗命名
+
+详见 [CHANGELOG.md](CHANGELOG.md)。
+
 ## 📥 安装
 
 ### 方式一：QGIS ZIP 安装（推荐）
@@ -99,17 +112,21 @@ graph TB
 #### Windows
 
 ```powershell
-# 1. 复制到 QGIS 插件目录
+# 1. 复制到 QGIS 插件目录（QGIS 3 用 QGIS3，QGIS 4 用 QGIS4）
 Copy-Item -Recurse qgis_agent\ "$env:APPDATA\QGIS\QGIS3\profiles\default\python\plugins\qgis_agent"
 
 # 2. 重启 QGIS，在 插件 → 管理和安装插件 中启用 QGIS Agent
 ```
+
+> 💡 QGIS 4 用户请把路径中的 `QGIS3` 改为 `QGIS4`。
 
 #### macOS / Linux
 
 ```bash
 cp -r qgis_agent/ ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/
 ```
+> 💡 QGIS 4 用户请把路径中的 `QGIS3` 改为 `QGIS4`（macOS 为 `~/Library/Application Support/QGIS/QGIS4/...`）。
+
 
 ## ⚙️ 配置
 
@@ -130,6 +147,9 @@ cp -r qgis_agent/ ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/
 | Google | `https://generativelanguage.googleapis.com/v1beta/openai/` | gemini-2.0-flash |
 | 小米 MiMo | `https://api.xiaomimimo.com/v1/chat/completions` | mimo-v2.5 |
 | 自定义 | 任何 OpenAI 兼容接口 | 任意模型名 |
+| 本地部署 | `http://localhost:11434/v1` 等 | 任意模型名（Ollama / vLLM / llama.cpp） |
+
+> 🔑 **本地 / 自托管模型无需密码**：自定义端点的 **API Key 可留空**。若你的服务经 Cloudflare 代理返回 `403 PermissionDenied`，插件已自动附加浏览器 `User-Agent` 绕过 Bot 防护，无需手动改配置。
 
 ## 🚀 快速上手
 
@@ -171,7 +191,7 @@ RAG 系统包含以下来源的 API 文档：
 
 | 来源 | 数量 | 说明 |
 |------|------|------|
-| 官方 API 文档 | 71 | 核心类的完整方法签名（QgsVectorLayer, QgsGeometry, QgsFeature 等） |
+| 官方 API 文档 | 运行时构建 | 核心类的完整方法签名（QgsVectorLayer, QgsGeometry, QgsFeature 等），首次运行由 official_doc_scraper / doc_generator 生成 |
 | 运行时反射 | 200+ | 从 QGIS 运行时提取的方法签名 |
 | Processing 算法 | 100+ | 所有已安装的 Processing 算法 |
 | 手动补充 | 11 | 常用操作速查 |
@@ -206,13 +226,13 @@ qgis_agent/
 │   ├── doc_generator.py         #   API 文档生成器
 │   ├── official_doc_scraper.py  #   📖 官方 API 文档
 │   └── cookbook.py               #   Cookbook 自我进化
-├── agent_loop/                  # 🔄 Agent Loop 架构（实验性）
+├── agent_loop/                  # 🔄 Agent Loop 架构（实验性，未接入主链路）
 │   ├── state.py                 #   状态管理
 │   ├── tools.py                 #   工具注册系统
 │   ├── memory.py                #   记忆系统
 │   ├── loop.py                  #   核心循环
-│   └── rag.py                   #   RAG 引擎
-├── skills/                      # 🔌 技能系统（实验性）
+│   └── processor.py             #   AgentLoopProcessor（基于新架构的处理器）
+├── skills/                      # 🔌 技能系统（实验性，未接入主链路）
 │   ├── skill_manager.py         #   技能管理器
 │   ├── builtins.py              #   内置技能（网络搜索等）
 │   └── user_skills/             #   用户自定义技能
@@ -274,7 +294,7 @@ SKILL = Skill(
 <details>
 <summary><b>Q: 支持哪些 QGIS 版本？</b></summary>
 
-- QGIS 3.0+，推荐 3.28 LTR 或更新版本
+- QGIS 3.0+ 与 4.x（PyQt5 / PyQt6 双兼容），推荐 3.28 LTR 或 4.x 新版
 </details>
 
 <details>

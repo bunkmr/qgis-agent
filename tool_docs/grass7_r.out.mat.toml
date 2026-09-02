@@ -1,11 +1,15 @@
 tool_ID = "grass7:r.out.mat"
 tool_name = "r.out.mat"
-brief_description = """Reprojects a raster layer into another Coordinate Reference System (CRS). The output file resolution and the resampling method can be chosen.
+brief_description = """
+Reprojects a raster layer into another Coordinate Reference System (CRS). The output file resolution and the resampling method can be chosen.
 This algorithm is derived from the GDAL warp utility .
-Default menu: Raster ► Projections"""
-full_description = """Reprojects a raster layer into another Coordinate Reference System (CRS). The output file resolution and the resampling method can be chosen.
+Default menu: Raster ► Projections
+"""
+full_description = """
+Reprojects a raster layer into another Coordinate Reference System (CRS). The output file resolution and the resampling method can be chosen.
 This algorithm is derived from the GDAL warp utility .
-Default menu: Raster ► Projections"""
+Default menu: Raster ► Projections
+"""
 parameters = """
 INPUT: Input layer. Input raster layer to reproject. Type: [raster]
 SOURCE_CRS: Source 
@@ -35,6 +39,7 @@ MULTITHREADING: Use multithreaded warping implementation. Two threads will be us
 EXTRA: Additional command-line parameters Optional. Add extra GDAL command line options.. Type: [string] Default: None outputs = 
 OUTPUT: Reprojected. Reprojected output raster layer. Type: [raster] Default: [Save to temporary file]
 
+
 """
 code_example = """
 import processing
@@ -45,7 +50,7 @@ def reproject_raster():
     input_path = 'D:/input_raster.tif'
     output_path = 'D:/output_raster.tif'
     # Load the input raster layer
-    input_layer = QgsRasterLayer(input_path, """Input Raster")
+    input_layer = QgsRasterLayer(input_path, \"\"\"Input Raster\")
     
                            
     parameters = {
@@ -63,11 +68,12 @@ def reproject_raster():
         'MULTITHREADING': '',
         'EXTRA': '''    }
                                       
-    result = processing.run("gdal:warpreproject", parameters)
+    result = processing.run(\"gdal:warpreproject\", parameters)
                                        
     output_layer = QgsRasterLayer(output_path, 'Reprojected Raster')
     QgsProject.instance().addMapLayer(output_layer)
 
                       
 reproject_raster()
+
 """

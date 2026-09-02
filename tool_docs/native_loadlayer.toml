@@ -1,11 +1,16 @@
 tool_ID = "native:loadlayer"
 tool_name = "loadlayer"
-brief_description = """Loads a layer to the current project."""
-full_description = """Loads a layer to the current project."""
+brief_description = """
+Loads a layer to the current project.
+"""
+full_description = """
+Loads a layer to the current project.
+"""
 parameters = """
 INPUT: Layer. Layer to load in the legend. Type: [layer]
 NAME: Loaded layer name. Name of the loaded layer. Type: [string] outputs = 
 OUTPUT: Layer. The (renamed) loaded layer. Type: [same as input]
+
 
 """
 code_example = """
@@ -14,7 +19,7 @@ from qgis.core import QgsVectorLayer, QgsProject
 
 def load_layer_example():
     # Define the input path and output path (if applicable)
-    input_path = """D:/input_layer.shp"
+    input_path = \"\"\"D:/input_layer.shp\"
     
                                                
     parameters = {
@@ -23,7 +28,7 @@ def load_layer_example():
     }
 
                                   
-    result = processing.run("native:loadlayer", parameters)
+    result = processing.run(\"native:loadlayer\", parameters)
 
                                      
     loaded_layer = QgsVectorLayer(input_path, parameters['NAME'], 'ogr')
@@ -31,4 +36,5 @@ def load_layer_example():
 
                       
 load_layer_example()
+
 """

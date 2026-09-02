@@ -1,7 +1,11 @@
 tool_ID = "native:printlayouttoimage"
 tool_name = "printlayouttoimage"
-brief_description = """Exports a print layout as an image file (e.g. PNG or JPEG images)"""
-full_description = """Exports a print layout as an image file (e.g. PNG or JPEG images)"""
+brief_description = """
+Exports a print layout as an image file (e.g. PNG or JPEG images)
+"""
+full_description = """
+Exports a print layout as an image file (e.g. PNG or JPEG images)
+"""
 parameters = """
 LAYOUT: Print layout. Layout to export. Type: [layout]
 OUTPUT: Image file. Name (including path) of the output file. One of: Save to a Temporary File Save to File…. Type: [file] Default: [Save to temporary file] 
@@ -15,6 +19,7 @@ RDF metadata. Determines if
 RDF metadata (title, author, …) should be generated. Type: [boolean] Default: True 
 ANTIALIAS: Enable antialiasing. Determines if antialiasing should be enabled. Type: [boolean] Default: True outputs = 
 OUTPUT: Image file. Image file corresponding to the exported print layout. Type: [file]
+
 
 """
 code_example = """
@@ -38,8 +43,9 @@ def export_layout_to_image():
     }
     
     # Execute the processing algorithm
-    result = processing.run("""native:printlayouttoimage", parameters)
+    result = processing.run(\"\"\"native:printlayouttoimage\", parameters)
     
                       
 export_layout_to_image()
+
 """

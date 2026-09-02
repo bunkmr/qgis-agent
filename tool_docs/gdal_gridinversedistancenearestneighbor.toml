@@ -1,9 +1,13 @@
 tool_ID = "gdal:gridinversedistancenearestneighbor"
 tool_name = "gridinversedistancenearestneighbor"
-brief_description = """Computes the Inverse Distance to a Power gridding combined to the nearest neighbor method. Ideal when a maximum number of data points to use is required.
-This algorithm is derived from the GDAL grid utility ."""
-full_description = """Computes the Inverse Distance to a Power gridding combined to the nearest neighbor method. Ideal when a maximum number of data points to use is required.
-This algorithm is derived from the GDAL grid utility ."""
+brief_description = """
+Computes the Inverse Distance to a Power gridding combined to the nearest neighbor method. Ideal when a maximum number of data points to use is required.
+This algorithm is derived from the GDAL grid utility .
+"""
+full_description = """
+Computes the Inverse Distance to a Power gridding combined to the nearest neighbor method. Ideal when a maximum number of data points to use is required.
+This algorithm is derived from the GDAL grid utility .
+"""
 parameters = """
 INPUT: Point layer. Input point vector layer. Type: [vector: point]
 POWER: Weighting power. Weighting power. Type: [number] Default: 2.0 
@@ -23,6 +27,7 @@ DATA_TYPE: Output data type. Defines the data type of the output raster file.Opt
 OUTPUT: Interpolated 
 (IDW with 
 NN search). Output raster with interpolated values. Type: [raster]
+
 
 """
 code_example = """
@@ -54,7 +59,7 @@ def perform_idw_interpolation():
     }
 
     # Perform the IDW interpolation
-    result = processing.run("""gdal:gridinversedistancenearestneighbor", parameters)
+    result = processing.run(\"\"\"gdal:gridinversedistancenearestneighbor\", parameters)
     
                                          
     interpolated_layer = QgsVectorLayer(result['OUTPUT'], 'Interpolated Layer', 'ogr')
@@ -62,4 +67,5 @@ def perform_idw_interpolation():
 
                       
 perform_idw_interpolation()
+
 """

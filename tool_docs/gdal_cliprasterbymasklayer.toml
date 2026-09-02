@@ -1,11 +1,15 @@
 tool_ID = "gdal:cliprasterbymasklayer"
 tool_name = "cliprasterbymasklayer"
-brief_description = """Clips any GDAL-supported raster by a vector mask layer.
+brief_description = """
+Clips any GDAL-supported raster by a vector mask layer.
 This algorithm is derived from the GDAL warp utility .
-Default menu: Raster ► Extraction"""
-full_description = """Clips any GDAL-supported raster by a vector mask layer.
+Default menu: Raster ► Extraction
+"""
+full_description = """
+Clips any GDAL-supported raster by a vector mask layer.
 This algorithm is derived from the GDAL warp utility .
-Default menu: Raster ► Extraction"""
+Default menu: Raster ► Extraction
+"""
 parameters = """
 INPUT: Input layer. The input raster. Type: [raster]
 MASK: Mask layer. Vector mask for clipping the raster. Type: [vector: polygon] 
@@ -30,6 +34,7 @@ DATA_TYPE: Output data type. Defines the format of the output raster file. Optio
 EXTRA: Additional command-line parameters Optional. Add extra GDAL command line options. Type: [string] Default: None outputs = 
 OUTPUT: Clipped (mask). Output raster layer clipped by the vector layer. Type: [raster]
 
+
 """
 code_example = """
 import processing
@@ -41,8 +46,8 @@ def clip_raster_by_mask_layer():
     output_path = 'D:/workspace_directory/output_raster.tif'  # Path for the output file
 
     # Load the input layers
-    input_layer = QgsRasterLayer(input_raster_path, """Input Raster")
-    mask_layer = QgsVectorLayer(mask_layer_path, "Mask Layer", "ogr")
+    input_layer = QgsRasterLayer(input_raster_path, \"\"\"Input Raster\")
+    mask_layer = QgsVectorLayer(mask_layer_path, \"Mask Layer\", \"ogr\")
 
                                   
     parameters = {
@@ -65,7 +70,7 @@ def clip_raster_by_mask_layer():
         'EXTRA': '''    }
 
                         
-    result = processing.run("gdal:cliprasterbymasklayer", parameters)
+    result = processing.run(\"gdal:cliprasterbymasklayer\", parameters)
 
                                
     output_layer = QgsRasterLayer(result['OUTPUT'], 'Clipped Raster')
@@ -73,4 +78,5 @@ def clip_raster_by_mask_layer():
 
                       
 clip_raster_by_mask_layer()
+
 """

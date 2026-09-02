@@ -6,8 +6,6 @@ UI 增强模块 — 优化对话框显示。
 """
 
 import html as html_module
-from typing import Optional
-from datetime import datetime
 
 
 # 样式常量
@@ -71,7 +69,7 @@ def render_assistant_message(content: str, timestamp: str, font_color: str) -> s
     Returns:
         HTML 字符串
     """
-    from .utils import create_markdown
+    from ..utils import create_markdown
 
     rendered_content = create_markdown(content)
     return f"""
@@ -169,7 +167,7 @@ def render_thinking(content: str, timestamp: str = "") -> str:
     Returns:
         HTML 字符串
     """
-    from .utils import create_markdown
+    from ..utils import create_markdown
 
     rendered_content = create_markdown(content) if content else ""
     time_text = f" · {timestamp}" if timestamp else ""

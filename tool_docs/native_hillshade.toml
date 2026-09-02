@@ -1,9 +1,13 @@
 tool_ID = "native:hillshade"
 tool_name = "hillshade"
-brief_description = """Evaluates on a cell-by-cell basis the position of the raster with the highest value in a stack of rasters. Position counts start with 1 and range to the total number of input rasters. The order of the input rasters is relevant for the algorithm. If multiple rasters feature the highest value, the first raster will be used for the position value.
-If multiband rasters are used in the data raster stack, the algorithm will always perform the analysis on the first band of the rasters - use GDAL to use other bands in the analysis. Any NoData cells in the raster layer stack will result in a NoData cell in the output raster unless the “ignore NoData” parameter is checked. The output NoData value can be set manually. The output rasters extent and resolution is defined by a reference raster layer and is always of Int32 type."""
-full_description = """Evaluates on a cell-by-cell basis the position of the raster with the highest value in a stack of rasters. Position counts start with 1 and range to the total number of input rasters. The order of the input rasters is relevant for the algorithm. If multiple rasters feature the highest value, the first raster will be used for the position value.
-If multiband rasters are used in the data raster stack, the algorithm will always perform the analysis on the first band of the rasters - use GDAL to use other bands in the analysis. Any NoData cells in the raster layer stack will result in a NoData cell in the output raster unless the “ignore NoData” parameter is checked. The output NoData value can be set manually. The output rasters extent and resolution is defined by a reference raster layer and is always of Int32 type."""
+brief_description = """
+Evaluates on a cell-by-cell basis the position of the raster with the highest value in a stack of rasters. Position counts start with 1 and range to the total number of input rasters. The order of the input rasters is relevant for the algorithm. If multiple rasters feature the highest value, the first raster will be used for the position value.
+If multiband rasters are used in the data raster stack, the algorithm will always perform the analysis on the first band of the rasters - use GDAL to use other bands in the analysis. Any NoData cells in the raster layer stack will result in a NoData cell in the output raster unless the “ignore NoData” parameter is checked. The output NoData value can be set manually. The output rasters extent and resolution is defined by a reference raster layer and is always of Int32 type.
+"""
+full_description = """
+Evaluates on a cell-by-cell basis the position of the raster with the highest value in a stack of rasters. Position counts start with 1 and range to the total number of input rasters. The order of the input rasters is relevant for the algorithm. If multiple rasters feature the highest value, the first raster will be used for the position value.
+If multiband rasters are used in the data raster stack, the algorithm will always perform the analysis on the first band of the rasters - use GDAL to use other bands in the analysis. Any NoData cells in the raster layer stack will result in a NoData cell in the output raster unless the “ignore NoData” parameter is checked. The output NoData value can be set manually. The output rasters extent and resolution is defined by a reference raster layer and is always of Int32 type.
+"""
 parameters = """
 INPUT_RASTERS: Input raster layers. List of raster layers to compare with. Type: [raster] [list]
 REFERENCE_LAYER: Reference layer. The reference layer for the output layer creation(extent, 
@@ -18,6 +22,7 @@ EXTENT: Extent. The spatial extent of the output raster layer. Type: [string]
 WIDTH_IN_PIXELS: Width in pixels. The number of columns in the output raster layer. Type: [integer] 
 HEIGHT_IN_PIXELS: Height in pixels. The number of rows in the output raster layer. Type: [integer] 
 TOTAL_PIXEL_COUNT: Total pixel count. The count of pixels in the output raster layer. Type: [integer]
+
 
 """
 code_example = """
@@ -43,7 +48,7 @@ def highest_position_in_raster_stack():
     }
     
     # Run the algorithm
-    result = processing.run("""native:highestpositioninrasterstack", parameters)
+    result = processing.run(\"\"\"native:highestpositioninrasterstack\", parameters)
 
                                    
     output_layer = QgsRasterLayer(result['OUTPUT'], 'Highest Position in Raster Stack')
@@ -51,4 +56,5 @@ def highest_position_in_raster_stack():
 
                       
 highest_position_in_raster_stack()
+
 """

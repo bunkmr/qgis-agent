@@ -1,13 +1,17 @@
 tool_ID = "native:cellstatistics"
 tool_name = "cellstatistics"
-brief_description = """Computes per-cell statistics based on input raster layers and for each cell writes the resulting statistics to an output raster. At each cell location, the output value is defined as a function of all overlaid cell values of the input rasters.
+brief_description = """
+Computes per-cell statistics based on input raster layers and for each cell writes the resulting statistics to an output raster. At each cell location, the output value is defined as a function of all overlaid cell values of the input rasters.
 By default, a NoData cell in ANY of the input layers will result in a NoData cell in the output raster. If the Ignore NoData values option is checked, then NoData inputs will be ignored in the statistic calculation. This may result in NoData output for locations where all cells are NoData.
 The Reference layer parameter specifies an existing raster layer to use as a reference when creating the output raster. The output raster will have the same extent, CRS, and pixel dimensions as this layer.
-Calculation details: Input raster layers that do not match the cell size of the reference raster layer will be resampled using nearestneighborresampling . The output raster data type will be set to the most complex data type present in the input datasets except when using the functions Mean , Standarddeviation and Variance (data type is always Float32 or Float64 depending on input float type) or Count and Variety (data type is always Int32 )."""
-full_description = """Computes per-cell statistics based on input raster layers and for each cell writes the resulting statistics to an output raster. At each cell location, the output value is defined as a function of all overlaid cell values of the input rasters.
+Calculation details: Input raster layers that do not match the cell size of the reference raster layer will be resampled using nearestneighborresampling . The output raster data type will be set to the most complex data type present in the input datasets except when using the functions Mean , Standarddeviation and Variance (data type is always Float32 or Float64 depending on input float type) or Count and Variety (data type is always Int32 ).
+"""
+full_description = """
+Computes per-cell statistics based on input raster layers and for each cell writes the resulting statistics to an output raster. At each cell location, the output value is defined as a function of all overlaid cell values of the input rasters.
 By default, a NoData cell in ANY of the input layers will result in a NoData cell in the output raster. If the Ignore NoData values option is checked, then NoData inputs will be ignored in the statistic calculation. This may result in NoData output for locations where all cells are NoData.
 The Reference layer parameter specifies an existing raster layer to use as a reference when creating the output raster. The output raster will have the same extent, CRS, and pixel dimensions as this layer.
-Calculation details: Input raster layers that do not match the cell size of the reference raster layer will be resampled using nearestneighborresampling . The output raster data type will be set to the most complex data type present in the input datasets except when using the functions Mean , Standarddeviation and Variance (data type is always Float32 or Float64 depending on input float type) or Count and Variety (data type is always Int32 )."""
+Calculation details: Input raster layers that do not match the cell size of the reference raster layer will be resampled using nearestneighborresampling . The output raster data type will be set to the most complex data type present in the input datasets except when using the functions Mean , Standarddeviation and Variance (data type is always Float32 or Float64 depending on input float type) or Count and Variety (data type is always Int32 ).
+"""
 parameters = """
 INPUT: Input layers. Input raster layers. Type: [raster] [list]
 STATISTIC: Statistic. Available statistics. Options: 0 — Sum 1 — Count 2 — Mean 3 — Median 4 — Standard deviation 5 — Variance 6 — Minimum 7 — Maximum 8 — Minority (least common value) 9 — Majority (most common value) 10 — Range (max - min) 11 — Variety (unique value count). Type: [enumeration] Default: 0 
@@ -24,6 +28,7 @@ OUTPUT: Output raster. Output raster layer containing the result. Type: [raster]
 TOTAL_PIXEL_COUNT: Total pixel count. The count of pixels in the output raster layer. Type: [integer] 
 WIDTH_IN_PIXELS: Width in pixels. The number of columns in the output raster layer. Type: [integer]
 
+
 """
 code_example = """
 import processing
@@ -34,8 +39,8 @@ def perform_cell_statistics():
     ref_layer_path = 'D:/Data/ref_layer.tif'
     output_path = 'C:/output_path/output_raster.tif'
 
-    input_layers = [QgsRasterLayer(path, """Input Layer") for path in input_paths]
-    ref_layer = QgsRasterLayer(ref_layer_path, "Reference Layer")
+    input_layers = [QgsRasterLayer(path, \"\"\"Input Layer\") for path in input_paths]
+    ref_layer = QgsRasterLayer(ref_layer_path, \"Reference Layer\")
 
     parameters = {
         'INPUT': input_layers,
@@ -46,10 +51,11 @@ def perform_cell_statistics():
         'OUTPUT_NO_DATA_VALUE': -9999.0
     }
 
-    result = processing.run("native:cellstatistics", parameters)
+    result = processing.run(\"native:cellstatistics\", parameters)
 
     output_layer = QgsRasterLayer(result['OUTPUT'], 'Cell Statistics Result')
     QgsProject.instance().addMapLayer(output_layer)
 
 perform_cell_statistics()
+
 """

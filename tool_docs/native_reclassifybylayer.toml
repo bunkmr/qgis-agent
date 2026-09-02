@@ -1,7 +1,11 @@
 tool_ID = "native:reclassifybylayer"
 tool_name = "reclassifybylayer"
-brief_description = """Reclassifies a raster band by assigning new class values based on the ranges specified in a vector table."""
-full_description = """Reclassifies a raster band by assigning new class values based on the ranges specified in a vector table."""
+brief_description = """
+Reclassifies a raster band by assigning new class values based on the ranges specified in a vector table.
+"""
+full_description = """
+Reclassifies a raster band by assigning new class values based on the ranges specified in a vector table.
+"""
 parameters = """
 INPUT_RASTER: Raster layer. Raster layer to reclassify. Type: [raster]
 RASTER_BAND: Band number. If the raster is multiband, choose the band you want toreclassify.. Type: [raster band] Default: The first band of the raster layer 
@@ -15,6 +19,7 @@ RANGE_BOUNDARIES: Range boundaries. Defines comparison rules for the classificat
 NODATA_FOR_MISSING: Use NoData when no range matches value. Applies the NoData value to band values that do not fall inany class.If False, the original value is kept.. Type: [boolean] Default: False 
 DATA_TYPE: Output data type. Defines the format of the output raster file.Options: 0 — Byte (Eight bit unsigned integer (quint8)) 1 — Int16 (Sixteen bit signed integer (qint16)) 2 — UInt16 (Sixteen bit unsigned integer (quint16)) 3 — Int32 (Thirty two bit signed integer (qint32)) 4 — UInt32 (Thirty two bit unsigned integer (quint32)) 5 — Float32 (Thirty two bit floating point (float)) 6 — Float64 (Sixty four bit floating point (double)) 7 — CInt16 (Complex Int16) 8 — CInt32 (Complex Int32) 9 — CFloat32 (Complex Float32) 10 — CFloat64 (Complex Float64) 11 — Int8 (Eight bit signed integer (qint8)) Available options depend on the GDAL version built with QGIS(see Help ► About menu). Type: [enumeration] Default: 5 outputs = 
 OUTPUT: Reclassified raster. Output raster layer with reclassified band values. Type: [raster]
+
 
 """
 code_example = """
@@ -42,7 +47,7 @@ def reclassify_raster_layer(input_raster_path, input_table_path, output_path):
     }
 
     # Execute the reclassification algorithm
-    result = processing.run("""native:reclassifybylayer", parameters)
+    result = processing.run(\"\"\"native:reclassifybylayer\", parameters)
 
                                                            
     reclassified_raster_layer = QgsRasterLayer(result['OUTPUT'], 'Reclassified Raster')
@@ -53,4 +58,5 @@ input_raster_path = '/path/to/input_raster.tif'
 input_table_path = '/path/to/class_breaks.shp'
 output_path = '/path/to/output_reclassified.tif'
 reclassify_raster_layer(input_raster_path, input_table_path, output_path)
+
 """

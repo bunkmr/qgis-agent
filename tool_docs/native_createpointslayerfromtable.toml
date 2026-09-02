@@ -1,9 +1,13 @@
 tool_ID = "native:createpointslayerfromtable"
 tool_name = "createpointslayerfromtable"
-brief_description = """Creates points layer from a table with columns that contain coordinates fields.
-Besides X and Y coordinates you can also specify Z and M fields."""
-full_description = """Creates points layer from a table with columns that contain coordinates fields.
-Besides X and Y coordinates you can also specify Z and M fields."""
+brief_description = """
+Creates points layer from a table with columns that contain coordinates fields.
+Besides X and Y coordinates you can also specify Z and M fields.
+"""
+full_description = """
+Creates points layer from a table with columns that contain coordinates fields.
+Besides X and Y coordinates you can also specify Z and M fields.
+"""
 parameters = """
 INPUT: Input layer. Input vector layer or a table.. Type: [vector: any]
 XFIELD: 
@@ -25,6 +29,7 @@ OUTPUT: Points from table. Specify the resulting point layer. One of: Create Tem
 TEMPORARY_OUTPUT ) Save to File… Save to Geopackage… Save to Database Table… The file encoding can also be changed here.. Type: [vector: point] Default: [Create temporary layer] outputs = 
 OUTPUT: Points from table. The resulting point layer. Type: [vector: point]
 
+
 """
 code_example = """
 import processing
@@ -35,7 +40,7 @@ def create_points_from_table():
     output_path = 'D:/output_points.shp'
     
     # Load the input layer
-    input_layer = QgsVectorLayer(input_path, """Input Table", "ogr")
+    input_layer = QgsVectorLayer(input_path, \"\"\"Input Table\", \"ogr\")
     
                                                         
     parameters = {
@@ -49,7 +54,7 @@ def create_points_from_table():
     }
     
                        
-    result = processing.run("native:createpointslayerfromtable", parameters)
+    result = processing.run(\"native:createpointslayerfromtable\", parameters)
     
                               
     output_layer = QgsVectorLayer(result['OUTPUT'], 'Points from Table', 'ogr')
@@ -57,4 +62,5 @@ def create_points_from_table():
 
                       
 create_points_from_table()
+
 """

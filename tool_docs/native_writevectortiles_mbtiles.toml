@@ -1,9 +1,13 @@
 tool_ID = "native:writevectortiles_mbtiles"
 tool_name = "writevectortiles_mbtiles"
-brief_description = """Exports one or more vector layers to vector tiles, a data format optimized for fast map rendering and small data size.
-MBTiles is a specification for storing tiled map data in SQLite databases for immediate usage and for transfer. MBTiles files are known as tilesets."""
-full_description = """Exports one or more vector layers to vector tiles, a data format optimized for fast map rendering and small data size.
-MBTiles is a specification for storing tiled map data in SQLite databases for immediate usage and for transfer. MBTiles files are known as tilesets."""
+brief_description = """
+Exports one or more vector layers to vector tiles, a data format optimized for fast map rendering and small data size.
+MBTiles is a specification for storing tiled map data in SQLite databases for immediate usage and for transfer. MBTiles files are known as tilesets.
+"""
+full_description = """
+Exports one or more vector layers to vector tiles, a data format optimized for fast map rendering and small data size.
+MBTiles is a specification for storing tiled map data in SQLite databases for immediate usage and for transfer. MBTiles files are known as tilesets.
+"""
 parameters = """
 INPUT: Input layers.
 A list of layers to combine to generate the vector tiles. Type: [vector: any] [list] 
@@ -20,6 +24,7 @@ META_CENTER: Metadata: Center Optional. The center (string of comma-separated nu
 OUTPUT: Destination MBTiles. Specification of the output MBTiles file. One of: Save to a Temporary File Save to File…. Type: [vector tiles] Default: [Save to temporary file] outputs = 
 OUTPUT: Destination MBTiles. Output vector tiles .mbtiles file.. Type: [file]
 
+
 """
 code_example = """
 import processing
@@ -31,8 +36,8 @@ def write_vector_tiles_mbtiles():
     output_path = 'path/to/output.mbtiles'
 
     # Load the input layers
-    input_layer_1 = QgsVectorLayer(input_path_1, """Layer 1", "ogr")
-    input_layer_2 = QgsVectorLayer(input_path_2, "Layer 2", "ogr")
+    input_layer_1 = QgsVectorLayer(input_path_1, \"\"\"Layer 1\", \"ogr\")
+    input_layer_2 = QgsVectorLayer(input_path_2, \"Layer 2\", \"ogr\")
 
                            
     parameters = {
@@ -50,7 +55,8 @@ def write_vector_tiles_mbtiles():
     }
 
                          
-    result = processing.run("native:writevectortiles_mbtiles", parameters)
+    result = processing.run(\"native:writevectortiles_mbtiles\", parameters)
 
 write_vector_tiles_mbtiles()
+
 """

@@ -1,9 +1,13 @@
 tool_ID = "native:atlaslayouttopdf"
 tool_name = "atlaslayouttopdf"
-brief_description = """Exports the atlas of a print layout as a single PDF file.
-If a coverage layer is set, the selected layout’s atlas settings exposed in this algorithm will be overwritten. In this case, an empty filter or sort by expression will turn those settings off."""
-full_description = """Exports the atlas of a print layout as a single PDF file.
-If a coverage layer is set, the selected layout’s atlas settings exposed in this algorithm will be overwritten. In this case, an empty filter or sort by expression will turn those settings off."""
+brief_description = """
+Exports the atlas of a print layout as a single PDF file.
+If a coverage layer is set, the selected layout’s atlas settings exposed in this algorithm will be overwritten. In this case, an empty filter or sort by expression will turn those settings off.
+"""
+full_description = """
+Exports the atlas of a print layout as a single PDF file.
+If a coverage layer is set, the selected layout’s atlas settings exposed in this algorithm will be overwritten. In this case, an empty filter or sort by expression will turn those settings off.
+"""
 parameters = """
 LAYOUT: Atlas layout. Layout to export. Type: [layout]
 COVERAGE_LAYER: Coverage layer Optional. Layer to use to generate the atlas. Type: [vector: any] 
@@ -32,6 +36,7 @@ OUTPUT:
 PDF file. 
 PDF file corresponding to the exported atlas layout. Type: [file]
 
+
 """
 code_example = """
 import processing
@@ -59,7 +64,8 @@ def export_atlas_layout_to_pdf():
         'IMAGE_COMPRESSION': 0  # [0 - Lossy (JPEG), 1 - Lossless]
     }
 
-    result = processing.run("""native:atlaslayouttopdf", parameters)
+    result = processing.run(\"\"\"native:atlaslayouttopdf\", parameters)
 
 export_atlas_layout_to_pdf()
+
 """

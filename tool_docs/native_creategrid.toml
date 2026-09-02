@@ -1,11 +1,15 @@
 tool_ID = "native:creategrid"
 tool_name = "creategrid"
-brief_description = """Creates a vector layer with a grid covering a given extent. Grid cells can have different shapes:
+brief_description = """
+Creates a vector layer with a grid covering a given extent. Grid cells can have different shapes:
 The size and/or placement of each element in the grid is defined using a horizontal and vertical spacing. The CRS of the output layer must be defined. The grid extent and the spacing values must be expressed in the coordinates and units of this CRS.
-Default menu: Vector ► Research Tools"""
-full_description = """Creates a vector layer with a grid covering a given extent. Grid cells can have different shapes:
+Default menu: Vector ► Research Tools
+"""
+full_description = """
+Creates a vector layer with a grid covering a given extent. Grid cells can have different shapes:
 The size and/or placement of each element in the grid is defined using a horizontal and vertical spacing. The CRS of the output layer must be defined. The grid extent and the spacing values must be expressed in the coordinates and units of this CRS.
-Default menu: Vector ► Research Tools"""
+Default menu: Vector ► Research Tools
+"""
 parameters = """
 TYPE: Grid type. Shape of the grid. One of: 0 — Point 1 — Line 2 — Rectangle (polygon) 3 — Diamond (polygon) 4 — Hexagon (polygon). Type: [enumeration] Default: 0
 EXTENT: Grid extent. Extent of the grid Available methods are: Calculate from layer…: uses extent of a layer loaded in the current project Calculate from layout map…: uses extent of a layout map item in the active project Calculate from bookmark…: uses extent of a saved bookmark Use map canvas extent Draw on canvas: click and drag a rectangle delimiting the area to take into account Enter the coordinates as xmin, xmax, ymin, ymax. Type: [extent] 
@@ -20,6 +24,7 @@ OUTPUT: Grid. Resulting vector grid layer. One of: Create Temporary Layer (
 TEMPORARY_OUTPUT ) Save to File… Save to Geopackage… Save to Database Table… The file encoding can also be changed here.. Type: [vector: any] Default: [Create temporary layer] outputs = 
 OUTPUT: Grid. Resulting vector grid layer. The output geometry type (point,line or polygon) depends on the Grid type .Features are created from top to bottom, left to right.The attribute table is filled with: an id coordinates on the left , right , top and bottom sides and their placement in the grid: row_index and column_index (available for point, rectangle and hexagon grid types). Type: [vector: any]
 
+
 """
 code_example = """
 import processing
@@ -27,7 +32,7 @@ from qgis.core import QgsProject, QgsVectorLayer
 
 def create_grid():
     # Define the input path and output path
-    output_path = """C:/Users/Output/grid_output.shp"
+    output_path = \"\"\"C:/Users/Output/grid_output.shp\"
 
                                               
     parameters = {
@@ -42,7 +47,7 @@ def create_grid():
     }
 
                                      
-    result = processing.run("native:creategrid", parameters)
+    result = processing.run(\"native:creategrid\", parameters)
 
                                    
     grid_layer = QgsVectorLayer(result['OUTPUT'], 'Grid_output', 'ogr')
@@ -50,4 +55,5 @@ def create_grid():
 
                       
 create_grid()
+
 """

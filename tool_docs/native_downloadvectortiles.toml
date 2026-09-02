@@ -1,9 +1,13 @@
 tool_ID = "native:downloadvectortiles"
 tool_name = "downloadvectortiles"
-brief_description = """NEWin3.32
-Downloads vector tiles of an input vector tile layer and saves them in a local vector tile file."""
-full_description = """NEWin3.32
-Downloads vector tiles of an input vector tile layer and saves them in a local vector tile file."""
+brief_description = """
+NEWin3.32
+Downloads vector tiles of an input vector tile layer and saves them in a local vector tile file.
+"""
+full_description = """
+NEWin3.32
+Downloads vector tiles of an input vector tile layer and saves them in a local vector tile file.
+"""
 parameters = """
 INPUT: Input layer.
 A vector tile layer to extract some tiles from. Type: [vector tiles] 
@@ -13,6 +17,7 @@ TILE_LIMIT: Tile limit. Maximum number of tiles to download, considering the zoo
 OUTPUT: Output. Specification of the output vector tile file. One of: Save to a Temporary File Save to File…. Type: [vector tiles] Default: [Save to temporary file] outputs = 
 OUTPUT: Output. 
 A local vector tile file storing the downloaded tiles.. Type: [vector tiles]
+
 
 """
 code_example = """
@@ -27,10 +32,11 @@ def download_vector_tiles(output_path):
         'TILE_LIMIT': 100,  # type [number] default: 100
         'OUTPUT': output_path  # type [vector tiles] default: [Save to temporary file]
     }
-    result = processing.run("""native:downloadvectortiles", parameters)
+    result = processing.run(\"\"\"native:downloadvectortiles\", parameters)
     output_layer = QgsVectorLayer(result['OUTPUT'], 'Downloaded Vector Tiles', 'ogr')
     QgsProject.instance().addMapLayer(output_layer)
 
-output_path = "D:/workspace_directory/downloaded_vector_tiles.mbtiles"
+output_path = \"D:/workspace_directory/downloaded_vector_tiles.mbtiles\"
 download_vector_tiles(output_path)
+
 """

@@ -1,7 +1,11 @@
 tool_ID = "qgis:boxplot"
 tool_name = "boxplot"
-brief_description = """Creates a box plot from a category field and a numerical layer field."""
-full_description = """Creates a box plot from a category field and a numerical layer field."""
+brief_description = """
+Creates a box plot from a category field and a numerical layer field.
+"""
+full_description = """
+Creates a box plot from a category field and a numerical layer field.
+"""
 parameters = """
 INPUT: Input layer. Input vector layer. Type: [vector: any]
 NAME_FIELD: Category name field. Categorical field to use for grouping the boxes 
@@ -13,6 +17,7 @@ OUTPUT: Box plot. Specify the
 HTML file for the plot. One of: Save to a Temporary File Save to File…. Type: [html] Default: [Save to temporary file] outputs = 
 OUTPUT: Box plot. 
 HTML file with the plot.Available in the Processing ► Result Viewer .. Type: [html]
+
 
 """
 code_example = """
@@ -38,7 +43,5 @@ def generate_boxplot(input_layer_path, output_path):
     # The result is an HTML file, so no need to load it into QGIS map
     
 # Test the function
-input_layer_path = """D:/Data/YourInputLayer.shp"                                
-output_path = "D:/output_path/boxplot.html"                                 
-generate_boxplot(input_layer_path, output_path)
+
 """

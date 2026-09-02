@@ -1,13 +1,18 @@
 tool_ID = "native:setlayerstyle"
 tool_name = "setlayerstyle"
-brief_description = """Applies a provided style to a layer. The style must be defined in a QML file.
-No new output are created: the style is immediately assigned to the layer."""
-full_description = """Applies a provided style to a layer. The style must be defined in a QML file.
-No new output are created: the style is immediately assigned to the layer."""
+brief_description = """
+Applies a provided style to a layer. The style must be defined in a QML file.
+No new output are created: the style is immediately assigned to the layer.
+"""
+full_description = """
+Applies a provided style to a layer. The style must be defined in a QML file.
+No new output are created: the style is immediately assigned to the layer.
+"""
 parameters = """
 INPUT: Input Layer. Input layer you want to apply the style to. Type: [layer]
 STYLE: Style file. Path to the .qml file of the style. Type: [file] outputs = 
 OUTPUT: . The input layer with the new style assigned. No new layer is created.. Type: [same as input]
+
 
 """
 code_example = """
@@ -19,7 +24,7 @@ def apply_style_to_layer():
     style_path = 'D:/style_file.qml'
     output_path = 'C:/Users/Output/styled_layer.shp'
     
-    input_layer = QgsVectorLayer(input_path, """Input Layer", "ogr")
+    input_layer = QgsVectorLayer(input_path, \"\"\"Input Layer\", \"ogr\")
     
     parameters = {
         'INPUT': input_path,
@@ -27,10 +32,11 @@ def apply_style_to_layer():
         'OUTPUT': output_path
     }
     
-    result = processing.run("native:setlayerstyle", parameters)
+    result = processing.run(\"native:setlayerstyle\", parameters)
     
     styled_layer = QgsVectorLayer(output_path, 'Styled Layer', 'ogr')
     QgsProject.instance().addMapLayer(styled_layer)
 
 apply_style_to_layer()
+
 """

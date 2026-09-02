@@ -1,13 +1,17 @@
 tool_ID = "native:linesubstring"
 tool_name = "linesubstring"
-brief_description = """Returns the portion of a line (or curve) which falls between the specified start and end distances (measured from the beginning of the line).
+brief_description = """
+Returns the portion of a line (or curve) which falls between the specified start and end distances (measured from the beginning of the line).
 Z and M values are linearly interpolated from existing values.
 If a multipart geometry is encountered, only the first part is considered when calculating the substring.
-Allows features in-place modification of line features"""
-full_description = """Returns the portion of a line (or curve) which falls between the specified start and end distances (measured from the beginning of the line).
+Allows features in-place modification of line features
+"""
+full_description = """
+Returns the portion of a line (or curve) which falls between the specified start and end distances (measured from the beginning of the line).
 Z and M values are linearly interpolated from existing values.
 If a multipart geometry is encountered, only the first part is considered when calculating the substring.
-Allows features in-place modification of line features"""
+Allows features in-place modification of line features
+"""
 parameters = """
 INPUT: Input layer. Input line vector layer. Type: [vector: line]
 START_DISTANCE: Start distance. Distance along the input line to the start point ofthe output feature. Type: [number ] 
@@ -15,6 +19,7 @@ END_DISTANCE: End distance. Distance along the input line to the end point ofthe
 OUTPUT: Substring. Specify the output line vector layer. One of: Create Temporary Layer ( 
 TEMPORARY_OUTPUT ) Save to File… Save to Geopackage… Save to Database Table… Append to Layer… The file encoding can also be changed here.. Type: [vector: line] Default: [Create temporary layer] outputs = 
 OUTPUT: Substring. The output line vector layer.. Type: [vector: line]
+
 
 """
 code_example = """
@@ -36,7 +41,7 @@ def create_line_substrings():
         'END_DISTANCE': 50.0,
         'OUTPUT': output_path  # options: [Create temporary layer, Save to File..., Save to Geopackage..., Save to Database Table..., Append to Layer...]
     }
-    result = processing.run("""native:linesubstring", parameters)
+    result = processing.run(\"\"\"native:linesubstring\", parameters)
 
                                    
     substring_layer = QgsVectorLayer(result['OUTPUT'], 'Line Substring', 'ogr')
@@ -44,4 +49,5 @@ def create_line_substrings():
 
                       
 create_line_substrings()
+
 """

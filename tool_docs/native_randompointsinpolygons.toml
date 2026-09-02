@@ -1,21 +1,25 @@
 tool_ID = "native:randompointsinpolygons"
 tool_name = "randompointsinpolygons"
-brief_description = """Creates a point layer with points placed inside the polygons of another layer.
+brief_description = """
+Creates a point layer with points placed inside the polygons of another layer.
 For each feature (polygon / multi-polygon) geometry in the input layer, the given number of points is added to the result layer.
 Per feature and global minimum distances can be specified in order to avoid points being too close in the output point layer. If a minimum distance is specified, it may not be possible to generate the specified number of points for each feature. The total number of generated points and missed points are available as output from the algorithm.
 The illustration below shows the effect of per feature and global minimum distances and zero/non-zero minimum distances (generated with the same seed, so at least the first point generated will be the same).
 The maximum number of tries per point can be specified. This is only relevant for non-zero minimum distance.
 A seed for the random number generator can be provided, making it possible to get identical random number sequences for different runs of the algorithm.
 The attributes of the polygon feature on which a point was generated can be included (Include polygon attributes).
-If you want approximately the same point density for all the features, you can data-define the number of points using the area of the polygon feature geometry."""
-full_description = """Creates a point layer with points placed inside the polygons of another layer.
+If you want approximately the same point density for all the features, you can data-define the number of points using the area of the polygon feature geometry.
+"""
+full_description = """
+Creates a point layer with points placed inside the polygons of another layer.
 For each feature (polygon / multi-polygon) geometry in the input layer, the given number of points is added to the result layer.
 Per feature and global minimum distances can be specified in order to avoid points being too close in the output point layer. If a minimum distance is specified, it may not be possible to generate the specified number of points for each feature. The total number of generated points and missed points are available as output from the algorithm.
 The illustration below shows the effect of per feature and global minimum distances and zero/non-zero minimum distances (generated with the same seed, so at least the first point generated will be the same).
 The maximum number of tries per point can be specified. This is only relevant for non-zero minimum distance.
 A seed for the random number generator can be provided, making it possible to get identical random number sequences for different runs of the algorithm.
 The attributes of the polygon feature on which a point was generated can be included (Include polygon attributes).
-If you want approximately the same point density for all the features, you can data-define the number of points using the area of the polygon feature geometry."""
+If you want approximately the same point density for all the features, you can data-define the number of points using the area of the polygon feature geometry.
+"""
 parameters = """
 INPUT: Input polygon layer. Input polygon vector layer. Type: [vector: line]
 POINTS_NUMBER: Number of points for each feature. Number of points to create. Type: [number ] Default: 1 
@@ -32,15 +36,16 @@ OUTPUT_POINTS: Total number of points generated. . Type: [number]
 POINTS_MISSED: Number of missed points. The number of points that could not be generated due tothe minimum distance constraint.. Type: [number] 
 POLYGONS_WITH_MISSED_POINTS: Number of features with missed points. Not including features with empty or no geometry. Type: [number]
 
+
 """
 code_example = """
 import processing
 from qgis.core import QgsVectorLayer, QgsProject
 
 def generate_random_points():
-    input_path = """D:/path_to_polygon_input.shp"
-    output_path = "D:/output_random_points.shp"
-    input_layer = QgsVectorLayer(input_path, "Polygon Input Layer", "ogr")
+    input_path = \"\"\"D:/path_to_polygon_input.shp\"
+    output_path = \"D:/output_random_points.shp\"
+    input_layer = QgsVectorLayer(input_path, \"Polygon Input Layer\", \"ogr\")
     
     parameters = {
         'INPUT': input_path,                              
@@ -53,9 +58,10 @@ def generate_random_points():
         'INCLUDE_POLYGON_ATTRIBUTES': True                   
     }
 
-    result = processing.run("native:randompointsinpolygons", parameters)
+    result = processing.run(\"native:randompointsinpolygons\", parameters)
     output_layer = QgsVectorLayer(result['OUTPUT'], 'Random Points Output', 'ogr')
     QgsProject.instance().addMapLayer(output_layer)
 
 generate_random_points()
+
 """

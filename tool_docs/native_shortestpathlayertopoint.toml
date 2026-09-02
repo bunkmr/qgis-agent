@@ -1,7 +1,11 @@
 tool_ID = "native:shortestpathlayertopoint"
 tool_name = "shortestpathlayertopoint"
-brief_description = """Computes the optimal (shortest or fastest) routes from multiple start points defined by a vector layer and a given end point."""
-full_description = """Computes the optimal (shortest or fastest) routes from multiple start points defined by a vector layer and a given end point."""
+brief_description = """
+Computes the optimal (shortest or fastest) routes from multiple start points defined by a vector layer and a given end point.
+"""
+full_description = """
+Computes the optimal (shortest or fastest) routes from multiple start points defined by a vector layer and a given end point.
+"""
 parameters = """
 INPUT: Vector layer representing network. Line vector layer representing the network to be covered. Type: [vector: line]
 STRATEGY: Path type to calculate. The type of path to calculate. One of: 0 — Shortest 1 — Fastest. Type: [enumeration] Default: 0 
@@ -19,6 +23,7 @@ DEFAULT_SPEED: Default speed (km/h). Value to use to calculate the travel time i
 TOLERANCE: Topology tolerance. Two lines with nodes closer than the specifiedtolerance are considered connected. Type: [number] Default: 0.0 outputs = 
 OUTPUT: Shortest path. Line layer of the shortest or fastest pathfrom each of the start points to the end point. Type: [vector: line]
 
+
 """
 code_example = """
 import processing
@@ -30,8 +35,8 @@ def shortest_path_algorithm():
     output_path = 'D:/output_shortest_path.shp'
     end_point = (34.0522, -118.2437)
 
-    network_layer = QgsVectorLayer(network_layer_path, """Network Layer", "ogr")
-    start_points_layer = QgsVectorLayer(start_points_path, "Start Points", "ogr")
+    network_layer = QgsVectorLayer(network_layer_path, \"\"\"Network Layer\", \"ogr\")
+    start_points_layer = QgsVectorLayer(start_points_path, \"Start Points\", \"ogr\")
 
     parameters = {
         'INPUT': network_layer_path,
@@ -49,9 +54,10 @@ def shortest_path_algorithm():
         'TOLERANCE': 0.0
     }
 
-    result = processing.run("native:shortestpathlayertopoint", parameters)
+    result = processing.run(\"native:shortestpathlayertopoint\", parameters)
     output_layer = QgsVectorLayer(result['OUTPUT'], 'Shortest_Path_Output', 'ogr')
     QgsProject.instance().addMapLayer(output_layer)
 
 shortest_path_algorithm()
+
 """

@@ -1,9 +1,13 @@
 tool_ID = "native:stylefromproject"
 tool_name = "stylefromproject"
-brief_description = """Extracts all style objects (symbols, color ramps, text formats and label settings) from a QGIS project.
-The extracted symbols are saved to a QGIS style database ( XML format), which can be managed and imported via the Style Manager dialog."""
-full_description = """Extracts all style objects (symbols, color ramps, text formats and label settings) from a QGIS project.
-The extracted symbols are saved to a QGIS style database ( XML format), which can be managed and imported via the Style Manager dialog."""
+brief_description = """
+Extracts all style objects (symbols, color ramps, text formats and label settings) from a QGIS project.
+The extracted symbols are saved to a QGIS style database ( XML format), which can be managed and imported via the Style Manager dialog.
+"""
+full_description = """
+Extracts all style objects (symbols, color ramps, text formats and label settings) from a QGIS project.
+The extracted symbols are saved to a QGIS style database ( XML format), which can be managed and imported via the Style Manager dialog.
+"""
 parameters = """
 INPUT: Input project (leave blank to use current) Optional.
 A 
@@ -18,6 +22,7 @@ OUTPUT: Output style database. Output
 SYMBOLS: Symbol count. Number of symbols. Type: [number] 
 TEXTFORMATS: Text format count. Number of text formats. Type: [number]
 
+
 """
 code_example = """
 import processing
@@ -25,7 +30,7 @@ from qgis.core import QgsProject
 
 def extract_style_from_project():
     # Define the output path for the style database
-    output_path = """C:/Users/Output/style_database.xml"
+    output_path = \"\"\"C:/Users/Output/style_database.xml\"
     
                                                     
     parameters = {
@@ -35,8 +40,9 @@ def extract_style_from_project():
     }
     
                                         
-    result = processing.run("native:stylefromproject", parameters)
+    result = processing.run(\"native:stylefromproject\", parameters)
 
                       
 extract_style_from_project()
+
 """

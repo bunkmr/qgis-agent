@@ -152,6 +152,45 @@ class APIDocRetriever:
 
         return all_results[:5]
 
+    # ── tool_docs（Processing 算法参考目录）──
+
+    def search_tool_docs(self, query: str, top_k: int = 3) -> list[dict]:
+        """检索 tool_docs 中的 Processing 算法参考。"""
+        return self.store.search_tool_docs(query, top_k)
+
+    def format_tool_docs_context(self, results: list[dict], max_chars: int = 2500) -> str:
+        """将 tool_docs 检索结果格式化为 LLM 可读的上下文文本。
+
+        Args:
+            results: search_tool_docs() 返回的结果列表
+            max_chars: 最大字符数
+
+        Returns:
+            格式化的 Processing 算法参考片段
+        """
+        if not results:
+            return ""
+        lines = ["## QGIS Processing 算法参考（tool_docs）\n"]
+        char_count = 0
+        for i, r in enumerate(results, 1):
+            tid = r.get("tool_id", "")
+            tname = r.get("tool_name", "")
+            desc = r.get("brief_description", "") or r.get("full_description", "")
+            params = r.get("parameters", "")
+            example = r.get("code_example", "")
+            entry = f"### {i}. `{tid}` ({tname})\n"
+            if desc:
+                entry += f"{desc}\n"
+            if params:
+                entry += f"\n参数:\n{params}\n"
+            if example:
+                entry += f"\n```python\n{example}\n```\n"
+            if char_count + len(entry) > max_chars:
+                break
+            lines.append(entry)
+            char_count += len(entry)
+        return "\n".join(lines)
+
     def search_from_user_intent(self, user_input: str, top_k: int = 5) -> list[dict]:
         """从用户原始输入中提取意图并检索相关 API。
 

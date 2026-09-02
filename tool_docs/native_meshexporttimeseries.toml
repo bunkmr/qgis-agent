@@ -1,9 +1,13 @@
 tool_ID = "native:meshexporttimeseries"
 tool_name = "meshexporttimeseries"
-brief_description = """Extracts a mesh dataset’s time series values from points contained in a vector layer.
-If the time step is kept to its default value (0 hours), the time step used is the one of the two first datasets of the first selected dataset group."""
-full_description = """Extracts a mesh dataset’s time series values from points contained in a vector layer.
-If the time step is kept to its default value (0 hours), the time step used is the one of the two first datasets of the first selected dataset group."""
+brief_description = """
+Extracts a mesh dataset’s time series values from points contained in a vector layer.
+If the time step is kept to its default value (0 hours), the time step used is the one of the two first datasets of the first selected dataset group.
+"""
+full_description = """
+Extracts a mesh dataset’s time series values from points contained in a vector layer.
+If the time step is kept to its default value (0 hours), the time step used is the one of the two first datasets of the first selected dataset group.
+"""
 parameters = """
 INPUT: Input mesh layer. The mesh layer to extract data from. Type: [mesh]
 DATASET_GROUPS: Dataset groups. The dataset groups. Type: [layer] [list] 
@@ -19,6 +23,7 @@ OUTPUT: Exported data
 CSV file. 
 .CSV file containing the mesh dataset time series valuesat the overlaying point features. Type: [file]
 
+
 """
 code_example = """
 import processing
@@ -26,13 +31,13 @@ from qgis.core import QgsMeshLayer, QgsVectorLayer, QgsProject
 
 def export_mesh_timeseries():
     # Define input layer paths 
-    mesh_layer_path = """D:/Data/ExampleMesh.qgsmesh"
-    points_layer_path = "D:/Data/PointsLayer.shp"
-    output_path = "D:/workspace_directory/output.csv"
+    mesh_layer_path = \"\"\"D:/Data/ExampleMesh.qgsmesh\"
+    points_layer_path = \"D:/Data/PointsLayer.shp\"
+    output_path = \"D:/workspace_directory/output.csv\"
     
                                     
-    mesh_layer = QgsMeshLayer(mesh_layer_path, "Input Mesh Layer", "mdal")
-    points_layer = QgsVectorLayer(points_layer_path, "Input Points", "ogr")
+    mesh_layer = QgsMeshLayer(mesh_layer_path, \"Input Mesh Layer\", \"mdal\")
+    points_layer = QgsVectorLayer(points_layer_path, \"Input Points\", \"ogr\")
     
                                                     
     parameters = {
@@ -48,9 +53,10 @@ def export_mesh_timeseries():
     }
     
                                             
-    result = processing.run("native:meshexporttimeseries", parameters)
+    result = processing.run(\"native:meshexporttimeseries\", parameters)
     
-    print("Export complete:", result)
+    print(\"Export complete:\", result)
     
 export_mesh_timeseries()
+
 """

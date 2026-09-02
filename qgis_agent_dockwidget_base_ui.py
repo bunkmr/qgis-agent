@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtWidgets
+from qgis.PyQt import QtCore, QtWidgets
 
 
 class Ui_QGISAgentDockWidget(object):
@@ -80,7 +80,7 @@ class Ui_QGISAgentDockWidget(object):
 
         self.lblTemperature = QtWidgets.QLabel("温度:")
         self.lblTemperature.setStyleSheet("font-size: 12px; color: #888;")
-        self.sliderTemperature = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.sliderTemperature = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
         self.sliderTemperature.setRange(0, 100)
         self.sliderTemperature.setValue(0)
         self.sliderTemperature.setFixedWidth(80)
@@ -172,12 +172,12 @@ class Ui_QGISAgentDockWidget(object):
         self.settingsTable.setColumnCount(4)
         self.settingsTable.setHorizontalHeaderLabels(["模型名称", "API 端点", "API Key", ""])
         self.settingsTable.horizontalHeader().setStretchLastSection(False)
-        self.settingsTable.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
-        self.settingsTable.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
-        self.settingsTable.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
+        self.settingsTable.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        self.settingsTable.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        self.settingsTable.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Stretch)
         self.settingsTable.setColumnWidth(3, 60)
         self.settingsTable.verticalHeader().setVisible(False)
-        self.settingsTable.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.settingsTable.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
 
         # 添加模型按钮
         self.btnAddModel = QtWidgets.QPushButton("+ 添加模型")
@@ -214,7 +214,7 @@ class Ui_QGISAgentDockWidget(object):
 
         # 工作流可视化区域（使用QWebView，参考SpatialAnalysisAgent）
         try:
-            from PyQt5.QtWebKitWidgets import QWebView
+            from qgis.PyQt.QtWebKitWidgets import QWebView
             self.workflowWebView = QWebView()
             self.workflowWebView.setHtml("<html><body><h3>等待任务执行...</h3><p>执行任务后，工作流将在此可视化展示。</p></body></html>")
         except ImportError:

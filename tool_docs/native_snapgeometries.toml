@@ -1,11 +1,15 @@
 tool_ID = "native:snapgeometries"
 tool_name = "snapgeometries"
-brief_description = """Snaps the geometries in a layer either to the geometries from another layer, or to geometries within the same layer.
+brief_description = """
+Snaps the geometries in a layer either to the geometries from another layer, or to geometries within the same layer.
 Matching is done based on a tolerance distance, and vertices will be inserted or removed as required to make the geometries match the reference geometries.
-Allows features in-place modification of point, line, and polygon features"""
-full_description = """Snaps the geometries in a layer either to the geometries from another layer, or to geometries within the same layer.
+Allows features in-place modification of point, line, and polygon features
+"""
+full_description = """
+Snaps the geometries in a layer either to the geometries from another layer, or to geometries within the same layer.
 Matching is done based on a tolerance distance, and vertices will be inserted or removed as required to make the geometries match the reference geometries.
-Allows features in-place modification of point, line, and polygon features"""
+Allows features in-place modification of point, line, and polygon features
+"""
 parameters = """
 INPUT: Input layer. Input vector layer. Type: [vector: any]
 REFERENCE_LAYER: Reference layer. Vector layer to snap to. Type: [vector: any] 
@@ -15,6 +19,7 @@ OUTPUT: Snapped geometry. Specify the output (snapped) layer.One of: Create Temp
 TEMPORARY_OUTPUT ) Save to File… Save to Geopackage… Save to Database Table… The file encoding can also be changed here.. Type: [same as input] Default: [Create temporary layer] outputs = 
 OUTPUT: Snapped geometry. Output (snapped) vector layer. Type: [same as input]
 
+
 """
 code_example = """
 from qgis.core import QgsVectorLayer, QgsProject
@@ -22,13 +27,13 @@ import processing
 
 def snap_geometries():
     # Define input, reference layer paths and output path
-    input_path = """D:/Data/InputLayer.shp"
-    reference_layer_path = "D:/Data/ReferenceLayer.shp"
-    output_path = "D:/workspace_directory/snapped_layer.shp"
+    input_path = \"\"\"D:/Data/InputLayer.shp\"
+    reference_layer_path = \"D:/Data/ReferenceLayer.shp\"
+    output_path = \"D:/workspace_directory/snapped_layer.shp\"
 
                                                               
-    input_layer = QgsVectorLayer(input_path, "Input Layer", "ogr")
-    reference_layer = QgsVectorLayer(reference_layer_path, "Reference Layer", "ogr")
+    input_layer = QgsVectorLayer(input_path, \"Input Layer\", \"ogr\")
+    reference_layer = QgsVectorLayer(reference_layer_path, \"Reference Layer\", \"ogr\")
 
                            
     parameters = {
@@ -40,7 +45,7 @@ def snap_geometries():
     }
 
                                        
-    result = processing.run("native:snapgeometries", parameters)
+    result = processing.run(\"native:snapgeometries\", parameters)
 
                                     
     snapped_layer = QgsVectorLayer(result['OUTPUT'], 'Snapped Layer', 'ogr')
@@ -48,4 +53,5 @@ def snap_geometries():
 
                       
 snap_geometries()
+
 """

@@ -1,11 +1,15 @@
 tool_ID = "gdal:gdalinfo"
 tool_name = "gdalinfo"
-brief_description = """The gdalinfo program lists various information about a GDAL supported raster dataset.
+brief_description = """
+The gdalinfo program lists various information about a GDAL supported raster dataset.
 This algorithm is derived from the GDAL info utility .
-Default menu: Raster ► Miscellaneous"""
-full_description = """The gdalinfo program lists various information about a GDAL supported raster dataset.
+Default menu: Raster ► Miscellaneous
+"""
+full_description = """
+The gdalinfo program lists various information about a GDAL supported raster dataset.
 This algorithm is derived from the GDAL info utility .
-Default menu: Raster ► Miscellaneous"""
+Default menu: Raster ► Miscellaneous
+"""
 parameters = """
 INPUT: Input layer. Input raster layer. Type: [raster]
 MIN_MAX: Force computation of the actual min/max values for each band. Forces computation of the actual min/max values for each band inthe dataset. Type: [boolean] Default: False 
@@ -22,6 +26,7 @@ EXTRA: Additional command-line parameters Optional. Add extra GDAL command line 
 OUTPUT: Layer information. The 
 HTML file containing information about the input rasterlayer. Type: [html]
 
+
 """
 code_example = """
 import processing
@@ -29,7 +34,7 @@ from qgis.core import QgsRasterLayer, QgsProject
 
 def gdal_info(input_raster_path, output_path):
     # Load the input raster layer
-    input_layer = QgsRasterLayer(input_raster_path, """Input Raster")
+    input_layer = QgsRasterLayer(input_raster_path, \"\"\"Input Raster\")
     
                                       
     parameters = {
@@ -43,14 +48,15 @@ def gdal_info(input_raster_path, output_path):
     }
     
                             
-    result = processing.run("gdal:gdalinfo", parameters)
+    result = processing.run(\"gdal:gdalinfo\", parameters)
     
                                            
                                                                        
                                                      
 
                
-input_raster_path = "D:/workspace/input_raster.tif"
-output_html_path = "D:/workspace/output_info.html"
+input_raster_path = \"D:/workspace/input_raster.tif\"
+output_html_path = \"D:/workspace/output_info.html\"
 gdal_info(input_raster_path, output_html_path)
+
 """

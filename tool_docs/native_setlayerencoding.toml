@@ -1,12 +1,17 @@
 tool_ID = "native:setlayerencoding"
 tool_name = "setlayerencoding"
-brief_description = """Sets the encoding used for reading a layer’s attributes. No permanent changes are made to the layer, rather it affects only how the layer is read during the current session."""
-full_description = """Sets the encoding used for reading a layer’s attributes. No permanent changes are made to the layer, rather it affects only how the layer is read during the current session."""
+brief_description = """
+Sets the encoding used for reading a layer’s attributes. No permanent changes are made to the layer, rather it affects only how the layer is read during the current session.
+"""
+full_description = """
+Sets the encoding used for reading a layer’s attributes. No permanent changes are made to the layer, rather it affects only how the layer is read during the current session.
+"""
 parameters = """
 INPUT: Saved features. Vector layer to set the encoding.. Type: [vector: any]
 ENCODING: Encoding. Text encoding to assign to the layer in the current 
 QGIS session.. Type: [string] outputs = 
 OUTPUT: Output layer. Input vector layer with the set encoding.. Type: [same as input]
+
 
 """
 code_example = """
@@ -27,8 +32,9 @@ def set_layer_encoding():
     }
 
     # Perform the set layer encoding operation
-    result = processing.run("""native:setlayerencoding", parameters)
+    result = processing.run(\"\"\"native:setlayerencoding\", parameters)
 
                       
 set_layer_encoding()
+
 """

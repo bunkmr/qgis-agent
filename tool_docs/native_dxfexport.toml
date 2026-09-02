@@ -1,7 +1,11 @@
 tool_ID = "native:dxfexport"
 tool_name = "dxfexport"
-brief_description = """Exports layers to DXF file. For each layer, you can choose a field whose values are used to split features in generated destination layers in DXF output."""
-full_description = """Exports layers to DXF file. For each layer, you can choose a field whose values are used to split features in generated destination layers in DXF output."""
+brief_description = """
+Exports layers to DXF file. For each layer, you can choose a field whose values are used to split features in generated destination layers in DXF output.
+"""
+full_description = """
+Exports layers to DXF file. For each layer, you can choose a field whose values are used to split features in generated destination layers in DXF output.
+"""
 parameters = """
 LAYERS: Input layers. Input vector layers to export. Type: [vector: any] [list]
 SYMBOLOGY_MODE: Symbology mode. Type of symbology to apply to output layers. You can choose between: 0 — No Symbology 1 — Feature Symbology 2 — Symbol Layer Symbology. Type: [enumeration] Default: 0 
@@ -25,6 +29,7 @@ OUTPUT:
 DXF. 
 .DXF file containing the input layers. Type: [file]
 
+
 """
 code_example = """
 import processing
@@ -45,7 +50,7 @@ def export_to_dxf(output_path):
         'OUTPUT': output_path  # Specification of the output DXF file
     }
     
-    result = processing.run("""native:dxfexport", parameters)
+    result = processing.run(\"\"\"native:dxfexport\", parameters)
     
                                                                        
     dxf_layer = QgsVectorLayer(result['OUTPUT'], 'Exported_DXF', 'ogr')
@@ -53,4 +58,5 @@ def export_to_dxf(output_path):
 
 output_path = 'C:/output_path/output_file.dxf'                           
 export_to_dxf(output_path)
+
 """

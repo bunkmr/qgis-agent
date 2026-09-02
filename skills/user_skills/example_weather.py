@@ -13,6 +13,18 @@ import urllib.request
 import urllib.parse
 from skills.skill_manager import Skill, SkillResult
 
+# 允许的 URL scheme（防止 file:// 等危险协议）
+_ALLOWED_SCHEMES = {"http", "https"}
+
+
+def _safe_urlopen(url, timeout=10):
+    """安全的 URL 打开，只允许 http/https 协议"""
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    if parsed.scheme.lower() not in _ALLOWED_SCHEMES:
+        raise ValueError(f"URL scheme not allowed: {parsed.scheme!r} (only http/https)")
+    return urllib.request.urlopen(url, timeout=timeout)  # nosec B310 - scheme validated above
+
 
 def handler(city: str = "Beijing", units: str = "metric") -> SkillResult:
     """
@@ -31,7 +43,7 @@ def handler(city: str = "Beijing", units: str = "metric") -> SkillResult:
         geocoding_url = f"https://geocoding-api.open-meteo.com/v1/search?name={urllib.parse.quote(city)}&count=1"
 
         req = urllib.request.Request(geocoding_url)
-        with urllib.request.urlopen(req, timeout=10) as response:
+        with _safe_urlopen(req, timeout=10) as response:
             geo_data = json.loads(response.read().decode("utf-8"))
 
         if not geo_data.get("results"):
@@ -52,7 +64,7 @@ def handler(city: str = "Beijing", units: str = "metric") -> SkillResult:
         )
 
         req = urllib.request.Request(weather_url)
-        with urllib.request.urlopen(req, timeout=10) as response:
+        with _safe_urlopen(req, timeout=10) as response:
             weather_data = json.loads(response.read().decode("utf-8"))
 
         current = weather_data.get("current", {})

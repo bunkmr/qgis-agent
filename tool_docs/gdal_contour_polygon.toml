@@ -1,9 +1,13 @@
 tool_ID = "gdal:contour_polygon"
 tool_name = "contour_polygon"
-brief_description = """Extracts contour polygons from any GDAL-supported elevation raster.
-This algorithm is derived from the GDAL contour utility ."""
-full_description = """Extracts contour polygons from any GDAL-supported elevation raster.
-This algorithm is derived from the GDAL contour utility ."""
+brief_description = """
+Extracts contour polygons from any GDAL-supported elevation raster.
+This algorithm is derived from the GDAL contour utility .
+"""
+full_description = """
+Extracts contour polygons from any GDAL-supported elevation raster.
+This algorithm is derived from the GDAL contour utility .
+"""
 parameters = """
 INPUT: Input layer. Input raster. Type: [raster]
 BAND: Band number. Raster band to create the contours from. Type: [raster band] Default: 1 
@@ -22,6 +26,7 @@ NODATA: Input pixel value to treat as “NoData” Optional. Defines a value tha
 EXTRA: Additional command-line parameters Optional. Add extra GDAL command line options.Refer to the corresponding GDAL utility documentation.. Type: [string] Default: None outputs = 
 OUTPUT: Contours. Output vector layer with contour polygons. Type: [vector: polygon]
 
+
 """
 code_example = """
 import processing
@@ -30,8 +35,8 @@ from qgis.core import QgsRasterLayer, QgsVectorLayer, QgsProject
 def generate_contour_polygons():
     input_raster_path = 'D:/input_raster.tif'
     output_dir = 'C:/Users/Output'
-    output_file_name = """contour_polygons.shp"
-    output_path = f"{output_dir}/{output_file_name}"
+    output_file_name = \"\"\"contour_polygons.shp\"
+    output_path = f\"{output_dir}/{output_file_name}\"
 
     parameters = {
         'INPUT': input_raster_path,
@@ -47,10 +52,11 @@ def generate_contour_polygons():
         'EXTRA': None 
     }
 
-    result = processing.run("gdal:contour_polygon", parameters)
+    result = processing.run(\"gdal:contour_polygon\", parameters)
 
     contour_layer = QgsVectorLayer(result['OUTPUT'], 'Contour Polygons', 'ogr')
     QgsProject.instance().addMapLayer(contour_layer)
 
 generate_contour_polygons()
+
 """

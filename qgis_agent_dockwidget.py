@@ -54,7 +54,7 @@ class QGISAgentDockWidget(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         self.scrollAreaLayout = QVBoxLayout()
         self.scrollAreaWidget = QWidget()
         self.saConversationCard.setWidget(self.scrollAreaWidget)
-        self.scrollAreaWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.scrollAreaWidget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         meta_table = dataloader.select_conversation_info()
         meta_table.sort(key=lambda info: datetime.strptime(info['modified'], "%m %d %Y %H:%M:%S"))
@@ -87,10 +87,10 @@ class QGISAgentDockWidget(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
 
         metadata = f"创建: {created} | 模型: {llm_id} | 消息: {msg_count}"
         meta_label = QLabel(metadata)
-        meta_label.setAlignment(Qt.AlignRight)
+        meta_label.setAlignment(Qt.AlignmentFlag.AlignRight)
 
         btn_layout = QHBoxLayout()
-        spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        spacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         btn_edit = QPushButton("编辑")
         btn_edit.setStyleSheet("QPushButton { background-color: #9DDE8B; }")
@@ -134,7 +134,7 @@ class QGISAgentDockWidget(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
     def updateConversation(self, conversation):
         current_html = ""
         interaction_history = conversation.fetch()
-        font_color = set_font_color(self.txHistory.palette().color(QPalette.Base))
+        font_color = set_font_color(self.txHistory.palette().color(QPalette.ColorRole.Base))
 
         for interaction in interaction_history:
             msg_dict = pack(interaction, "interaction")
@@ -168,7 +168,7 @@ class QGISAgentDockWidget(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
 
     def showThinking(self, partial_text, response_time=""):
         """实时显示模型思考/生成中的内容"""
-        font_color = set_font_color(self.txHistory.palette().color(QPalette.Base))
+        font_color = set_font_color(self.txHistory.palette().color(QPalette.ColorRole.Base))
         # 构建当前完整 HTML（保留历史 + 追加流式内容）
         current_html = self.txHistory.toHtml() if hasattr(self.txHistory, 'toHtml') else ""
 
@@ -248,11 +248,11 @@ class QGISAgentDockWidget(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
             te.setDisabled(False)
 
     def eventFilter(self, obj, event):
-        if event.type() == QEvent.KeyPress:
-            if obj is self.ptMessage and event.key() == Qt.Key_Return:
+        if event.type() == QEvent.Type.KeyPress:
+            if obj is self.ptMessage and event.key() == Qt.Key.Key_Return:
                 self.enterPressed.emit(self.ptMessage.toPlainText())
                 return True
-            if obj is self.ptSearchConversationCard and event.key() == Qt.Key_Return:
+            if obj is self.ptSearchConversationCard and event.key() == Qt.Key.Key_Return:
                 self.searchPressed.emit(self.ptSearchConversationCard.toPlainText())
                 return True
         return super().eventFilter(obj, event)

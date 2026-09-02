@@ -1,11 +1,15 @@
 tool_ID = "gdal:rasterize"
 tool_name = "rasterize"
-brief_description = """Converts vector geometries (points, lines and polygons) into a raster image.
+brief_description = """
+Converts vector geometries (points, lines and polygons) into a raster image.
 This algorithm is derived from the GDAL rasterize utility .
-Default menu: Raster ► Conversion"""
-full_description = """Converts vector geometries (points, lines and polygons) into a raster image.
+Default menu: Raster ► Conversion
+"""
+full_description = """
+Converts vector geometries (points, lines and polygons) into a raster image.
 This algorithm is derived from the GDAL rasterize utility .
-Default menu: Raster ► Conversion"""
+Default menu: Raster ► Conversion
+"""
 parameters = """
 INPUT: Input layer. Input vector layer. Type: [vector: any]
 FIELD: Field to use for a burn-in value Optional. Defines the attribute field from which the attributes forthe pixels should be chosen. Type: [tablefield: numeric] 
@@ -30,6 +34,7 @@ INVERT: Invert rasterization. Burns the fixed burn value, or the burn value asso
 EXTRA: Additional command-line parameters Optional. Add extra GDAL command line options. Type: [string] Default: ‘’ outputs = 
 OUTPUT: Rasterized. Output raster layer. Type: [raster]
 
+
 """
 code_example = """
 import processing
@@ -41,7 +46,7 @@ def rasterize_layer():
     output_path = 'C:/Users/Output/rasterized_output.tif'
 
     # Load the input vector layer
-    input_layer = QgsVectorLayer(input_path, """Input Layer", "ogr")
+    input_layer = QgsVectorLayer(input_path, \"\"\"Input Layer\", \"ogr\")
 
                            
     parameters = {
@@ -62,7 +67,8 @@ def rasterize_layer():
         'EXTRA': '''    }
 
                                  
-    result = processing.run("gdal:rasterize", parameters)
+    result = processing.run(\"gdal:rasterize\", parameters)
 
 rasterize_layer()
+
 """

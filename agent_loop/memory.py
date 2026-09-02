@@ -7,7 +7,6 @@
 """
 
 import os
-from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Optional
 from datetime import datetime
@@ -52,11 +51,15 @@ class ShortTermMemory:
             if not history_rows:
                 return []
 
+            # select_interaction 返回元组，需按 interaction 列序转为字典
+            from ..utils import pack
+            history_rows = [pack(r, "interaction") for r in history_rows]
+
             # 取最近 N 条
             recent_rows = history_rows[-self.max_messages:]
             messages = []
 
-            for row in history_rows:
+            for row in recent_rows:
                 if row.get("typeMessage") == "input":
                     messages.append({
                         "role": "user",

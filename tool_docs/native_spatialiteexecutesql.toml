@@ -1,7 +1,11 @@
 tool_ID = "native:spatialiteexecutesql"
 tool_name = "spatialiteexecutesql"
-brief_description = """Allows a SQL database query to be performed on a SpatiaLite database. The algorithm won’t create a new layer: it is designed to run queries on the layer itself."""
-full_description = """Allows a SQL database query to be performed on a SpatiaLite database. The algorithm won’t create a new layer: it is designed to run queries on the layer itself."""
+brief_description = """
+Allows a SQL database query to be performed on a SpatiaLite database. The algorithm won’t create a new layer: it is designed to run queries on the layer itself.
+"""
+full_description = """
+Allows a SQL database query to be performed on a SpatiaLite database. The algorithm won’t create a new layer: it is designed to run queries on the layer itself.
+"""
 parameters = """
 DATABASE: File Database. The SQLite/SpatiaLite database file to connect to. Type: [vector]
 SQL: 
@@ -9,6 +13,7 @@ SQL query. Defines the
 SQL query, for example 
 UPDATE my_table 
 SET field=10 .. Type: [string] Default: ‘’ outputs =
+
 
 """
 code_example = """
@@ -18,7 +23,7 @@ from qgis.core import QgsProject, QgsVectorLayer
 def execute_sql_on_spatialite():
     # Define the database and SQL query
     database_path = 'D:/path_to_your_database.sqlite'
-    sql_query = """UPDATE my_table SET field=10"
+    sql_query = \"\"\"UPDATE my_table SET field=10\"
 
                                                             
     parameters = {
@@ -29,7 +34,7 @@ def execute_sql_on_spatialite():
     }
 
                                         
-    result = processing.run("native:spatialiteexecutesql", parameters)
+    result = processing.run(\"native:spatialiteexecutesql\", parameters)
     
                                          
     if result['OUTPUT']:
@@ -38,4 +43,5 @@ def execute_sql_on_spatialite():
 
                       
 execute_sql_on_spatialite()
+
 """

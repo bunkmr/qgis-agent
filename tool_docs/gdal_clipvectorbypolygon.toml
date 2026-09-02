@@ -1,9 +1,13 @@
 tool_ID = "gdal:clipvectorbypolygon"
 tool_name = "clipvectorbypolygon"
-brief_description = """Clips any OGR-supported vector layer by a mask polygon layer.
-This algorithm is derived from the GDAL ogr2ogr utility ."""
-full_description = """Clips any OGR-supported vector layer by a mask polygon layer.
-This algorithm is derived from the GDAL ogr2ogr utility ."""
+brief_description = """
+Clips any OGR-supported vector layer by a mask polygon layer.
+This algorithm is derived from the GDAL ogr2ogr utility .
+"""
+full_description = """
+Clips any OGR-supported vector layer by a mask polygon layer.
+This algorithm is derived from the GDAL ogr2ogr utility .
+"""
 parameters = """
 INPUT: Input layer. The input vector layer. Type: [vector: any]
 MASK: Mask layer. Layer to be used as clipping extent for the input vector layer.. Type: [vector: polygon] 
@@ -11,6 +15,7 @@ OUTPUT: Clipped (mask). The output (masked) layer. One of: Save to a Temporary F
 OPTIONS: Additional creation options Optional. Additional GDAL creation options.. Type: [string] Default: ‘’ (no additional options) outputs = 
 OUTPUT: Clipped (mask). The output (masked) layer.The default format is 
 “ESRI Shapefile”.. Type: [same as input]
+
 
 """
 code_example = """
@@ -24,8 +29,8 @@ def clip_vector_by_polygon():
     output_path = 'D:/output_clipped.shp'
     
     # Load the input and mask layers
-    input_layer = QgsVectorLayer(input_layer_path, """Input Layer", "ogr")
-    mask_layer = QgsVectorLayer(mask_layer_path, "Mask Layer", "ogr")
+    input_layer = QgsVectorLayer(input_layer_path, \"\"\"Input Layer\", \"ogr\")
+    mask_layer = QgsVectorLayer(mask_layer_path, \"Mask Layer\", \"ogr\")
     
                              
     clip_params = {
@@ -36,7 +41,7 @@ def clip_vector_by_polygon():
     }
     
                                 
-    result = processing.run("gdal:clipvectorbypolygon", clip_params)
+    result = processing.run(\"gdal:clipvectorbypolygon\", clip_params)
     
                            
     clipped_layer = QgsVectorLayer(output_path, 'Clipped Output', 'ogr')
@@ -44,4 +49,5 @@ def clip_vector_by_polygon():
 
                       
 clip_vector_by_polygon()
+
 """

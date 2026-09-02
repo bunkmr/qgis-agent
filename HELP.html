@@ -214,7 +214,7 @@ a:hover {
 <div class="container">
 
 <h1>🗺️ QGIS Agent</h1>
-<p class="version">版本 2.1.0 | 将大语言模型嵌入QGIS的智能助手</p>
+<p class="version">版本 2.1.3 | 将大语言模型嵌入QGIS的智能助手</p>
 <p style="text-align: center; color: #666;">用自然语言操控 QGIS，无需编写代码</p>
 
 <div class="feature-box">
@@ -227,6 +227,16 @@ a:hover {
 <li><strong>❓ 主动提问</strong> - 识别模糊请求，主动向用户澄清</li>
 <li><strong>📊 Task Graph</strong> - 任务流程图可视化</li>
 <li><strong>🎯 Query Tuning</strong> - 用户查询优化</li>
+</ul>
+</div>
+
+<div class="tip">
+<strong>🆕 v2.1.3 兼容性升级</strong>
+<ul>
+<li><strong>QGIS 4 支持</strong>：插件现在 <strong>PyQt5 / PyQt6 双兼容</strong>，可在 QGIS 3.x 与 QGIS 4.x（含 macOS QGIS 4）中加载运行</li>
+<li><strong>本地 / 自托管模型免密</strong>：接入本地部署的 OpenAI 兼容服务（如 Ollama、vLLM、llama.cpp）时，API Key 可留空</li>
+<li><strong>Cloudflare 403 自动规避</strong>：若自托管服务位于 Cloudflare 后返回 403，插件会自动附加浏览器 User-Agent 绕过 Bot 防护（无需手动改配置）</li>
+<li><strong>发送更稳健</strong>：无活动对话时自动创建；主线程构造异常与 LLM 超时（180s）均有可见红字提示，不再「点击无反应」</li>
 </ul>
 </div>
 
@@ -290,7 +300,7 @@ graph TB
 <div class="step">
     <div class="step-number">2</div>
     <div class="step-content">
-        <strong>从 ZIP 安装</strong> → 选择 <code>qgis_agent_v2.1.0_20260612_flat.zip</code>
+        <strong>从 ZIP 安装</strong> → 选择 <code>qgis_agent_v2.1.3_20260902.zip</code>
     </div>
 </div>
 <div class="step">
@@ -336,6 +346,15 @@ graph TB
 <tr><td>小米 MiMo</td><td><code>https://api.xiaomimimo.com/v1</code></td><td>mimo-v2.5</td></tr>
 <tr><td>自定义</td><td>任何 OpenAI 兼容接口</td><td>任意模型名</td></tr>
 </table>
+</div>
+
+<div class="warning">
+<strong>🔑 关于 API Key 与本地模型</strong>
+<ul>
+<li><strong>云端模型</strong>（DeepSeek / OpenAI 等）：需填写对应服务商发放的有效 API Key。</li>
+<li><strong>本地 / 自托管模型</strong>（Ollama、vLLM、llama.cpp 等 OpenAI 兼容接口）：<strong>API Key 可留空</strong>，只需填对端点（如 <code>http://localhost:11434/v1</code> 或你的内网地址）。</li>
+<li>若本地服务经 Cloudflare 代理且返回 <code>403 PermissionDenied</code>，插件已自动附加浏览器 <code>User-Agent</code> 绕过 Bot 防护；如仍被拦，请检查 Cloudflare 的 Bot Fight Mode 设置。</li>
+</ul>
 </div>
 
 <h3>3. 基本使用</h3>
@@ -511,8 +530,9 @@ graph LR
 
 <table>
 <tr><th>问题</th><th>可能原因</th><th>解决方案</th></tr>
-<tr><td>插件无法加载</td><td>QGIS 版本过低</td><td>升级到 QGIS 3.0+</td></tr>
+<tr><td>插件无法加载</td><td>QGIS 版本不支持</td><td>请使用 QGIS 3.0+ 或 4.x（插件已 PyQt5/PyQt6 双兼容）</td></tr>
 <tr><td>API 调用失败</td><td>网络连接或密钥错误</td><td>检查网络和 API 密钥</td></tr>
+<tr><td>返回 403 PermissionDenied</td><td>Cloudflare / 网关拦截 Python 客户端</td><td>本地模型可留空 Key；插件已自动附加浏览器 UA，若仍被拦请检查 Cloudflare Bot Fight Mode</td></tr>
 <tr><td>代码执行错误</td><td>语法或参数错误</td><td>查看 SmartDebugger 的修复建议</td></tr>
 <tr><td>图层加载失败</td><td>文件路径错误</td><td>检查文件路径是否正确</td></tr>
 <tr><td>工具调用失败</td><td>算法ID或参数错误</td><td>使用 search_pyqgis_api 查询正确用法</td></tr>
@@ -564,6 +584,17 @@ graph LR
 </div>
 
 <h2>📄 更新日志</h2>
+
+<h3>v2.1.3 (2026-09-02)</h3>
+<ul>
+<li>🆕 <strong>QGIS 4 兼容</strong>：PyQt5 / PyQt6 双兼容，支持 QGIS 3.x 与 4.x（含 macOS QGIS 4）</li>
+<li>🆕 <strong>本地 / 自托管模型免密</strong>：自定义端点 API Key 可留空</li>
+<li>🛡️ <strong>Cloudflare 403 规避</strong>：自动附加浏览器 User-Agent 绕过 Bot 防护</li>
+<li>🐛 修复发送无反应：无活动对话自动创建、主线程异常与 LLM 超时(180s)改为可见红字提示</li>
+<li>🐛 修复 PyQt6 枚举缺失（QHeaderView / QEvent / QPalette 等）导致 DockWidget 崩溃</li>
+<li>🐛 修复 pydantic-core 版本冲突导致插件无法加载</li>
+<li>💬 对话名默认取首条消息前 20 字，不再强制弹窗命名</li>
+</ul>
 
 <h3>v2.1.0 (2026-06-12)</h3>
 <ul>

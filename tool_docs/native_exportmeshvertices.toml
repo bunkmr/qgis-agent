@@ -1,7 +1,11 @@
 tool_ID = "native:exportmeshvertices"
 tool_name = "exportmeshvertices"
-brief_description = """Exports a mesh layer’s vertices to a point vector layer, with the dataset values on vertices as attribute values."""
-full_description = """Exports a mesh layer’s vertices to a point vector layer, with the dataset values on vertices as attribute values."""
+brief_description = """
+Exports a mesh layer’s vertices to a point vector layer, with the dataset values on vertices as attribute values.
+"""
+full_description = """
+Exports a mesh layer’s vertices to a point vector layer, with the dataset values on vertices as attribute values.
+"""
 parameters = """
 INPUT: Input mesh layer. The mesh layer to export data from. Type: [mesh]
 DATASET_GROUPS: Dataset groups. The dataset groups. Type: [layer] [list] 
@@ -12,6 +16,7 @@ OUTPUT: Output vector layer. Specification of the output file. One of: Create Te
 TEMPORARY_OUTPUT ) Save to File… Save to Geopackage… Save to Database Table… The file encoding can also be changed here.. Type: [vector: point] Default: [Create temporary layer] outputs = 
 OUTPUT: Output vector layer. Output vector point layer containing the vertices of the input meshlayer with associated dataset values. Type: [vector: point]
 
+
 """
 code_example = """
 import processing
@@ -19,7 +24,7 @@ from qgis.core import QgsMeshLayer, QgsProject
 
 def export_mesh_vertices(input_layer_path, output_path):
     # Load the input mesh layer
-    input_layer = QgsMeshLayer(input_layer_path, """Input Mesh", "mesh")
+    input_layer = QgsMeshLayer(input_layer_path, \"\"\"Input Mesh\", \"mesh\")
 
                            
     parameters = {
@@ -32,11 +37,12 @@ def export_mesh_vertices(input_layer_path, output_path):
     }
 
                                             
-    result = processing.run("native:exportmeshvertices", parameters)
+    result = processing.run(\"native:exportmeshvertices\", parameters)
                                             
     output_layer = QgsProject.instance().addMapLayer(QgsMeshLayer(result['OUTPUT'], 'Exported_Mesh_Vertices', 'ogr'))
 
-input_layer_path = "path/to/your/mesh/file"
-output_layer_path = "path/to/your/output/file"
+input_layer_path = \"path/to/your/mesh/file\"
+output_layer_path = \"path/to/your/output/file\"
 export_mesh_vertices(input_layer_path, output_layer_path)
+
 """

@@ -1,13 +1,17 @@
 tool_ID = "native:addxyfields"
 tool_name = "addxyfields"
-brief_description = """Takes a vector layer and an attribute and adds a new numeric field.
+brief_description = """
+Takes a vector layer and an attribute and adds a new numeric field.
 Values in this field correspond to values in the specified attribute, so features with the same value for the attribute will have the same value in the new numeric field.
 This creates a numeric equivalent of the specified attribute, which defines the same classes.
-The new attribute is not added to the input layer but a new layer is generated instead."""
-full_description = """Takes a vector layer and an attribute and adds a new numeric field.
+The new attribute is not added to the input layer but a new layer is generated instead.
+"""
+full_description = """
+Takes a vector layer and an attribute and adds a new numeric field.
 Values in this field correspond to values in the specified attribute, so features with the same value for the attribute will have the same value in the new numeric field.
 This creates a numeric equivalent of the specified attribute, which defines the same classes.
-The new attribute is not added to the input layer but a new layer is generated instead."""
+The new attribute is not added to the input layer but a new layer is generated instead.
+"""
 parameters = """
 INPUT: Input layer. The input layer.. Type: [vector: any]
 FIELD: Class field. Features that have the same value for this field will get thesame index.. Type: [tablefield: any] 
@@ -20,13 +24,14 @@ TEMPORARY_OUTPUT ) Save to File… Save to Geopackage… Save to Database Table�
 OUTPUT: Layer with index field. Vector layer with the numeric field containing indexes.. Type: [same as input] 
 SUMMARY_OUTPUT: Class summary. Table with summary of the class field mapped to thecorresponding unique value.. Type: [table]
 
+
 """
 code_example = """
 from qgis.core import QgsVectorLayer, QgsProject
 import processing
 
 def add_unique_value_index(input_layer_path, output_path):
-    input_layer = QgsVectorLayer(input_layer_path, """Input Layer", "ogr")
+    input_layer = QgsVectorLayer(input_layer_path, \"\"\"Input Layer\", \"ogr\")
     parameters = {
         'INPUT': input_layer_path,
         'FIELD': 'SampleField',                          
@@ -34,11 +39,12 @@ def add_unique_value_index(input_layer_path, output_path):
         'OUTPUT': output_path,                                      
         'SUMMARY_OUTPUT': ''                          
     }
-    result = processing.run("native:adduniquevalueindexfield", parameters)
+    result = processing.run(\"native:adduniquevalueindexfield\", parameters)
     output_layer = QgsVectorLayer(output_path, 'Layer_with_Index', 'ogr')
     QgsProject.instance().addMapLayer(output_layer)
 
-input_layer_path = "D:/Data/InputData.shp"                               
-output_layer_path = "D:/workspace_directory/output_layer.shp"
+input_layer_path = \"D:/Data/InputData.shp\"                               
+output_layer_path = \"D:/workspace_directory/output_layer.shp\"
 add_unique_value_index(input_layer_path, output_layer_path)
+
 """

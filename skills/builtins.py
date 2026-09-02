@@ -6,7 +6,19 @@
 import json
 import urllib.request
 import urllib.parse
-from .skill_manager import Skill, SkillResult, get_skill_manager
+from .skill_manager import Skill, SkillManager, SkillResult, get_skill_manager
+
+# 允许的 URL scheme（防止 file:// 等危险协议）
+_ALLOWED_SCHEMES = {"http", "https"}
+
+
+def _safe_urlopen(url, timeout=10):
+    """安全的 URL 打开，只允许 http/https 协议"""
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    if parsed.scheme.lower() not in _ALLOWED_SCHEMES:
+        raise ValueError(f"URL scheme not allowed: {parsed.scheme!r} (only http/https)")
+    return urllib.request.urlopen(url, timeout=timeout)  # nosec B310 - scheme validated above
 
 
 def web_search_handler(query: str, num_results: int = 5, engine: str = "duckduckgo") -> SkillResult:
@@ -65,8 +77,8 @@ def _search_duckduckgo_http(query: str, num_results: int) -> list[dict]:
     headers = {"User-Agent": "Mozilla/5.0"}
 
     req = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(req, timeout=10) as response:
-        html = response.read().decode("utf-8")
+    with _safe_urlopen(req, timeout=10) as response:
+        response.read()  # noqa: F841 - HTML content not parsed yet
 
     # 简单解析结果
     results = []
@@ -93,7 +105,7 @@ def _search_google(query: str, num_results: int) -> list[dict]:
     )
 
     req = urllib.request.Request(url)
-    with urllib.request.urlopen(req, timeout=10) as response:
+    with _safe_urlopen(req, timeout=10) as response:
         data = json.loads(response.read().decode("utf-8"))
 
     results = []
@@ -120,7 +132,7 @@ def _search_bing(query: str, num_results: int) -> list[dict]:
     )
 
     req = urllib.request.Request(url, headers={"Ocp-Apim-Subscription-Key": api_key})
-    with urllib.request.urlopen(req, timeout=10) as response:
+    with _safe_urlopen(req, timeout=10) as response:
         data = json.loads(response.read().decode("utf-8"))
 
     results = []
@@ -189,8 +201,8 @@ def gis_data_search_handler(query: str, data_type: str = "all") -> SkillResult:
         results = []
         query_lower = query.lower()
         for source in data_sources:
-            if (query_lower in source["name"].lower() or
-                query_lower in source["description"].lower()):
+            if (query_lower in source["name"].lower()
+                    or query_lower in source["description"].lower()):  # noqa: W503
                 results.append(source)
 
         # 如果没有匹配，返回所有结果
@@ -258,13 +270,13 @@ def _format_as_html(results: list) -> str:
         url = r.get("url", "")
         snippet = r.get("snippet", "")
 
-        html_parts.append(f'<div style="margin: 10px 0;">')
+        html_parts.append('<div style="margin: 10px 0;">')
         html_parts.append(f'<h3 style="margin: 0;">{i}. {title}</h3>')
         if url:
             html_parts.append(f'<a href="{url}">{url}</a>')
         if snippet:
             html_parts.append(f'<p style="color: #666;">{snippet}</p>')
-        html_parts.append(f'</div>')
+        html_parts.append('</div>')
 
     return "\n".join(html_parts)
 

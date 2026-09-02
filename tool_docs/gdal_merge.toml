@@ -1,11 +1,15 @@
 tool_ID = "gdal:merge"
 tool_name = "merge"
-brief_description = """Merges raster files in a simple way. Here you can use a pseudocolor table from an input raster and define the output raster type. All the images must be in the same coordinate system.
+brief_description = """
+Merges raster files in a simple way. Here you can use a pseudocolor table from an input raster and define the output raster type. All the images must be in the same coordinate system.
 This algorithm is derived from the GDAL merge utility .
-Default menu: Raster ► Miscellaneous"""
-full_description = """Merges raster files in a simple way. Here you can use a pseudocolor table from an input raster and define the output raster type. All the images must be in the same coordinate system.
+Default menu: Raster ► Miscellaneous
+"""
+full_description = """
+Merges raster files in a simple way. Here you can use a pseudocolor table from an input raster and define the output raster type. All the images must be in the same coordinate system.
 This algorithm is derived from the GDAL merge utility .
-Default menu: Raster ► Miscellaneous"""
+Default menu: Raster ► Miscellaneous
+"""
 parameters = """
 INPUT: Input layers. Input raster layers. Type: [raster] [list]
 PCT: Grab pseudocolor table from first layer. The pseudocolor table from the first layer will be usedfor the coloring. Type: [boolean] Default: False 
@@ -17,6 +21,7 @@ NODATA_OUTPUT: Assign specified “NoData” value to output Optional. Assigns t
 OPTIONS: Additional creation options Optional. For adding one or more creation options that control theraster to be created (colors, block size, filecompression…).For convenience, you can rely on predefined profiles (see GDAL driver options section ). Batch Process and Model Designer: separate multiple options with a pipecharacter ( | ).. Type: [string] Default: ‘’ 
 EXTRA: Additional command-line parameters. Add extra GDAL command line options. Type: [string] Default: None outputs = 
 OUTPUT: Merged. Output raster layer. Type: [raster]
+
 
 """
 code_example = """
@@ -39,10 +44,11 @@ def merge_rasters():
         'EXTRA': None
     }
     
-    result = processing.run("""gdal:merge", parameters)
+    result = processing.run(\"\"\"gdal:merge\", parameters)
 
     merged_layer = QgsRasterLayer(output_path, 'Merged_Raster')
     QgsProject.instance().addMapLayer(merged_layer)
 
 merge_rasters()
+
 """

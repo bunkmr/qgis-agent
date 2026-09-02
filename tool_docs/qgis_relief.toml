@@ -1,7 +1,11 @@
 tool_ID = "qgis:relief"
 tool_name = "relief"
-brief_description = """Creates a shaded relief layer from digital elevation data. You can specify the relief color manually, or you can let the algorithm choose automatically all the relief classes."""
-full_description = """Creates a shaded relief layer from digital elevation data. You can specify the relief color manually, or you can let the algorithm choose automatically all the relief classes."""
+brief_description = """
+Creates a shaded relief layer from digital elevation data. You can specify the relief color manually, or you can let the algorithm choose automatically all the relief classes.
+"""
+full_description = """
+Creates a shaded relief layer from digital elevation data. You can specify the relief color manually, or you can let the algorithm choose automatically all the relief classes.
+"""
 parameters = """
 INPUT: Elevation layer. Digital Terrain Model raster layer. Type: [raster]
 Z_FACTOR: 
@@ -17,6 +21,7 @@ CSV table for the output frequency distribution.One of: Skip Output Save to a Te
 OUTPUT: Relief. The output relief raster layer. Type: [raster] 
 OUTPUT: Frequency distribution. The output frequency distribution. Type: [table]
 
+
 """
 code_example = """
 import processing
@@ -24,7 +29,7 @@ from qgis.core import QgsRasterLayer, QgsProject
 
 def generate_relief(input_layer_path, output_path):
     # Load the input raster layer
-    input_layer = QgsRasterLayer(input_layer_path, """Elevation Layer")
+    input_layer = QgsRasterLayer(input_layer_path, \"\"\"Elevation Layer\")
 
                                                     
     parameters = {
@@ -47,4 +52,5 @@ def generate_relief(input_layer_path, output_path):
 input_layer_path = 'D:/Data/Elevation.tif'
 output_path = 'C:/output_path/output_relief.tif'
 generate_relief(input_layer_path, output_path)
+
 """

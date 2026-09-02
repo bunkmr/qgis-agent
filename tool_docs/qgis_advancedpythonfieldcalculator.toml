@@ -1,9 +1,13 @@
 tool_ID = "qgis:advancedpythonfieldcalculator"
 tool_name = "advancedpythonfieldcalculator"
-brief_description = """Adds a new attribute to a vector layer, with values resulting from applying an expression to each feature.
-The expression is defined as a Python function."""
-full_description = """Adds a new attribute to a vector layer, with values resulting from applying an expression to each feature.
-The expression is defined as a Python function."""
+brief_description = """
+Adds a new attribute to a vector layer, with values resulting from applying an expression to each feature.
+The expression is defined as a Python function.
+"""
+full_description = """
+Adds a new attribute to a vector layer, with values resulting from applying an expression to each feature.
+The expression is defined as a Python function.
+"""
 parameters = """
 INPUT: Input layer. Input vector layer. Type: [vector: any]
 FIELD_NAME: Result field name. Name of the new field. Type: [string] Default: ‘NewField’ 
@@ -17,6 +21,7 @@ OUTPUT: Calculated. Specify the vector layer with the new calculatedfield. One o
 TEMPORARY_OUTPUT ) Save to File… Save to Geopackage… Save to Database Table… The file encoding can also be changed here.. Type: [same as input] Default: [Create temporary layer] outputs = 
 OUTPUT: Calculated. Vector layer with the new calculated field. Type: [same as input]
 
+
 """
 code_example = """
 from qgis.core import QgsVectorLayer, QgsProject
@@ -24,7 +29,7 @@ import processing
 
 def advanced_python_field_calculator(input_layer_path, output_path):
     # Load the input layer
-    input_layer = QgsVectorLayer(input_layer_path, """Input Layer", "ogr")
+    input_layer = QgsVectorLayer(input_layer_path, \"\"\"Input Layer\", \"ogr\")
 
                                                                     
     parameters = {
@@ -39,16 +44,17 @@ def advanced_python_field_calculator(input_layer_path, output_path):
     }
 
                                               
-    result = processing.run("qgis:advancedpythonfieldcalculator", parameters)
+    result = processing.run(\"qgis:advancedpythonfieldcalculator\", parameters)
 
                                     
     output_layer = QgsVectorLayer(result['OUTPUT'], 'Calculated_Field', 'ogr')
     QgsProject.instance().addMapLayer(output_layer)
 
               
-input_layer_path = "D:/Data/PrevalenceData.shp"
-output_path = "D:/workspace_directory/output_layer.shp"
+input_layer_path = \"D:/Data/PrevalenceData.shp\"
+output_path = \"D:/workspace_directory/output_layer.shp\"
 
                       
 advanced_python_field_calculator(input_layer_path, output_path)
+
 """

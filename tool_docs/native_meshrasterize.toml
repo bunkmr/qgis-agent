@@ -1,9 +1,13 @@
 tool_ID = "native:meshrasterize"
 tool_name = "meshrasterize"
-brief_description = """Creates a raster layer from a mesh dataset.
-For data on volume (3D stacked dataset values), the exported dataset values are averaged on faces using the method defined in the mesh layer properties (default is Multi level averaging method). 1D meshes are not supported."""
-full_description = """Creates a raster layer from a mesh dataset.
-For data on volume (3D stacked dataset values), the exported dataset values are averaged on faces using the method defined in the mesh layer properties (default is Multi level averaging method). 1D meshes are not supported."""
+brief_description = """
+Creates a raster layer from a mesh dataset.
+For data on volume (3D stacked dataset values), the exported dataset values are averaged on faces using the method defined in the mesh layer properties (default is Multi level averaging method). 1D meshes are not supported.
+"""
+full_description = """
+Creates a raster layer from a mesh dataset.
+For data on volume (3D stacked dataset values), the exported dataset values are averaged on faces using the method defined in the mesh layer properties (default is Multi level averaging method). 1D meshes are not supported.
+"""
 parameters = """
 INPUT: Input mesh layer. The mesh layer to export data from. Type: [mesh]
 DATASET_GROUPS: Dataset groups. The dataset groups. Type: [layer] [list] 
@@ -13,6 +17,7 @@ PIXEL_SIZE: Pixel size. Pixel size of the output raster layer.. Type: [number] D
 CRS_OUTPUT: Output coordinate system Optional. Coordinate Reference System to assign to the output. Type: [crs] 
 OUTPUT: Output raster layer. Specification of the output file. One of: Save to a Temporary File Save to File…. Type: [raster] Default: [Save to temporary file] outputs = 
 OUTPUT: Output raster layer. Output raster layer with dataset values computedfrom the mesh layer.. Type: [raster]
+
 
 """
 code_example = """
@@ -35,10 +40,11 @@ def mesh_rasterize():
         'OUTPUT': output_path
     }
 
-    result = processing.run("""native:meshrasterize", parameters)
+    result = processing.run(\"\"\"native:meshrasterize\", parameters)
 
     raster_layer = QgsProject.instance().mapLayersByName('Output Raster')[0]
     QgsProject.instance().addMapLayer(raster_layer)
 
 mesh_rasterize()
+
 """

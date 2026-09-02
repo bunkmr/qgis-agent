@@ -1,11 +1,15 @@
 tool_ID = "gdal:cliprasterbyextent"
 tool_name = "cliprasterbyextent"
-brief_description = """Clips any GDAL-supported raster file to a given extent.
+brief_description = """
+Clips any GDAL-supported raster file to a given extent.
 This algorithm is derived from the GDAL translate utility .
-Default menu: Raster ► Extraction"""
-full_description = """Clips any GDAL-supported raster file to a given extent.
+Default menu: Raster ► Extraction
+"""
+full_description = """
+Clips any GDAL-supported raster file to a given extent.
 This algorithm is derived from the GDAL translate utility .
-Default menu: Raster ► Extraction"""
+Default menu: Raster ► Extraction
+"""
 parameters = """
 INPUT: Input layer. The input raster. Type: [raster]
 EXTENT: Clipping extent. Extent that should be used for the output raster.Only pixels within the specified bounding box will beincluded in the output. Available methods are: Calculate from layer…: uses extent of a layer loaded in the current project Calculate from layout map…: uses extent of a layout map item in the active project Calculate from bookmark…: uses extent of a saved bookmark Use map canvas extent Draw on canvas: click and drag a rectangle delimiting the area to take into account Enter the coordinates as xmin, xmax, ymin, ymax. Type: [extent] 
@@ -18,6 +22,7 @@ DATA_TYPE: Output data type. Defines the format of the output raster file. Optio
 EXTRA: Additional command-line parameters Optional. Add extra GDAL command line options. Type: [string] Default: None outputs = 
 OUTPUT: Clipped (extent). Output raster layer clipped by the given extent. Type: [raster]
 
+
 """
 code_example = """
 import processing
@@ -27,7 +32,7 @@ def clip_raster_by_extent():
     input_path = 'D:/input_raster.tif'
     output_path = 'D:/output_clipped_raster.tif'
     
-    input_layer = QgsRasterLayer(input_path, """Input Raster")
+    input_layer = QgsRasterLayer(input_path, \"\"\"Input Raster\")
     
     parameters = {
         'INPUT': input_path,
@@ -40,11 +45,12 @@ def clip_raster_by_extent():
         'EXTRA': None
     }
     
-    result = processing.run("gdal:cliprasterbyextent", parameters)
+    result = processing.run(\"gdal:cliprasterbyextent\", parameters)
     
     clipped_layer = QgsRasterLayer(result['OUTPUT'], 'Clipped Raster')
     QgsProject.instance().addMapLayer(clipped_layer)
     
                       
 clip_raster_by_extent()
+
 """

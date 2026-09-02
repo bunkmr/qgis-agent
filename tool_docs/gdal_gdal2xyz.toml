@@ -1,7 +1,11 @@
 tool_ID = "gdal:gdal2xyz"
 tool_name = "gdal2xyz"
-brief_description = """Converts raster data to XYZ ASCII file format."""
-full_description = """Converts raster data to XYZ ASCII file format."""
+brief_description = """
+Converts raster data to XYZ ASCII file format.
+"""
+full_description = """
+Converts raster data to XYZ ASCII file format.
+"""
 parameters = """
 INPUT: Input layer. Raster layer to convert. Type: [raster]
 BAND: Band number. If the raster is multiband, choose the band you want toconvert. Type: [raster band] Default: The first band of the input layer 
@@ -19,6 +23,7 @@ INPUT:
 XYZ 
 ASCII file. Table file containing the values exported from the raster band.. Type: [table]
 
+
 """
 code_example = """
 from qgis.core import QgsRasterLayer, QgsProject
@@ -28,11 +33,11 @@ def convert_raster_to_xyz():
     # Define the input and output paths
     input_path = 'D:/input_raster.tif'
     output_dir = 'C:/Users/Output'
-    output_file_name = """output_xyz.txt"
-    output_path = f"{output_dir}/{output_file_name}"
+    output_file_name = \"\"\"output_xyz.txt\"
+    output_path = f\"{output_dir}/{output_file_name}\"
 
                                  
-    input_layer = QgsRasterLayer(input_path, "Input Raster")
+    input_layer = QgsRasterLayer(input_path, \"Input Raster\")
 
                                          
     parameters = {
@@ -46,8 +51,9 @@ def convert_raster_to_xyz():
     }
 
                                          
-    processing.run("gdal:gdal2xyz", parameters)
+    processing.run(\"gdal:gdal2xyz\", parameters)
 
                       
 convert_raster_to_xyz()
+
 """

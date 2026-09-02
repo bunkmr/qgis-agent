@@ -1,9 +1,13 @@
 tool_ID = "native:alignsingleraster"
 tool_name = "alignsingleraster"
-brief_description = """NEWin3.34
-Aligns raster by resampling it to the same cell size and reprojecting to the same CRS as a reference raster."""
-full_description = """NEWin3.34
-Aligns raster by resampling it to the same cell size and reprojecting to the same CRS as a reference raster."""
+brief_description = """
+NEWin3.34
+Aligns raster by resampling it to the same cell size and reprojecting to the same CRS as a reference raster.
+"""
+full_description = """
+NEWin3.34
+Aligns raster by resampling it to the same cell size and reprojecting to the same CRS as a reference raster.
+"""
 parameters = """
 INPUT: Input layer. Input raster layer to align. Type: [raster]
 RESAMPLING_METHOD: Resampling method. Method to use for input layer resampling. Available options are: 0 — Nearest Neighbour 1 — Bilinear (2x2 kernel) 2 — Cubic (4x4 kernel) 3 — Cubic B-Spline (4x4 kernel) 4 — Lanczos (6x6 kernel) 5 — Average 6 — Mode 7 — Maximum 8 — Minimum 9 — Median 10 — First quartile 
@@ -31,6 +35,7 @@ EXTENT: Clip to extent Optional. Specify the extent of the output raster layer.I
 OUTPUT: Aligned raster. output raster with pixels resampled. Type: [raster] outputs = 
 OUTPUT: Aligned raster. output raster with pixels resampled. Type: [raster]
 
+
 """
 code_example = """
 # Import necessary modules
@@ -42,12 +47,12 @@ def align_single_raster():
     input_path = 'D:/input_raster.tif'
     reference_layer_path = 'D:/reference_layer.tif'
     output_dir = 'C:/Users/Output'
-    output_file_name = """aligned_raster.tif"
-    output_path = f"{output_dir}/{output_file_name}"
+    output_file_name = \"\"\"aligned_raster.tif\"
+    output_path = f\"{output_dir}/{output_file_name}\"
     
                           
-    input_layer = QgsRasterLayer(input_path, "Input Raster")
-    reference_layer = QgsRasterLayer(reference_layer_path, "Reference Layer")
+    input_layer = QgsRasterLayer(input_path, \"Input Raster\")
+    reference_layer = QgsRasterLayer(reference_layer_path, \"Reference Layer\")
 
                                
     parameters = {
@@ -65,11 +70,12 @@ def align_single_raster():
     }
 
                                   
-    result = processing.run("native:alignsingleraster", parameters)
+    result = processing.run(\"native:alignsingleraster\", parameters)
                                              
     aligned_raster_layer = QgsRasterLayer(result['OUTPUT'], 'Aligned Raster')
     QgsProject.instance().addMapLayer(aligned_raster_layer)
 
                       
 align_single_raster()
+
 """

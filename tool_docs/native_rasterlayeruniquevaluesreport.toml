@@ -1,7 +1,11 @@
 tool_ID = "native:rasterlayeruniquevaluesreport"
 tool_name = "rasterlayeruniquevaluesreport"
-brief_description = """Returns the count and area of each unique value in a given raster layer. The calculation of the area is done in the area unit of the layer’s CRS."""
-full_description = """Returns the count and area of each unique value in a given raster layer. The calculation of the area is done in the area unit of the layer’s CRS."""
+brief_description = """
+Returns the count and area of each unique value in a given raster layer. The calculation of the area is done in the area unit of the layer’s CRS.
+"""
+full_description = """
+Returns the count and area of each unique value in a given raster layer. The calculation of the area is done in the area unit of the layer’s CRS.
+"""
 parameters = """
 INPUT: Input layer. Input raster layer. Type: [raster]
 BAND: Band number. If the raster is multiband, choose the band you want to getstatistics for.. Type: [raster band] Default: The first band of the input layer 
@@ -19,6 +23,7 @@ HTML file contains the following information: Analyzed file: the path of the ras
 OUTPUT_TABLE: Unique values table. 
 A table with three columns: value : pixel value count : count of pixels with this value m2 or deg2 or ft2 or … : total area of pixels with this value.The column name depends on the area unit of the layer’s CRSand the calculation is done in that unit.. Type: [table] 
 WIDTH_IN_PIXELS: Width in pixels. The number of columns in the output raster layer. Type: [integer]
+
 
 """
 code_example = """
@@ -42,7 +47,7 @@ def raster_unique_values_report(input_raster_path):
     }
 
     # Perform the unique values report operation
-    result = processing.run("""native:rasterlayeruniquevaluesreport", parameters)
+    result = processing.run(\"\"\"native:rasterlayeruniquevaluesreport\", parameters)
 
                                    
     QgsProject.instance().addMapLayer(result['OUTPUT_HTML_FILE'])
@@ -51,4 +56,5 @@ def raster_unique_values_report(input_raster_path):
                       
 input_raster_path = 'D:/Data/InputRaster.tif'                                 
 raster_unique_values_report(input_raster_path)
+
 """

@@ -1,9 +1,13 @@
 tool_ID = "qgis:postgisexecuteandloadsql"
 tool_name = "postgisexecuteandloadsql"
-brief_description = """Allows a SQL database query to be performed on a PostgreSQL database connected to QGIS and loads the result. The algorithm won’t create a new layer: it is designed to run queries on the layer itself.
-Example"""
-full_description = """Allows a SQL database query to be performed on a PostgreSQL database connected to QGIS and loads the result. The algorithm won’t create a new layer: it is designed to run queries on the layer itself.
-Example"""
+brief_description = """
+Allows a SQL database query to be performed on a PostgreSQL database connected to QGIS and loads the result. The algorithm won’t create a new layer: it is designed to run queries on the layer itself.
+Example
+"""
+full_description = """
+Allows a SQL database query to be performed on a PostgreSQL database connected to QGIS and loads the result. The algorithm won’t create a new layer: it is designed to run queries on the layer itself.
+Example
+"""
 parameters = """
 DATABASE: Database (connection name). The database connection (not the database name).Existing connections will be shown in the combobox.. Type: [string]
 SQL: 
@@ -17,6 +21,7 @@ GEOMETRY_FIELD: Geometry field name Optional. Name of the geometry column (a col
 OUTPUT: 
 SQL layer. The resulting vector layer to be loaded into 
 QGIS.. Type: [vector: any]
+
 
 """
 code_example = """
@@ -36,7 +41,7 @@ def execute_and_load_sql():
     }
 
     # Run the PostGIS execute and load SQL command
-    result = processing.run("""qgis:postgisexecuteandloadsql", parameters)
+    result = processing.run(\"\"\"qgis:postgisexecuteandloadsql\", parameters)
 
                               
     result_layer = QgsVectorLayer(result['OUTPUT'], 'SQL_Result', 'ogr')
@@ -44,4 +49,5 @@ def execute_and_load_sql():
 
                       
 execute_and_load_sql()
+
 """

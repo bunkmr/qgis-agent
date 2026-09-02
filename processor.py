@@ -118,21 +118,36 @@ class Processor(QObject):
         self.model_name = model_name
         self.provider = llm_id.split("::", 1)[0]
         self.llm = get_llm_instance(self.provider, model_name, api_key, endpoint, temperature=temperature)
-        self.streaming_llm = get_llm_instance(self.provider, model_name, api_key, endpoint, temperature=temperature)
         self.output_parser = StrOutputParser()
         self.threadpool = QThreadPool()
         self.max_tool_rounds = 10  # 最大工具调用轮次，防止死循环
         self._cancelled = False  # 中断标志
         self._code_confirm_callback = None  # 代码执行确认回调
 
-        # ── RAG 组件 ──
-        self.doc_store = DocStore()
-        self.retriever = APIDocRetriever(self.doc_store)
-        self.cookbook = Cookbook(self.doc_store)
-
-        # ── Query Tuning 组件 ──
-        self.query_tuner = QueryTuner(self.llm)
-        self.data_overview = DataOverview()
+        # ── RAG 组件（构造失败一律降级，绝不阻塞对话）──
+        self.doc_store = None
+        self.retriever = None
+        self.cookbook = None
+        self.query_tuner = None
+        self.data_overview = None
+        try:
+            self.doc_store = DocStore()
+            self.retriever = APIDocRetriever(self.doc_store)
+            # 首次运行时将 tool_docs/*.toml 自动入库（幂等，失败不阻塞）
+            self.doc_store.ensure_tool_docs()
+        except Exception:
+            self.doc_store = None
+            self.retriever = None
+        try:
+            self.cookbook = Cookbook(self.doc_store) if self.doc_store else None
+        except Exception:
+            self.cookbook = None
+        try:
+            self.query_tuner = QueryTuner(self.llm)
+            self.data_overview = DataOverview()
+        except Exception:
+            self.query_tuner = None
+            self.data_overview = None
 
     def cancel(self):
         """设置中断标志，后台线程会在下一轮循环前检查"""
@@ -223,6 +238,11 @@ class Processor(QObject):
                     if interaction.get("typeMessage") == "input":
                         messages.append(HumanMessage(content=interaction.get("requestText", "")))
                     elif interaction.get("typeMessage") == "return":
+                        # 同一行同时存了 requestText 与 responseText，
+                        # 重建历史时必须把用户提问一并补回，否则多轮对话丢失提问。
+                        req = interaction.get("requestText", "")
+                        if req:
+                            messages.append(HumanMessage(content=req))
                         messages.append(AIMessage(content=interaction.get("responseText", "")))
         except Exception:
             pass  # 历史加载失败不影响本次对话
@@ -245,7 +265,7 @@ class Processor(QObject):
             # 绑定工具到 LLM（如果不支持 tool calling 则回退到普通对话）
             try:
                 llm_with_tools = self.llm.bind_tools(TOOL_DEFINITIONS)
-            except (AttributeError, TypeError, NotImplementedError, Exception):
+            except (AttributeError, TypeError, NotImplementedError):
                 # 模型不支持 function calling，直接普通对话
                 if thinking_callback:
                     thinking_callback("[思考中...]\n")
@@ -302,11 +322,25 @@ class Processor(QObject):
                 # ── RAG 检索增强：对危险工具，先查 API 文档 ──
                 if tool_name in ("execute_pyqgis", "execute_processing"):
                     try:
+                        doc_context = ""
                         api_docs = self.retriever.search_for_tool_call(tool_name, tool_args)
                         if api_docs:
-                            doc_context = self.retriever.format_as_context(api_docs)
-                            if doc_context and thinking_callback:
-                                thinking_callback(f"📚 RAG 检索到 {len(api_docs)} 条相关 API 文档\n")
+                            doc_context += self.retriever.format_as_context(api_docs)
+                        # 额外检索 tool_docs 中的 Processing 算法参考（tool_ID 即 algorithm）
+                        if tool_name == "execute_processing":
+                            algo = tool_args.get("algorithm", "")
+                            if algo:
+                                tool_doc_results = self.retriever.search_tool_docs(algo, top_k=1)
+                                if tool_doc_results:
+                                    doc_context += "\n" + self.retriever.format_tool_docs_context(tool_doc_results)
+                        if doc_context:
+                            # 注入到上下文供下一轮 LLM 参考。
+                            # 注意：部分模型会忽略对话中途插入的 SystemMessage，
+                            # 故以带明确标识的 HumanMessage 形式追加，确保被模型关注。
+                            labeled = "[系统参考文档，仅供编写/调用代码时使用，无需回复]\n" + doc_context
+                            messages.append(HumanMessage(content=labeled))
+                            if thinking_callback:
+                                thinking_callback("📚 RAG 检索到相关 API / 算法文档\n")
                     except Exception:
                         pass  # RAG 检索失败不阻塞流程
 
@@ -319,7 +353,7 @@ class Processor(QObject):
                 elif tool_name == "execute_processing":
                     # 延迟发送执行日志，避免频繁更新导致卡顿
                     from qgis.PyQt.QtCore import QTimer
-                    QTimer.singleShot(50, lambda: self.execution_log.emit(f"▶ 执行 Processing 算法: {tool_name}"))
+                    QTimer.singleShot(50, lambda tool_name=tool_name: self.execution_log.emit(f"▶ 执行 Processing 算法: {tool_name}"))
 
                 # 执行工具
                 try:
@@ -391,7 +425,7 @@ class Processor(QObject):
         prompt_id = f"{self.llm_id}::0::agent"
 
         # ── 更新工作流状态并发送最终更新 ──
-        workflow_data["status"] = "completed" if workflow == "withTool" else "completed"
+        workflow_data["status"] = "completed"
         workflow_data["summary"] = f"任务执行完成，共 {len(workflow_data['steps'])} 个步骤"
 
         # 发送最终的工作流更新信号

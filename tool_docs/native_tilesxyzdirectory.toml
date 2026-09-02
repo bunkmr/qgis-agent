@@ -1,9 +1,13 @@
 tool_ID = "native:tilesxyzdirectory"
 tool_name = "tilesxyzdirectory"
-brief_description = """Generates raster “XYZ” tiles using the current QGIS project as individual images to a directory structure.
-Optionally, a Leaflet HTML output file using the generated tiles as a map layer could be created."""
-full_description = """Generates raster “XYZ” tiles using the current QGIS project as individual images to a directory structure.
-Optionally, a Leaflet HTML output file using the generated tiles as a map layer could be created."""
+brief_description = """
+Generates raster “XYZ” tiles using the current QGIS project as individual images to a directory structure.
+Optionally, a Leaflet HTML output file using the generated tiles as a map layer could be created.
+"""
+full_description = """
+Generates raster “XYZ” tiles using the current QGIS project as individual images to a directory structure.
+Optionally, a Leaflet HTML output file using the generated tiles as a map layer could be created.
+"""
 parameters = """
 EXTENT: Extent (xmin, xmax, ymin, ymax). Specify the extent of the tiles.It will internally be extended to a multiple of the tile size. Available methods are: Calculate from layer…: uses extent of a layer loaded in the current project Calculate from layout map…: uses extent of a layout map item in the active project Calculate from bookmark…: uses extent of a saved bookmark Use map canvas extent Draw on canvas: click and drag a rectangle delimiting the area to take into account Enter the coordinates as xmin, xmax, ymin, ymax. Type: [extent]
 ZOOM_MIN: Minimum zoom. Minimum 0, maximum 25.. Type: [number] Default: 12 
@@ -41,6 +45,7 @@ OUTPUT_DIRECTORY: Output directory. Output directory (for the tiles). Type: [fol
 OUTPUT_HTML: Output html (Leaflet). The output 
 HTML (Leaflet) file. Type: [html]
 
+
 """
 code_example = """
 # Import necessary modules
@@ -73,8 +78,9 @@ def generate_xyz_tiles():
     }
     
     # Run the tiles generation algorithm
-    processing.run("""native:tilesxyzdirectory", tile_params)
+    processing.run(\"\"\"native:tilesxyzdirectory\", tile_params)
 
                       
 generate_xyz_tiles()
+
 """

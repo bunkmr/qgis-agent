@@ -1,7 +1,11 @@
 tool_ID = "native:convertgpsdata"
 tool_name = "convertgpsdata"
-brief_description = """Uses the GPSBabel tool to convert a GPS data file from a range of formats to the GPX standard format."""
-full_description = """Uses the GPSBabel tool to convert a GPS data file from a range of formats to the GPX standard format."""
+brief_description = """
+Uses the GPSBabel tool to convert a GPS data file from a range of formats to the GPX standard format.
+"""
+full_description = """
+Uses the GPSBabel tool to convert a GPS data file from a range of formats to the GPX standard format.
+"""
 parameters = """
 INPUT: Input file. File containing the data to convert. Type: [file]
 FORMAT: Format. Format of the file to convert,from this list .. Type: [enumeration] 
@@ -10,6 +14,7 @@ OUTPUT: Output. Specification of the output
 GPX file. One of: Save to a Temporary File Save to File…. Type: [vector: any] Default: [Save to temporary file] outputs = 
 OUTPUT_LAYER: Output layer. Output layer with data in 
 GPX standard format. Type: [vector: any]
+
 
 """
 code_example = """
@@ -30,7 +35,7 @@ def convert_gps_data():
     }
     
     # Run conversion
-    result = processing.run("""native:convertgpsdata", parameters)
+    result = processing.run(\"\"\"native:convertgpsdata\", parameters)
     
                                          
     converted_layer = QgsVectorLayer(result['OUTPUT'], 'Converted Output', 'ogr')
@@ -38,4 +43,5 @@ def convert_gps_data():
 
                       
 convert_gps_data()
+
 """

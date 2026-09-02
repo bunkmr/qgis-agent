@@ -1,9 +1,13 @@
 tool_ID = "native:rectanglesovalsdiamonds"
 tool_name = "rectanglesovalsdiamonds"
-brief_description = """Creates a buffer area with a rectangle, oval or diamond shape for each feature of the input point layer.
-The shape parameters can be fixed for all features or dynamic using a field or an expression."""
-full_description = """Creates a buffer area with a rectangle, oval or diamond shape for each feature of the input point layer.
-The shape parameters can be fixed for all features or dynamic using a field or an expression."""
+brief_description = """
+Creates a buffer area with a rectangle, oval or diamond shape for each feature of the input point layer.
+The shape parameters can be fixed for all features or dynamic using a field or an expression.
+"""
+full_description = """
+Creates a buffer area with a rectangle, oval or diamond shape for each feature of the input point layer.
+The shape parameters can be fixed for all features or dynamic using a field or an expression.
+"""
 parameters = """
 INPUT: Input layer. Input point vector layer. Type: [vector: point]
 SHAPE: Buffer shape. The shape to use. One of: 0 — Rectangles 1 — Ovals 2 — Diamonds. Type: [enumeration] 
@@ -15,16 +19,17 @@ OUTPUT: Output. Specify the output vector layer. One of: Create Temporary Layer 
 TEMPORARY_OUTPUT ) Save to File… Save to Geopackage… Save to Database Table… Append to Layer… The file encoding can also be changed here.. Type: [vector: polygon] Default: [Create temporary layer] outputs = 
 OUTPUT: Output. The output vector layer (with the buffer shapes). Type: [vector: polygon]
 
+
 """
 code_example = """
 import processing
 from qgis.core import QgsVectorLayer, QgsProject
 
 def generate_buffers():
-    input_path = """D:/Data/PointLayer.shp"
-    output_path = "D:/workspace_directory/output_layer.shp"
+    input_path = \"\"\"D:/Data/PointLayer.shp\"
+    output_path = \"D:/workspace_directory/output_layer.shp\"
 
-    input_layer = QgsVectorLayer(input_path, "Input Points", "ogr")
+    input_layer = QgsVectorLayer(input_path, \"Input Points\", \"ogr\")
 
     parameters = {
         'INPUT': input_layer,
@@ -36,10 +41,11 @@ def generate_buffers():
         'OUTPUT': output_path
     }
 
-    result = processing.run("native:rectanglesovalsdiamonds", parameters)
+    result = processing.run(\"native:rectanglesovalsdiamonds\", parameters)
 
     output_layer = QgsVectorLayer(result['OUTPUT'], 'Buffered Shapes', 'ogr')
     QgsProject.instance().addMapLayer(output_layer)
 
 generate_buffers()
+
 """

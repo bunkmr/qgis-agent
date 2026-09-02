@@ -1,9 +1,13 @@
 tool_ID = "qgis:vectorlayerhistogram"
 tool_name = "vectorlayerhistogram"
-brief_description = """Generates a histogram with the values of the attribute of a vector layer.
-The attribute to use for computing the histogram must be numeric."""
-full_description = """Generates a histogram with the values of the attribute of a vector layer.
-The attribute to use for computing the histogram must be numeric."""
+brief_description = """
+Generates a histogram with the values of the attribute of a vector layer.
+The attribute to use for computing the histogram must be numeric.
+"""
+full_description = """
+Generates a histogram with the values of the attribute of a vector layer.
+The attribute to use for computing the histogram must be numeric.
+"""
 parameters = """
 INPUT: Input layer. Input vector layer. Type: [vector: any]
 FIELD: Attribute. Value to use for the plot 
@@ -14,6 +18,7 @@ OUTPUT: Histogram. Specify the
 HTML file for the plot. One of: Save to a Temporary File Save to File…. Type: [html] Default: [Save to temporary file] outputs = 
 OUTPUT: Histogram. 
 HTML file with the plot.Available in the Processing ► Result Viewer .. Type: [html]
+
 
 """
 code_example = """
@@ -33,7 +38,8 @@ def create_histogram():
         'OUTPUT': output_path
     }
 
-    result = processing.run("""qgis:vectorlayerhistogram", parameters)
+    result = processing.run(\"\"\"qgis:vectorlayerhistogram\", parameters)
 
 create_histogram()
+
 """

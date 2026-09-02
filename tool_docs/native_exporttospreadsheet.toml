@@ -1,7 +1,11 @@
 tool_ID = "native:exporttospreadsheet"
 tool_name = "exporttospreadsheet"
-brief_description = """Exports the attributes of a selection of vector layers into a spreadsheet document or optionally appends them to an existing spreadsheet as additional sheets."""
-full_description = """Exports the attributes of a selection of vector layers into a spreadsheet document or optionally appends them to an existing spreadsheet as additional sheets."""
+brief_description = """
+Exports the attributes of a selection of vector layers into a spreadsheet document or optionally appends them to an existing spreadsheet as additional sheets.
+"""
+full_description = """
+Exports the attributes of a selection of vector layers into a spreadsheet document or optionally appends them to an existing spreadsheet as additional sheets.
+"""
 parameters = """
 LAYERS: Input layers. Input vector layers. The output spreadsheet will consist of a sheet,for each layer, that contains the attributes of this layer.. Type: [vector: any] [list]
 USE_ALIAS: Use field aliases as column headings. Use the field aliases from the attribute table for the spreadsheet.. Type: [boolean] Default: False 
@@ -10,6 +14,7 @@ OVERWRITE: Overwrite existing spreadsheet. If the specified spreadsheet exists, 
 OUTPUT: Destination spreadsheet. Output spreadsheet with a sheet for every layer. One of: Save to a Temporary File Save to File…. Type: [file] Default: [Save to temporary file] outputs = 
 OUTPUT: Destination spreadsheet. Spreadsheet with a sheet for every layer.. Type: [file] 
 OUTPUT_LAYERS: Layers within spreadsheet. The list of sheets added to the spreadsheet.. Type: [list]
+
 
 """
 code_example = """
@@ -23,8 +28,8 @@ def export_to_spreadsheet():
     output_path = 'path/to/output.xlsx'
    
     # Load the input layers
-    layer_1 = QgsVectorLayer(layer_1_path, """Layer 1", "ogr")
-    layer_2 = QgsVectorLayer(layer_2_path, "Layer 2", "ogr")
+    layer_1 = QgsVectorLayer(layer_1_path, \"\"\"Layer 1\", \"ogr\")
+    layer_2 = QgsVectorLayer(layer_2_path, \"Layer 2\", \"ogr\")
     
                                                      
     export_params = {
@@ -36,7 +41,8 @@ def export_to_spreadsheet():
     }
     
                                              
-    result = processing.run("native:exporttospreadsheet", export_params)
+    result = processing.run(\"native:exporttospreadsheet\", export_params)
 
 export_to_spreadsheet()
+
 """

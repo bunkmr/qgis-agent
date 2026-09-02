@@ -1,0 +1,21 @@
+# 归一化行尾为 LF，避免跨平台（Windows/macOS/Linux）导致的整仓「modified」假差异
+* text=auto eol=lf
+
+# 二进制资源不转换行尾
+*.png binary
+*.ico binary
+*.qm binary
+*.zip binary
+*.pyc binary
+
+# 文本类资源明确按文本处理
+*.py text
+*.toml text
+*.md text
+*.txt text
+*.ui text
+*.qrc text
+*.svg text
+*.json text
+*.html text
+*.rst text

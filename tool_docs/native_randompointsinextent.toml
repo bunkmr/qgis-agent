@@ -1,11 +1,15 @@
 tool_ID = "native:randompointsinextent"
 tool_name = "randompointsinextent"
-brief_description = """Creates a new point layer with a given number of random points, all of them within a given extent.
+brief_description = """
+Creates a new point layer with a given number of random points, all of them within a given extent.
 A distance factor can be specified, to avoid points being too close to each other. If the minimum distance between points makes it impossible to create new points, either distance can be decreased or the maximum number of attempts may be increased.
-Default menu: Vector ► Research Tools"""
-full_description = """Creates a new point layer with a given number of random points, all of them within a given extent.
+Default menu: Vector ► Research Tools
+"""
+full_description = """
+Creates a new point layer with a given number of random points, all of them within a given extent.
 A distance factor can be specified, to avoid points being too close to each other. If the minimum distance between points makes it impossible to create new points, either distance can be decreased or the maximum number of attempts may be increased.
-Default menu: Vector ► Research Tools"""
+Default menu: Vector ► Research Tools
+"""
 parameters = """
 EXTENT: Input extent. Map extent for the random points Available methods are: Calculate from layer…: uses extent of a layer loaded in the current project Calculate from layout map…: uses extent of a layout map item in the active project Calculate from bookmark…: uses extent of a saved bookmark Use map canvas extent Draw on canvas: click and drag a rectangle delimiting the area to take into account Enter the coordinates as xmin, xmax, ymin, ymax. Type: [extent]
 POINTS_NUMBER: Number of points. Number of point to create. Type: [number] Default: 1 
@@ -19,6 +23,7 @@ TEMPORARY_OUTPUT ) Save to File… Save to Geopackage… Save to Database Table�
 MAX_ATTEMPTS: Maximum number of search attempts given the minimum distance. Maximum number of attempts to place the points. Type: [number] Default: 200 outputs = 
 OUTPUT: Random points. The output random points layer.. Type: [vector: point]
 
+
 """
 code_example = """
 import processing
@@ -26,9 +31,9 @@ from qgis.core import QgsProject, QgsCoordinateReferenceSystem
 
 def create_random_points():
     # Define the output path
-    output_path = """D:/workspace_directory/random_points.shp"
+    output_path = \"\"\"D:/workspace_directory/random_points.shp\"
     
-    target_crs = QgsCoordinateReferenceSystem("EPSG:4326")                                                  
+    target_crs = QgsCoordinateReferenceSystem(\"EPSG:4326\")                                                  
     
                                       
     parameters = {
@@ -41,11 +46,12 @@ def create_random_points():
     }
     
                            
-    result = processing.run("native:randompointsinextent", parameters)
+    result = processing.run(\"native:randompointsinextent\", parameters)
     
                               
     random_points_layer = QgsVectorLayer(result['OUTPUT'], 'Random Points', 'ogr')
     QgsProject.instance().addMapLayer(random_points_layer)
 
 create_random_points()
+
 """

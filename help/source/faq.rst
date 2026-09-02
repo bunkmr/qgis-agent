@@ -9,7 +9,7 @@ A: 首次启动时会提示自动安装，点击「是」即可。如果自动�
 
 .. code-block:: bash
 
-    pip install langchain langchain-core langchain-openai langchain-deepseek requests
+    pip install langchain_core langchain_openai langchain_deepseek httpx psutil
 
 Q: 为什么发送消息后没有反应？
 -------------------------------
@@ -17,9 +17,15 @@ Q: 为什么发送消息后没有反应？
 A: 请检查：
 
 1. 是否已在「模型配置」标签页添加了 LLM
-2. API Key 是否正确
+2. API Key 是否正确（本地 / 自托管模型可留空）
 3. 网络是否可以访问 API 端点
 4. 查看 QGIS 的「日志消息」面板是否有错误信息
+
+.. note::
+   v2.1.3 起发送链路已做防呆：无活动对话会自动创建；若主线程构造异常或
+   LLM 调用超时（180s），聊天框会显示**红色错误提示**而非「点击无反应」。
+   若返回 ``403 PermissionDenied``，本地模型请留空 Key，插件会自动附加浏览器
+   User-Agent 绕过 Cloudflare Bot 防护。
 
 Q: Agent 生成的代码是否正确？
 -------------------------------

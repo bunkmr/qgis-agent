@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtWidgets
+from qgis.PyQt import QtCore, QtWidgets
 
 
 class Ui_SettingsDialog(object):
@@ -18,12 +18,12 @@ class Ui_SettingsDialog(object):
         self.table.setColumnCount(4)
         self.table.setHorizontalHeaderLabels(["模型名称", "API 端点", "API Key", ""])
         self.table.horizontalHeader().setStretchLastSection(False)
-        self.table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
-        self.table.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
-        self.table.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Stretch)
         self.table.setColumnWidth(3, 60)
         self.table.verticalHeader().setVisible(False)
-        self.table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
 
         self.btnAdd = QtWidgets.QPushButton("+ 添加模型")
         self.btnAdd.setStyleSheet("QPushButton { background-color: #5CB85C; color: white; border-radius: 4px; padding: 6px 16px; } QPushButton:hover { background-color: #4CAE4C; }")

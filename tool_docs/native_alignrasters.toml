@@ -1,9 +1,13 @@
 tool_ID = "native:alignrasters"
 tool_name = "alignrasters"
-brief_description = """NEWin3.34
-Aligns rasters by resampling them to the same cell size and reprojecting to the same CRS as a reference raster."""
-full_description = """NEWin3.34
-Aligns rasters by resampling them to the same cell size and reprojecting to the same CRS as a reference raster."""
+brief_description = """
+NEWin3.34
+Aligns rasters by resampling them to the same cell size and reprojecting to the same CRS as a reference raster.
+"""
+full_description = """
+NEWin3.34
+Aligns rasters by resampling them to the same cell size and reprojecting to the same CRS as a reference raster.
+"""
 parameters = """
 INPUT: Input layers. List of input raster layers with resampling options associated(filled as a QgsProcessingParameterAlignRasterLayers item —done in
 GUI by pressing Configure Raster… buttonfor each selected layer): Input layer [string] ( inputFile ) Full path of the input layer to align Output file [string] ( outputFile ) Full path of the corresponding aligned output layer Resampling method [enumeration] ( resampleMethod ) Method to use for input layer resampling. Available options are: 0 — Nearest Neighbour 1 — Bilinear (2x2 kernel) 2 — Cubic (4x4 kernel) 3 — Cubic B-Spline (4x4 kernel) 4 — Lanczos (6x6 kernel) 5 — Average 6 — Mode 7 — Maximum 8 — Minimum 9 — Median 10 — First quartile 
@@ -29,6 +33,7 @@ Y direction to apply to cells grid. Type: [number]
 EXTENT: Clip to extent Optional. Specify the extent of the output raster layer.It will internally be extended to a multiple of the tile size. Available methods are: Calculate from layer…: uses extent of a layer loaded in the current project Calculate from layout map…: uses extent of a layout map item in the active project Calculate from bookmark…: uses extent of a saved bookmark Use map canvas extent Draw on canvas: click and drag a rectangle delimiting the area to take into account Enter the coordinates as xmin, xmax, ymin, ymax. Type: [extent] outputs = 
 OUTPUT_LAYERS: Aligned rasters. output rasters with pixels resampled. Type: [raster] [list]
 
+
 """
 code_example = """
 import processing
@@ -37,7 +42,7 @@ from qgis.core import QgsRasterLayer, QgsProject
 def align_rasters(output_path):
     input_layers = ['path/to/raster1.tif', 'path/to/raster2.tif']  # List of input raster layer paths
     reference_layer_path = 'path/to/reference_raster.tif'
-    reference_layer = QgsRasterLayer(reference_layer_path, """Reference Layer")
+    reference_layer = QgsRasterLayer(reference_layer_path, \"\"\"Reference Layer\")
     
                                                                 
     parameters = {
@@ -54,12 +59,13 @@ def align_rasters(output_path):
     }
 
                                
-    result = processing.run("native:alignrasters", parameters)
+    result = processing.run(\"native:alignrasters\", parameters)
 
                                    
-    aligned_raster_layer = QgsRasterLayer(result['OUTPUT'], "Aligned Rasters")
+    aligned_raster_layer = QgsRasterLayer(result['OUTPUT'], \"Aligned Rasters\")
     QgsProject.instance().addMapLayer(aligned_raster_layer)
 
-output_raster_path = "path/to/aligned_raster_output.tif"
+output_raster_path = \"path/to/aligned_raster_output.tif\"
 align_rasters(output_raster_path)
+
 """

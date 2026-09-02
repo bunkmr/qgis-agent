@@ -1,11 +1,15 @@
 tool_ID = "gdal:overviews"
 tool_name = "overviews"
-brief_description = """To speed up rendering time of raster layers overviews (pyramids) can be created. Overviews are lower resolution copies of the data which QGIS uses depending of the level of zoom.
+brief_description = """
+To speed up rendering time of raster layers overviews (pyramids) can be created. Overviews are lower resolution copies of the data which QGIS uses depending of the level of zoom.
 This algorithm is derived from the GDAL addo utility .
-Default menu: Raster ► Miscellaneous"""
-full_description = """To speed up rendering time of raster layers overviews (pyramids) can be created. Overviews are lower resolution copies of the data which QGIS uses depending of the level of zoom.
+Default menu: Raster ► Miscellaneous
+"""
+full_description = """
+To speed up rendering time of raster layers overviews (pyramids) can be created. Overviews are lower resolution copies of the data which QGIS uses depending of the level of zoom.
 This algorithm is derived from the GDAL addo utility .
-Default menu: Raster ► Miscellaneous"""
+Default menu: Raster ► Miscellaneous
+"""
 parameters = """
 INPUT: Input layer. Input raster layer. Type: [raster]
 CLEAN: Remove all existing overviews. Removes existing overviews from the raster.By default these are not removed.. Type: [boolean] Default: False 
@@ -18,6 +22,7 @@ ERDAS Imagine file.By default the overviews are stored in the output raster.Poss
 EXTRA: Additional command-line parameters Optional. Add extra GDAL command line options. Type: [string] Default: None outputs = 
 OUTPUT: Pyramidized. Output raster layer with overviews. Type: [raster]
 
+
 """
 code_example = """
 import processing
@@ -29,7 +34,7 @@ def create_overviews():
     output_path = 'D:/output_raster_with_overviews.tif'
 
     # Load the input raster layer
-    input_layer = QgsRasterLayer(input_raster_path, """Input Raster")
+    input_layer = QgsRasterLayer(input_raster_path, \"\"\"Input Raster\")
 
                                    
     parameters = {
@@ -43,7 +48,7 @@ def create_overviews():
     }
 
                                       
-    result = processing.run("gdal:overviews", parameters)
+    result = processing.run(\"gdal:overviews\", parameters)
 
                                                     
     output_layer = QgsRasterLayer(output_path, 'Raster with Overviews')
@@ -51,4 +56,5 @@ def create_overviews():
 
                       
 create_overviews()
+
 """
