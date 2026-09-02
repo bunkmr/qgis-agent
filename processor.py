@@ -15,6 +15,20 @@ from .rag import DocStore, APIDocRetriever, Cookbook
 # ── Query Tuning 模块 ──
 from .query_tuning import QueryTuner, DataOverview
 
+import weakref
+
+# 进程级注册表：跟踪所有活着的 Processor 实例，便于插件卸载 / QGIS 关闭时统一中断后台线程。
+_ALL_PROCESSORS = weakref.WeakSet()
+
+
+def shutdown_all_processors():
+    """中断全部 Processor 的后台 LLM 请求并清理线程池，避免 QGIS 关闭时卡死。"""
+    for proc in list(_ALL_PROCESSORS):
+        try:
+            proc.shutdown()
+        except Exception:
+            pass
+
 # Agent 系统提示词
 AGENT_SYSTEM_PROMPT = """你是一个 QGIS 地理信息系统智能助手，运行在 QGIS 桌面版内部。
 
@@ -120,9 +134,19 @@ class Processor(QObject):
         self.llm = get_llm_instance(self.provider, model_name, api_key, endpoint, temperature=temperature)
         self.output_parser = StrOutputParser()
         self.threadpool = QThreadPool()
+        # 线程执行完立即退出，不要在池中常驻，否则 QGIS 关闭时这些线程会让进程无法退出。
+        try:
+            self.threadpool.setExpiryTimeout(0)
+        except Exception:
+            pass
         self.max_tool_rounds = 10  # 最大工具调用轮次，防止死循环
         self._cancelled = False  # 中断标志
         self._code_confirm_callback = None  # 代码执行确认回调
+        # 登记到进程级注册表
+        try:
+            _ALL_PROCESSORS.add(self)
+        except Exception:
+            pass
 
         # ── RAG 组件（构造失败一律降级，绝不阻塞对话）──
         self.doc_store = None
@@ -150,10 +174,33 @@ class Processor(QObject):
             self.data_overview = None
 
     def cancel(self):
-        """设置中断标志，后台线程会在下一轮循环前检查"""
+        """设置中断标志，后台线程会在下一轮循环前检查；同时关闭 http 客户端中断在途请求。"""
         self._cancelled = True
         # 清空线程池中等待的任务
         self.threadpool.clear()
+        # 关闭底层 httpx 客户端，让正在执行的阻塞式 LLM 请求立即抛错返回，
+        # 否则工作线程会卡在 socket 等待直到 timeout（默认 180s）。
+        self._close_http_client()
+
+    def shutdown(self):
+        """插件卸载 / QGIS 关闭时调用：中断后台 LLM 请求并清理线程池，避免 QGIS 卡死在关闭界面。"""
+        try:
+            self._cancelled = True
+        except Exception:
+            pass
+        try:
+            self.threadpool.clear()
+        except Exception:
+            pass
+        self._close_http_client()
+
+    def _close_http_client(self):
+        """关闭 LLM 底层 httpx 客户端（若已构造）。仅在卸载/停止时调用，目的是中断在途请求。"""
+        try:
+            if self.llm is not None and hasattr(self.llm, "_http_client"):
+                self.llm._http_client.close()
+        except Exception:
+            pass
 
     # ── Agent 模式：带工具调用的智能对话 ──
 

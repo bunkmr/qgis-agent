@@ -30,7 +30,7 @@ def get_llm_instance(provider, model, api_key, endpoint, temperature=0):
     llm_timeout = 180
     llm_retries = 1
     if provider == "DeepSeek":
-        return ChatDeepSeek(
+        llm = ChatDeepSeek(
             model=model,
             api_key=api_key,
             temperature=temperature,
@@ -39,17 +39,25 @@ def get_llm_instance(provider, model, api_key, endpoint, temperature=0):
             max_retries=llm_retries,
             default_headers=browser_headers,
         )
-    # 其他所有 provider（GLM, XiaomiMiMo, Gemini, OpenAI, Custom 等）都走 OpenAI 兼容接口
-    return ChatOpenAI(
-        model=model,
-        openai_api_key=api_key,
-        openai_api_base=endpoint,
-        temperature=temperature,
-        http_client=http_client,
-        timeout=llm_timeout,
-        max_retries=llm_retries,
-        default_headers=browser_headers,
-    )
+    else:
+        # 其他所有 provider（GLM, XiaomiMiMo, Gemini, OpenAI, Custom 等）都走 OpenAI 兼容接口
+        llm = ChatOpenAI(
+            model=model,
+            openai_api_key=api_key,
+            openai_api_base=endpoint,
+            temperature=temperature,
+            http_client=http_client,
+            timeout=llm_timeout,
+            max_retries=llm_retries,
+            default_headers=browser_headers,
+        )
+    # 暴露底层 httpx 客户端，供插件卸载 / QGIS 关闭时主动 close() 以中断在途请求，
+    # 避免工作线程卡在 socket 等待导致 QGIS 关闭界面一直转圈。
+    try:
+        llm._http_client = http_client
+    except Exception:
+        pass
+    return llm
 
 
 def get_default_api_key(provider):

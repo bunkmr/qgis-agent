@@ -118,16 +118,64 @@ class QGISAgent:
         )
 
     def onClosePlugin(self):
-        self.dockwidget.closingPlugin.disconnect(self.onClosePlugin)
+        # 关闭 dock 时中断可能在跑的后台对话线程，避免线程继续占用资源
+        try:
+            if self.live_conversation is not None and self.live_conversation.processor is not None:
+                self.live_conversation.processor.shutdown()
+        except Exception:
+            pass
+        try:
+            self.dockwidget.closingPlugin.disconnect(self.onClosePlugin)
+        except Exception:
+            pass
         self.plugin_is_active = False
         if self.dataloader:
-            self.dataloader.close()
+            try:
+                self.dataloader.close()
+            except Exception:
+                pass
 
     def unload(self):
-        for action in self.actions:
-            self.iface.removePluginMenu(self.tr("&QGIS Agent"), action)
-            self.iface.removeToolBarIcon(action)
-        del self.toolbar
+        # 1) 先中断所有后台 LLM 请求 / 工作线程，避免 QGIS 关闭界面一直转圈卡死
+        try:
+            from .processor import shutdown_all_processors
+            shutdown_all_processors()
+        except Exception:
+            pass
+        try:
+            if self.live_conversation is not None and self.live_conversation.processor is not None:
+                self.live_conversation.processor.shutdown()
+        except Exception:
+            pass
+        # 2) 停掉任何可能存活的定时器
+        try:
+            if self.console_tracker is not None:
+                self.console_tracker.stop()
+        except Exception:
+            pass
+        # 3) 关闭 dock 并断开信号（不 delete，交给 QGIS 自行回收，避免向已销毁对象发信号崩溃）
+        try:
+            if self.dockwidget is not None:
+                self.iface.removeDockWidget(self.dockwidget)
+        except Exception:
+            pass
+        # 4) 关闭数据库连接
+        try:
+            if self.dataloader is not None:
+                self.dataloader.close()
+        except Exception:
+            pass
+        # 5) 清理菜单与工具栏（必须放在最后，且全程 try，unload 抛异常会让 QGIS 关闭卡死）
+        for action in list(self.actions):
+            try:
+                self.iface.removePluginMenu(self.tr("&QGIS Agent"), action)
+                self.iface.removeToolBarIcon(action)
+            except Exception:
+                pass
+        try:
+            del self.toolbar
+        except Exception:
+            pass
 
     def run(self):
         if not _HAS_LLM_LIBS:
