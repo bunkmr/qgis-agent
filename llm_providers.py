@@ -3,6 +3,8 @@ import os
 import httpx
 from langchain_openai import ChatOpenAI
 from langchain_deepseek import ChatDeepSeek
+import logging
+logger = logging.getLogger(__name__)
 
 
 def get_llm_instance(provider, model, api_key, endpoint, temperature=0):
@@ -55,8 +57,8 @@ def get_llm_instance(provider, model, api_key, endpoint, temperature=0):
     # 避免工作线程卡在 socket 等待导致 QGIS 关闭界面一直转圈。
     try:
         llm._http_client = http_client
-    except Exception:
-        pass
+    except Exception as _e:
+        logger.debug("ignored exception", exc_info=True)
     return llm
 
 

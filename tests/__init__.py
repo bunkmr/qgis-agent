@@ -2,6 +2,8 @@ import os
 import sys
 import tempfile
 import unittest
+import logging
+logger = logging.getLogger(__name__)
 
 # 注意：从项目父目录运行测试：cd D:\Work && python -m unittest qgis_agent.tests -v
 
@@ -194,8 +196,8 @@ class TestPackageManager(unittest.TestCase):
         pm = PackageManager(["os", "sys"])
         try:
             pm.check_dependencies()
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
 
 
 class TestConfig(unittest.TestCase):

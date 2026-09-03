@@ -18,6 +18,8 @@ import urllib.parse
 from dataclasses import dataclass
 from typing import Optional
 from html.parser import HTMLParser
+import logging
+logger = logging.getLogger(__name__)
 
 
 # QGIS 官方 API 文档基础 URL
@@ -306,8 +308,8 @@ class OfficialDocScraper:
                 with open(cache_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
                 return [APIDocEntry(**entry) for entry in data]
-            except Exception:
-                pass
+            except Exception as _e:
+                logger.debug("ignored exception", exc_info=True)
 
         # 构建 URL
         url = f"{QGIS_API_BASE_URL}/class{class_name}.html"

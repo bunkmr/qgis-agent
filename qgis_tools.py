@@ -504,8 +504,8 @@ def set_layer_labeling(
             if hasattr(ps, attr):
                 try:
                     setattr(ps, attr, placement_val)
-                except Exception:
-                    pass
+                except Exception as _e:
+                    logger.debug("ignored exception", exc_info=True)
         settings.placementSettings = ps
     else:
         # 旧版 QGIS 直接设置 placement
@@ -522,8 +522,8 @@ def set_layer_labeling(
                     4: QgsPalLayerSettings.Horizontal,
                 }.get(placement_val, QgsPalLayerSettings.AroundPoint)
                 settings.placement = placement_enum
-            except Exception:
-                pass  # 保留默认值
+            except Exception as _e:
+                logger.debug("ignored exception", exc_info=True)
 
     # 应用标注
     labeling = QgsVectorLayerSimpleLabeling(settings)
@@ -537,8 +537,8 @@ def set_layer_labeling(
             if hasattr(layer, 'setLabeling'):
                 # 直接传 QgsPalLayerSettings（某些版本接受）
                 layer.setLabeling(settings)
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
     layer.setLabelsEnabled(True)
     layer.triggerRepaint()
 
@@ -582,6 +582,8 @@ def render_map(output_path: str, width: int = 800, height: int = 600):
 # ──────────────────────────────────────────────
 
 from qgis.PyQt.QtCore import pyqtSignal, pyqtSlot, QMutex, QWaitCondition, QThread  # noqa: E402
+import logging
+logger = logging.getLogger(__name__)
 
 # 全局代码确认回调（由 qgis_agent.py 设置）
 _code_confirm_callback = None
@@ -750,8 +752,8 @@ def save_memory(content: str, category: str = "") -> dict:
             try:
                 with open(memory_path, "r", encoding="utf-8") as f:
                     existing = f.read()
-            except Exception:
-                pass
+            except Exception as _e:
+                logger.debug("ignored exception", exc_info=True)
 
         # 简单去重：如果内容已存在，跳过
         if content.strip() in existing:

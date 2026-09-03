@@ -14,6 +14,8 @@ import re
 import sqlite3
 import json
 import threading
+import logging
+logger = logging.getLogger(__name__)
 
 try:
     import tomllib
@@ -184,8 +186,8 @@ class DocStore:
         for doc in docs:
             try:
                 self.insert_api_doc(doc)
-            except Exception:
-                pass
+            except Exception as _e:
+                logger.debug("ignored exception", exc_info=True)
         conn.commit()
         # 重建 FTS5 索引
         conn.execute("INSERT INTO pyqgis_api_fts(pyqgis_api_fts) VALUES('rebuild')")
@@ -305,7 +307,8 @@ class DocStore:
                     doc.get("code_example", ""),
                 ))
                 count += 1
-            except Exception:
+            except Exception as _e:
+                logger.debug("ignored exception in loop", exc_info=True)
                 continue
         conn.commit()
         # 重建 FTS5 索引

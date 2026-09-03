@@ -9,6 +9,8 @@ import json
 import os
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
+import logging
+logger = logging.getLogger(__name__)
 
 
 class ErrorPatternMatcher:
@@ -234,8 +236,8 @@ class AdaptiveLearning:
             try:
                 with open(self.history_file, 'r') as f:
                     return json.load(f)
-            except Exception:
-                pass
+            except Exception as _e:
+                logger.debug("ignored exception", exc_info=True)
 
         return {
             "successful_fixes": [],

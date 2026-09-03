@@ -14,6 +14,8 @@ API 文档生成器 — 从 QGIS 运行时提取 PyQGIS/GDAL API 文档。
 import inspect
 
 from .doc_store import DocStore
+import logging
+logger = logging.getLogger(__name__)
 
 
 # ── 核心 QGIS 类列表（需要提取文档的类） ──
@@ -122,8 +124,8 @@ def _inspect_class(cls, class_name: str, source: str = "runtime") -> list[dict]:
                 "return_type": "",
                 "source": source,
             })
-    except Exception:
-        pass
+    except Exception as _e:
+        logger.debug("ignored exception", exc_info=True)
     return docs
 
 
@@ -157,10 +159,11 @@ def _extract_processing_algorithms() -> list[dict]:
                     "return_type": "dict",
                     "source": "processing_registry",
                 })
-            except Exception:
+            except Exception as _e:
+                logger.debug("ignored exception in loop", exc_info=True)
                 continue
-    except Exception:
-        pass
+    except Exception as _e:
+        logger.debug("ignored exception", exc_info=True)
     return docs
 
 

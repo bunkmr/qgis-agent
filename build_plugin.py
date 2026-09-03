@@ -15,6 +15,8 @@ QGIS 插件 ZIP 格式要求：ZIP 根目录直接包含一个与插件同名的
 import os
 import zipfile
 from datetime import datetime
+import logging
+logger = logging.getLogger(__name__)
 
 
 # 插件名称（同时作为 ZIP 内的顶层文件夹名）
@@ -110,8 +112,8 @@ def get_version() -> str:
             for line in content.split("\n"):
                 if "PLUGIN_VERSION" in line:
                     return line.split("=")[1].strip().strip('"').strip("'")
-    except Exception:
-        pass
+    except Exception as _e:
+        logger.debug("ignored exception", exc_info=True)
     return "1.2.0"
 
 

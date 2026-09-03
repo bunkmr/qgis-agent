@@ -6,6 +6,8 @@ Converts JSON format to TOML and integrates with QGIS Agent
 import json
 import os
 import re
+import logging
+logger = logging.getLogger(__name__)
 
 try:
     import tomllib
@@ -142,8 +144,8 @@ def repair_tool_docs(tool_docs_dir: str):
             with open(filepath, "rb") as f:
                 tomllib.load(f)
             continue  # 已是合法 TOML，跳过
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
         # 宽松解析后按合法 TOML 重写
         text = _read_text(filepath)
         fields = _lenient_parse(text)

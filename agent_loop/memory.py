@@ -10,6 +10,8 @@ import os
 from dataclasses import dataclass, field
 from typing import Optional
 from datetime import datetime
+import logging
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -159,8 +161,8 @@ class LongTermMemory:
                     f.write(content)
 
             self._content = None  # 清除缓存
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
 
     def has_content(self) -> bool:
         """是否有记忆内容"""

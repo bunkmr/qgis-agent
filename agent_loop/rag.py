@@ -7,6 +7,8 @@ RAG 引擎 — 检索增强生成。
 
 from typing import Optional
 from ..rag import DocStore, APIDocRetriever, Cookbook
+import logging
+logger = logging.getLogger(__name__)
 
 
 class RAGEngine:
@@ -43,8 +45,8 @@ class RAGEngine:
             results = self.retriever.search(query, top_k=top_k)
             if results:
                 return self.retriever.format_as_context(results)
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
         return ""
 
     def search_for_tool_call(self, tool_name: str, arguments: dict) -> str:
@@ -62,8 +64,8 @@ class RAGEngine:
             results = self.retriever.search_for_tool_call(tool_name, arguments)
             if results:
                 return self.retriever.format_as_context(results, max_chars=3000)
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
         return ""
 
     def search_similar_tasks(self, user_input: str, top_k: int = 2) -> str:
@@ -81,8 +83,8 @@ class RAGEngine:
             results = self.cookbook.search_for_task(user_input, top_k=top_k)
             if results:
                 return self.cookbook.format_as_context(results)
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
         return ""
 
     def archive_task(self, user_input: str, tool_calls: list, code_snippet: str = "",
@@ -103,8 +105,8 @@ class RAGEngine:
                 code_snippet=code_snippet,
                 success=success,
             )
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
 
     def get_stats(self) -> dict:
         """获取 RAG 统计信息"""

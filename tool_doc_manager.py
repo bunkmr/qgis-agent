@@ -7,6 +7,8 @@ Inspired by SpatialAnalysisAgent's Tools_Documentation system.
 import os
 import json
 from typing import Dict, List, Optional
+import logging
+logger = logging.getLogger(__name__)
 
 
 class ToolDocManager:
@@ -61,8 +63,8 @@ class ToolDocManager:
                     "code_example": doc.get("code_example", ""),
                     "file_path": filepath
                 }
-        except Exception:
-            pass  # Skip invalid TOML files
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
 
     def get_tool_doc(self, tool_id: str) -> Optional[Dict]:
         """Get documentation for a specific tool"""

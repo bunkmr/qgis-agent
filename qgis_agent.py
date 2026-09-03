@@ -16,6 +16,8 @@ from qgis.PyQt.QtWidgets import (
 from qgis.utils import iface
 
 from .package_manager import PackageManager
+import logging
+logger = logging.getLogger(__name__)
 
 required_modules = [
     "langchain_core",
@@ -122,60 +124,60 @@ class QGISAgent:
         try:
             if self.live_conversation is not None and self.live_conversation.processor is not None:
                 self.live_conversation.processor.shutdown()
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
         try:
             self.dockwidget.closingPlugin.disconnect(self.onClosePlugin)
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
         self.plugin_is_active = False
         if self.dataloader:
             try:
                 self.dataloader.close()
-            except Exception:
-                pass
+            except Exception as _e:
+                logger.debug("ignored exception", exc_info=True)
 
     def unload(self):
         # 1) 先中断所有后台 LLM 请求 / 工作线程，避免 QGIS 关闭界面一直转圈卡死
         try:
             from .processor import shutdown_all_processors
             shutdown_all_processors()
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
         try:
             if self.live_conversation is not None and self.live_conversation.processor is not None:
                 self.live_conversation.processor.shutdown()
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
         # 2) 停掉任何可能存活的定时器
         try:
             if self.console_tracker is not None:
                 self.console_tracker.stop()
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
         # 3) 关闭 dock 并断开信号（不 delete，交给 QGIS 自行回收，避免向已销毁对象发信号崩溃）
         try:
             if self.dockwidget is not None:
                 self.iface.removeDockWidget(self.dockwidget)
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
         # 4) 关闭数据库连接
         try:
             if self.dataloader is not None:
                 self.dataloader.close()
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
         # 5) 清理菜单与工具栏（必须放在最后，且全程 try，unload 抛异常会让 QGIS 关闭卡死）
         for action in list(self.actions):
             try:
                 self.iface.removePluginMenu(self.tr("&QGIS Agent"), action)
                 self.iface.removeToolBarIcon(action)
-            except Exception:
-                pass
+            except Exception as _e:
+                logger.debug("ignored exception", exc_info=True)
         try:
             del self.toolbar
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
 
     def run(self):
         if not _HAS_LLM_LIBS:
@@ -431,8 +433,8 @@ class QGISAgent:
             self.live_conversation.llm_thinking.disconnect(self._on_thinking)
             try:
                 self.live_conversation.llm_tool_status.disconnect(self._on_tool_status)
-            except Exception:
-                pass
+            except Exception as _e:
+                logger.debug("ignored exception", exc_info=True)
             self.live_conversation.llm_interrupted.disconnect(self._on_response_error)
 
             # 清除流式标记
@@ -442,8 +444,8 @@ class QGISAgent:
             if self.dataloader.connection is None:
                 try:
                     self.dataloader.connect()
-                except Exception:
-                    pass
+                except Exception as _e:
+                    logger.debug("ignored exception", exc_info=True)
 
             self.dockwidget.updateConversation(self.live_conversation)
             self.dockwidget.updateGeneralInfo(self.live_conversation)
@@ -537,8 +539,8 @@ class QGISAgent:
         self.live_conversation.llm_thinking.disconnect(self._on_thinking)
         try:
             self.live_conversation.llm_tool_status.disconnect(self._on_tool_status)
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
         self.live_conversation.llm_interrupted.disconnect(self._on_response_error)
         self.dockwidget.finalizeThinking()
         self.dockwidget.txHistory.append(f"<p style='color:red'>错误: {html_module.escape(error_message)}</p>")
@@ -635,10 +637,10 @@ class QGISAgent:
                             f"API 文档索引构建完成！\n"
                             f"共索引 {new_stats['api_docs']} 个 API 条目。"
                         )
-                except Exception:
-                    pass  # 构建失败静默跳过，不影响插件使用
-        except Exception:
-            pass  # RAG 初始化失败不阻塞插件
+                except Exception as _e:
+                    logger.debug("ignored exception", exc_info=True)
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
 
     def _on_stop_requested(self):
         """用户点击停止按钮"""

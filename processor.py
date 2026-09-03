@@ -16,6 +16,8 @@ from .rag import DocStore, APIDocRetriever, Cookbook
 from .query_tuning import QueryTuner, DataOverview
 
 import weakref
+import logging
+logger = logging.getLogger(__name__)
 
 # 进程级注册表：跟踪所有活着的 Processor 实例，便于插件卸载 / QGIS 关闭时统一中断后台线程。
 _ALL_PROCESSORS = weakref.WeakSet()
@@ -26,8 +28,8 @@ def shutdown_all_processors():
     for proc in list(_ALL_PROCESSORS):
         try:
             proc.shutdown()
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
 
 # Agent 系统提示词
 AGENT_SYSTEM_PROMPT = """你是一个 QGIS 地理信息系统智能助手，运行在 QGIS 桌面版内部。
@@ -137,16 +139,16 @@ class Processor(QObject):
         # 线程执行完立即退出，不要在池中常驻，否则 QGIS 关闭时这些线程会让进程无法退出。
         try:
             self.threadpool.setExpiryTimeout(0)
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
         self.max_tool_rounds = 10  # 最大工具调用轮次，防止死循环
         self._cancelled = False  # 中断标志
         self._code_confirm_callback = None  # 代码执行确认回调
         # 登记到进程级注册表
         try:
             _ALL_PROCESSORS.add(self)
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
 
         # ── RAG 组件（构造失败一律降级，绝不阻塞对话）──
         self.doc_store = None
@@ -186,12 +188,12 @@ class Processor(QObject):
         """插件卸载 / QGIS 关闭时调用：中断后台 LLM 请求并清理线程池，避免 QGIS 卡死在关闭界面。"""
         try:
             self._cancelled = True
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
         try:
             self.threadpool.clear()
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
         self._close_http_client()
 
     def _close_http_client(self):
@@ -199,8 +201,8 @@ class Processor(QObject):
         try:
             if self.llm is not None and hasattr(self.llm, "_http_client"):
                 self.llm._http_client.close()
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
 
     # ── Agent 模式：带工具调用的智能对话 ──
 
@@ -253,8 +255,8 @@ class Processor(QObject):
                     if len(raw) > 4000:
                         raw = raw[:4000] + "\n\n...(记忆过长已截断)"
                     memory_content = raw
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
 
         if memory_content:
             system_prompt += f"\n\n## 长期记忆内容（来自 MEMORY.md）\n以下是之前保存的重要信息，请优先参考：\n\n{memory_content}"
@@ -265,8 +267,8 @@ class Processor(QObject):
             cookbook_results = self.cookbook.search_for_task(user_input, top_k=2)
             if cookbook_results:
                 cookbook_context = self.cookbook.format_as_context(cookbook_results)
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
 
         if cookbook_context:
             system_prompt += f"\n\n{cookbook_context}"
@@ -291,8 +293,8 @@ class Processor(QObject):
                         if req:
                             messages.append(HumanMessage(content=req))
                         messages.append(AIMessage(content=interaction.get("responseText", "")))
-        except Exception:
-            pass  # 历史加载失败不影响本次对话
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
 
         # 添加当前用户输入
         messages.append(HumanMessage(content=user_input))
@@ -388,8 +390,8 @@ class Processor(QObject):
                             messages.append(HumanMessage(content=labeled))
                             if thinking_callback:
                                 thinking_callback("📚 RAG 检索到相关 API / 算法文档\n")
-                    except Exception:
-                        pass  # RAG 检索失败不阻塞流程
+                    except Exception as _e:
+                        logger.debug("ignored exception", exc_info=True)
 
                 # ── 发送代码到报告页签 ──
                 if tool_name == "execute_pyqgis" and "code" in tool_args:
@@ -492,8 +494,8 @@ class Processor(QObject):
                 final_response=final_response,
                 success=True,
             )
-        except Exception:
-            pass  # 归档失败不影响主流程
+        except Exception as _e:
+            logger.debug("ignored exception", exc_info=True)
 
         # 保存交互记录
         tool_log = json.dumps(all_tool_calls_log, ensure_ascii=False) if all_tool_calls_log else ""
