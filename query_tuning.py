@@ -132,7 +132,7 @@ class DataOverview:
         info_parts = [f"Layer: {layer.name()}"]
         info_parts.append(f"Type: {self._get_layer_type(layer)}")
 
-        if layer.type() == QgsMapLayer.VectorLayer:
+        if layer.type() == QgsMapLayer.LayerType.VectorLayer:
             info_parts.append(f"Feature Count: {layer.featureCount()}")
             info_parts.append(f"CRS: {layer.crs().authid()}")
 
@@ -147,7 +147,7 @@ class DataOverview:
             if extent.isValid():
                 info_parts.append(f"Extent: {extent.toString()}")
 
-        elif layer.type() == QgsMapLayer.RasterLayer:
+        elif layer.type() == QgsMapLayer.LayerType.RasterLayer:
             info_parts.append(f"CRS: {layer.crs().authid()}")
 
             # Get raster info
@@ -165,15 +165,15 @@ class DataOverview:
         """Get human-readable layer type"""
         from qgis.core import QgsMapLayer
 
-        if layer.type() == QgsMapLayer.VectorLayer:
+        if layer.type() == QgsMapLayer.LayerType.VectorLayer:
             geom_type = layer.geometryType()
             geom_names = {0: "Point", 1: "Line", 2: "Polygon", 3: "No Geometry", 4: "Unknown"}
             return f"Vector ({geom_names.get(geom_type, 'Unknown')})"
-        elif layer.type() == QgsMapLayer.RasterLayer:
+        elif layer.type() == QgsMapLayer.LayerType.RasterLayer:
             return "Raster"
-        elif layer.type() == QgsMapLayer.MeshLayer:
+        elif layer.type() == QgsMapLayer.LayerType.MeshLayer:
             return "Mesh"
-        elif layer.type() == QgsMapLayer.VectorTileLayer:
+        elif layer.type() == QgsMapLayer.LayerType.VectorTileLayer:
             return "Vector Tile"
         else:
             return f"Unknown ({layer.type()})"
@@ -197,10 +197,10 @@ class DataOverview:
             for layer_id, layer in layers.items():
                 summary["layer_names"].append(layer.name())
 
-                if layer.type() == QgsMapLayer.VectorLayer:
+                if layer.type() == QgsMapLayer.LayerType.VectorLayer:
                     summary["vector_layers"] += 1
                     summary["total_features"] += layer.featureCount()
-                elif layer.type() == QgsMapLayer.RasterLayer:
+                elif layer.type() == QgsMapLayer.LayerType.RasterLayer:
                     summary["raster_layers"] += 1
 
             return summary

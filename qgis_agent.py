@@ -558,7 +558,7 @@ class QGISAgent:
         """
         msg = QMessageBox()
         msg.setWindowTitle("代码执行确认")
-        msg.setIcon(QMessageBox.Warning)
+        msg.setIcon(QMessageBox.Icon.Warning)
         msg.setText(f"即将执行 {tool_name}，是否继续？")
         msg.setInformativeText("请检查代码是否正确，确认无误后点击「执行」。")
         msg.setDetailedText(code_preview)
@@ -574,7 +574,7 @@ class QGISAgent:
         """同步版本的代码确认（用于全局回调，返回 bool）"""
         msg = QMessageBox()
         msg.setWindowTitle("代码执行确认")
-        msg.setIcon(QMessageBox.Warning)
+        msg.setIcon(QMessageBox.Icon.Warning)
         msg.setText(f"即将执行 {tool_name}，是否继续？")
         msg.setInformativeText("请检查代码是否正确，确认无误后点击「执行」。")
         msg.setDetailedText(code_preview)

@@ -27,17 +27,17 @@ from .smart_debugger import SmartDebugger
 
 def _get_layer_type(layer):
     """获取图层类型字符串"""
-    if layer.type() == QgsMapLayer.VectorLayer:
+    if layer.type() == QgsMapLayer.LayerType.VectorLayer:
         gtype = layer.geometryType()
         geom_names = {0: "Point", 1: "Line", 2: "Polygon", 3: "NoGeometry", 4: "Unknown"}
         return f"vector_{geom_names.get(gtype, 'Unknown')}"
-    elif layer.type() == QgsMapLayer.RasterLayer:
+    elif layer.type() == QgsMapLayer.LayerType.RasterLayer:
         return "raster"
-    elif layer.type() == QgsMapLayer.MeshLayer:
+    elif layer.type() == QgsMapLayer.LayerType.MeshLayer:
         return "mesh"
-    elif layer.type() == QgsMapLayer.VectorTileLayer:
+    elif layer.type() == QgsMapLayer.LayerType.VectorTileLayer:
         return "vector_tile"
-    elif layer.type() == QgsMapLayer.PluginLayer:
+    elif layer.type() == QgsMapLayer.LayerType.PluginLayer:
         return "plugin"
     else:
         return f"type_{layer.type()}"
@@ -58,7 +58,7 @@ def get_qgis_info():
             "type": _get_layer_type(layer),
             "visible": project.layerTreeRoot().findLayer(layer_id).isVisible() if project.layerTreeRoot().findLayer(layer_id) else False
         }
-        if layer.type() == QgsMapLayer.VectorLayer:
+        if layer.type() == QgsMapLayer.LayerType.VectorLayer:
             info["feature_count"] = layer.featureCount()
         layers_info.append(info)
 
@@ -85,7 +85,7 @@ def get_layer_features(layer_id_or_name: str, limit: int = 10):
 
     if not layer:
         return {"error": f"未找到图层: {layer_id_or_name}"}
-    if layer.type() != QgsMapLayer.VectorLayer:
+    if layer.type() != QgsMapLayer.LayerType.VectorLayer:
         return {"error": f"图层 {layer.name()} 不是矢量图层"}
 
     features = []
@@ -450,7 +450,7 @@ def set_layer_labeling(
 
     if not layer:
         return {"error": f"未找到图层: {layer_id_or_name}"}
-    if layer.type() != QgsMapLayer.VectorLayer:
+    if layer.type() != QgsMapLayer.LayerType.VectorLayer:
         return {"error": f"图层 {layer.name()} 不是矢量图层，无法设置标注"}
 
     # 检查字段是否存在
@@ -486,11 +486,11 @@ def set_layer_labeling(
 
     # 放置方式 — 兼容 QGIS 3.x 各版本
     placement_map = {
-        "around_point": 0,   # QgsPalLayerSettings.AroundPoint
-        "over_point": 1,     # QgsPalLayerSettings.OverPoint
-        "line": 2,           # QgsPalLayerSettings.Line
-        "curved": 3,         # QgsPalLayerSettings.Curved
-        "horizontal": 4,     # QgsPalLayerSettings.Horizontal
+        "around_point": 0,   # QgsPalLayerSettings.Placement.AroundPoint
+        "over_point": 1,     # QgsPalLayerSettings.PredefinedPointPosition.OverPoint
+        "line": 2,           # QgsPalLayerSettings.Position.Line
+        "curved": 3,         # QgsPalLayerSettings.Position.Curved
+        "horizontal": 4,     # QgsPalLayerSettings.Position.Horizontal
     }
     placement_val = placement_map.get(placement, 0)
 
@@ -515,12 +515,12 @@ def set_layer_labeling(
             # 尝试用枚举值
             try:
                 placement_enum = {
-                    0: QgsPalLayerSettings.AroundPoint,
-                    1: QgsPalLayerSettings.OverPoint,
-                    2: QgsPalLayerSettings.Line,
-                    3: QgsPalLayerSettings.Curved,
-                    4: QgsPalLayerSettings.Horizontal,
-                }.get(placement_val, QgsPalLayerSettings.AroundPoint)
+                    0: QgsPalLayerSettings.Placement.AroundPoint,
+                    1: QgsPalLayerSettings.PredefinedPointPosition.OverPoint,
+                    2: QgsPalLayerSettings.Position.Line,
+                    3: QgsPalLayerSettings.Position.Curved,
+                    4: QgsPalLayerSettings.Position.Horizontal,
+                }.get(placement_val, QgsPalLayerSettings.Placement.AroundPoint)
                 settings.placement = placement_enum
             except Exception as _e:
                 logger.debug("ignored exception", exc_info=True)
