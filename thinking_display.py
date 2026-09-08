@@ -33,17 +33,20 @@ def create_thinking_block(content: str, timestamp: str = "", is_final: bool = Fa
         header_color = "#666666"
         status_text = "💭 思考完成"
         hint_text = "点击展开"
+        # 折叠态额外提供「复制」入口，由 DockWidget 的 anchorClicked 处理
+        copy_entry = ' <a href="#copy-thinking" style="color: #888; font-size: 11px;">[复制]</a>'
     else:
         # 思考中：展开
         details_open = " open"
         header_color = "#6baad1"
         status_text = f"🧠 思考中...{time_text}"
         hint_text = "点击折叠"
+        copy_entry = ""
 
     # 简化 HTML 结构，使用更兼容的样式
     html = f'''<div style="margin: 8px 0; padding: 0;">
 <details{details_open}>
-<summary style="cursor: pointer; padding: 8px 12px; background-color: #2d2d2d; border-left: 4px solid {header_color}; border-radius: 4px;"><span style="color: {header_color}; font-weight: bold;">{status_text}</span> <span style="color: #888; font-size: 11px;">[{hint_text}]</span></summary>
+<summary style="cursor: pointer; padding: 8px 12px; background-color: #2d2d2d; border-left: 4px solid {header_color}; border-radius: 4px;"><span style="color: {header_color}; font-weight: bold;">{status_text}</span> <span style="color: #888; font-size: 11px;">[{hint_text}]</span>{copy_entry}</summary>
 <div style="padding: 10px 12px; background-color: #1e1e1e; border-left: 4px solid #444; margin-top: 2px; min-height: 20px;"><pre style="color: #cccccc; font-size: 12px; line-height: 1.5; margin: 0; white-space: pre-wrap; word-wrap: break-word; font-family: Consolas, Monaco, monospace;">{safe_content}</pre></div>
 </details>
 </div>'''
@@ -86,6 +89,7 @@ class ThinkingManager:
     def __init__(self):
         self._thinking_id = 0
         self._current_content = ""
+        self._current_timestamp = ""
         self._history = []
 
     def start(self, timestamp: str = "") -> tuple[str, str]:
@@ -100,9 +104,10 @@ class ThinkingManager:
         """
         self._thinking_id += 1
         self._current_content = ""
+        self._current_timestamp = timestamp or ""
 
         # 生成思考块 HTML
-        html = create_thinking_block("", timestamp, is_final=False)
+        html = create_thinking_block("", self._current_timestamp, is_final=False)
         self._history.append(html)
 
         return html
@@ -111,17 +116,22 @@ class ThinkingManager:
         """
         更新思考内容
 
+        注意：这里传入的是「累积后的完整文本」而不是新增片段，
+        片段累积由调用方（DockWidget 的 _thinking_buffer）负责。
+
         Args:
-            content: 新内容
+            content: 累积后的完整思考内容
 
         Returns:
             更新后的 HTML
         """
-        self._current_content = content
+        self._current_content = content or ""
 
-        # 重新生成最后一个思考块
+        # 重新生成最后一个思考块（沿用开始时的时间戳）
         if self._history:
-            self._history[-1] = create_thinking_block(content, is_final=False)
+            self._history[-1] = create_thinking_block(
+                self._current_content, self._current_timestamp, is_final=False
+            )
 
         return "".join(self._history)
 
@@ -152,4 +162,5 @@ class ThinkingManager:
         """清空"""
         self._thinking_id = 0
         self._current_content = ""
+        self._current_timestamp = ""
         self._history.clear()

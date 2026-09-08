@@ -9,6 +9,7 @@
 """
 
 import html as html_module
+import logging
 from datetime import datetime
 
 from qgis.PyQt import QtWidgets
@@ -22,6 +23,16 @@ from qgis.PyQt.QtGui import QFont, QPalette
 from .utils import handle_none_conversation, pack, unpack, format_description, create_markdown, set_font_color
 from .qgis_agent_dockwidget_base_ui import Ui_QGISAgentDockWidget
 from .thinking_display import ThinkingManager
+
+logger = logging.getLogger(__name__)
+
+# 思考块定位标记：注释便于阅读，锚点用于定位（QTextBrowser 会丢弃注释，但会保留锚点）
+THINKING_MARKER = '<!-- THINKING_BLOCK -->'
+THINKING_ANCHOR = '<a name="THINKING_BLOCK"></a>'
+
+# 输入框自适应高度范围（px）
+MESSAGE_INPUT_MIN_HEIGHT = 40
+MESSAGE_INPUT_MAX_HEIGHT = 140
 
 
 class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
@@ -48,7 +59,6 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         self.setupUi(self)
 
         self.messagesLayout.setStretch(3, 1)
-        self.ptMessage.setFixedHeight(40)
 
         self.pbStop.clicked.connect(self.stopRequested.emit)
 
@@ -57,8 +67,20 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
 
         self.twTabs.setCurrentWidget(self.tbMessages)
 
-        # 思考内容管理器
+        # 思考内容管理器与累积缓冲
         self._thinking_manager = ThinkingManager()
+        self._thinking_buffer = ""
+        self._thinking_active = False
+        self._thinking_base_html = ""
+        self._last_thinking_text = ""
+
+        # 输入框高度随内容自适应（40–140px）
+        self.ptMessage.document().sizeChanged.connect(self._adjust_message_input_height)
+        self._adjust_message_input_height()
+
+        # 思考块内的「复制」入口（锚点 #copy-thinking）
+        if hasattr(self.txHistory, "anchorClicked"):
+            self.txHistory.anchorClicked.connect(self._on_history_anchor_clicked)
 
     def set_sending_state(self, is_sending):
         """切换发送/停止状态"""
@@ -155,7 +177,8 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
     @handle_none_conversation
     def updateConversation(self, conversation):
         """更新对话历史显示"""
-        self._thinking_manager.clear()
+        # 历史被整体重建，思考缓冲与思考块一并重置
+        self.resetThinking()
         current_html = ""
         interaction_history = conversation.fetch()
         font_color = set_font_color(self.txHistory.palette().color(QPalette.ColorRole.Base))
@@ -195,98 +218,123 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
 
     def showThinking(self, partial_text, response_time=""):
         """
-        实时显示思考内容
+        实时显示思考内容（累积渲染）
 
-        使用简单的 div 结构，兼容 QTextBrowser，使用 QGIS 主题颜色。
+        processor 的思考回调每次只传「新增的一小片」文本，这里先累积到
+        self._thinking_buffer，再渲染累积后的全文，用户看到的是完整的
+        思考流，而不是不断闪烁的最后一行碎片。
         """
-        # 获取 QGIS 主题颜色
-        palette = self.txHistory.palette()
-        font_color = set_font_color(palette.color(QPalette.ColorRole.Base))
+        try:
+            if not self._thinking_active:
+                self._start_thinking(response_time)
 
-        # 构建当前完整 HTML
-        current_html = self.txHistory.toHtml() if hasattr(self.txHistory, 'toHtml') else ""
+            # 累积新增片段（partial_text 可能是 None）
+            self._thinking_buffer += partial_text or ""
 
-        # 思考标记
-        thinking_marker = '<!-- THINKING_BLOCK -->'
+            # 复用 ThinkingManager：它负责保存累积全文并生成思考块 HTML
+            block_html = self._thinking_manager.update(self._thinking_buffer)
+            self._render_thinking_block(block_html)
+        except Exception as e:
+            logger.debug("渲染思考内容失败: %s", e, exc_info=True)
 
-        # 准备内容（使用 create_markdown 渲染）
-        rendered_content = create_markdown(partial_text) if partial_text else "&nbsp;"
+    def finalizeThinking(self):
+        """
+        完成思考：输出真正的可折叠思考块（默认折叠，可展开，并可复制全文）
 
-        # 使用 QGIS 主题颜色构建思考块（不设置背景色，使用透明）
-        new_thinking = f'''{thinking_marker}
-<div style="margin: 8px 0; padding: 0;">
-<div style="padding: 8px 12px; border-left: 4px solid #6baad1; border-radius: 4px;">
-<span style="color: #6baad1; font-weight: bold;">🧠 思考中... {response_time}</span>
-</div>
-<div style="padding: 10px 12px; border-left: 4px solid #444; margin-top: 2px;">
-<div style="color: {font_color}; font-size: 12px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; font-family: Consolas, Monaco, monospace;">
-{rendered_content}
-<span style="color: #6baad1;">▌</span>
-</div>
-</div>
-</div>
-{thinking_marker}'''
+        不再截断到 200 字，思考内容完整保留。
+        """
+        try:
+            if not self._thinking_active:
+                return
 
-        if thinking_marker in current_html:
-            # 更新现有思考块
-            thinking_start = current_html.find(thinking_marker)
-            thinking_end = current_html.find(thinking_marker, thinking_start + len(thinking_marker))
+            # ThinkingManager 内部保存的是累积后的完整思考文本
+            block_html = self._thinking_manager.finalize()
 
-            if thinking_end > thinking_start:
-                current_html = current_html[:thinking_start] + new_thinking + current_html[thinking_end + len(thinking_marker):]
+            # 保留最后一次完整思考内容，供块内「复制」入口使用
+            self._last_thinking_text = self._thinking_buffer
+
+            self._render_thinking_block(block_html)
+            self.resetThinking()
+        except Exception as e:
+            logger.debug("完成思考块渲染失败: %s", e, exc_info=True)
+
+    def resetThinking(self):
+        """
+        重置思考状态（发送新消息、切换/重建会话时调用）
+        """
+        self._thinking_buffer = ""
+        self._thinking_active = False
+        self._thinking_base_html = ""
+        self._thinking_manager.clear()
+
+    def _start_thinking(self, response_time=""):
+        """开启新一轮思考：清空缓冲，并记录思考块之前的聊天内容"""
+        self._thinking_buffer = ""
+        self._thinking_active = True
+        # 只保留当前这一轮思考，避免历史思考块被重复渲染
+        self._thinking_manager.clear()
+        self._thinking_manager.start(response_time)
+        self._thinking_base_html = self.txHistory.toHtml() if hasattr(self.txHistory, "toHtml") else ""
+
+    def _locate_thinking_block(self, current_html):
+        """
+        在完整 HTML 中定位当前思考块
+
+        Returns:
+            (start, end) 命中时返回切片区间；未找到返回 (None, None)
+        """
+        start = current_html.find(THINKING_ANCHOR)
+        if start < 0:
+            return None, None
+        end = current_html.find(THINKING_ANCHOR, start + len(THINKING_ANCHOR))
+        if end < 0:
+            return None, None
+        return start, end + len(THINKING_ANCHOR)
+
+    def _render_thinking_block(self, block_html):
+        """把思考块渲染进历史区：原地替换旧块，而不是每次追加一个新块"""
+        wrapped = f"{THINKING_MARKER}{THINKING_ANCHOR}{block_html}{THINKING_ANCHOR}{THINKING_MARKER}"
+        current_html = self.txHistory.toHtml() if hasattr(self.txHistory, "toHtml") else ""
+
+        start, end = self._locate_thinking_block(current_html)
+        if start is not None:
+            # 原地替换：思考块之后追加的内容（如工具状态）保持不动
+            current_html = current_html[:start] + wrapped + current_html[end:]
         else:
-            # 添加新的思考块
-            current_html += new_thinking
+            # 兜底：标记被富文本引擎丢弃时，插到「思考开始前的内容」末尾
+            base_html = self._thinking_base_html
+            if "</body>" in base_html:
+                current_html = base_html.replace("</body>", wrapped + "</body>", 1)
+            else:
+                current_html = base_html + wrapped
 
         self.txHistory.setHtml(current_html)
         self.txHistory.setReadOnly(True)
         self.txHistory.verticalScrollBar().setValue(self.txHistory.verticalScrollBar().maximum())
 
-    def finalizeThinking(self):
-        """
-        完成思考，将思考块设为折叠样式
-        """
-        # 获取 QGIS 主题颜色
-        palette = self.txHistory.palette()
-        font_color = set_font_color(palette.color(QPalette.ColorRole.Base))
+    def _on_history_anchor_clicked(self, url):
+        """处理历史区链接点击：#copy-thinking 复制思考全文，其余链接保持默认行为"""
+        try:
+            if url is not None and url.fragment() == "copy-thinking":
+                from qgis.PyQt.QtWidgets import QApplication
+                text = self._last_thinking_text or self._thinking_buffer
+                if text:
+                    QApplication.clipboard().setText(text)
+        except Exception as e:
+            logger.debug("复制思考内容失败: %s", e, exc_info=True)
 
-        current_html = self.txHistory.toHtml() if hasattr(self.txHistory, 'toHtml') else ""
-        thinking_marker = '<!-- THINKING_BLOCK -->'
-
-        if thinking_marker in current_html:
-            thinking_start = current_html.find(thinking_marker)
-            thinking_end = current_html.find(thinking_marker, thinking_start + len(thinking_marker))
-
-            if thinking_end > thinking_start:
-                # 提取思考块内容
-                thinking_block = current_html[thinking_start + len(thinking_marker):thinking_end]
-
-                # 从内容 div 中提取文本
-                import re
-                content_match = re.search(r'<div style="color: [^"]*">(.*?)<span style="color: #6baad1;">▌</span>', thinking_block, re.DOTALL)
-                if content_match:
-                    content_html = content_match.group(1)
-                    # 移除 HTML 标签，保留文本
-                    content_text = re.sub(r'<[^>]+>', '', content_html).strip()
-                    # 截断过长内容
-                    if len(content_text) > 200:
-                        content_text = content_text[:200] + "..."
-                else:
-                    content_text = "..."
-
-                # 生成折叠状态的思考块（使用主题颜色，不设置背景色）
-                safe_content = html_module.escape(content_text) if content_text else "&nbsp;"
-                finalized_thinking = f'''{thinking_marker}
-<div style="margin: 8px 0; padding: 0;">
-<div style="padding: 6px 12px; border-left: 4px solid #666; border-radius: 4px;">
-<span style="color: {font_color}; font-size: 11px;">💭 思考完成 ▸ {safe_content}</span>
-</div>
-</div>
-{thinking_marker}'''
-                current_html = current_html[:thinking_start] + finalized_thinking + current_html[thinking_end + len(thinking_marker):]
-
-        self.txHistory.setHtml(current_html)
-        self.txHistory.verticalScrollBar().setValue(self.txHistory.verticalScrollBar().maximum())
+    def _adjust_message_input_height(self, _size=None):
+        """让输入框高度随内容自适应，限制在 40–140px 之间"""
+        try:
+            doc_height = int(self.ptMessage.document().size().height())
+            margins = self.ptMessage.contentsMargins()
+            frame_height = self.ptMessage.frameWidth() * 2
+            new_height = doc_height + margins.top() + margins.bottom() + frame_height + 4
+            new_height = max(MESSAGE_INPUT_MIN_HEIGHT, min(MESSAGE_INPUT_MAX_HEIGHT, new_height))
+            if self.ptMessage.height() != new_height:
+                self.ptMessage.setFixedHeight(new_height)
+        except Exception as e:
+            logger.debug("自适应输入框高度失败: %s", e, exc_info=True)
 
     def showToolStatus(self, status_text):
         """在聊天框中显示工具调用状态"""
@@ -321,12 +369,22 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.Type.KeyPress:
-            if obj is self.ptMessage and event.key() == Qt.Key.Key_Return:
-                self.enterPressed.emit(self.ptMessage.toPlainText())
-                return True
-            if obj is self.ptSearchConversationCard and event.key() == Qt.Key.Key_Return:
-                self.searchPressed.emit(self.ptSearchConversationCard.toPlainText())
-                return True
+            if obj is self.ptMessage:
+                if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+                    # Shift/Ctrl + Enter 换行，单独的 Enter 发送
+                    modifiers = event.modifiers()
+                    if (modifiers & Qt.KeyboardModifier.ShiftModifier
+                            or modifiers & Qt.KeyboardModifier.ControlModifier):
+                        self.ptMessage.insertPlainText("\n")
+                        return True
+                    # 发送新消息前重置思考缓冲，避免与上一轮思考内容串在一起
+                    self.resetThinking()
+                    self.enterPressed.emit(self.ptMessage.toPlainText())
+                    return True
+            if obj is self.ptSearchConversationCard:
+                if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+                    self.searchPressed.emit(self.ptSearchConversationCard.toPlainText())
+                    return True
         return super().eventFilter(obj, event)
 
     # ── 工作流可视化方法 ──

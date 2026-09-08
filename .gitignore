@@ -40,3 +40,12 @@ extlibs/
 # Dev tools
 .codebuddy/
 .codebuddy/
+
+# macOS AppleDouble / 资源分叉
+._*
+.DS_Store
+
+# AI 助手工作区（含开发记忆，禁止提交与打包）
+.workbuddy/
+.claude/
+.codebuddy/

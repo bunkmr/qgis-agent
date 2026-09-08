@@ -41,6 +41,9 @@ EXCLUDE_PATTERNS = [
     ".vscode",
     ".idea",
     ".claude",
+    ".codebuddy",
+    ".workbuddy",
+    ".github",
     "._*",  # macOS AppleDouble 元数据文件
     "*.egg-info",
     "build",
@@ -104,17 +107,30 @@ def should_include(filepath: str) -> bool:
 
 
 def get_version() -> str:
-    """从 config.py 获取版本号"""
-    config_path = os.path.join(os.path.dirname(__file__), "config.py")
-    try:
-        with open(config_path, "r", encoding="utf-8") as f:
-            content = f.read()
-            for line in content.split("\n"):
-                if "PLUGIN_VERSION" in line:
-                    return line.split("=")[1].strip().strip('"').strip("'")
-    except Exception as _e:
-        logger.debug("ignored exception", exc_info=True)
-    return "1.2.0"
+    """从 metadata.txt 获取版本号（版本号的唯一真源）。
+
+    解析失败时直接抛异常：宁可打包失败，也不能静默回退成错误版本号
+    （版本号错误会导致 QGIS 插件仓库拒收）。
+    """
+    metadata_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "metadata.txt"
+    )
+    if not os.path.exists(metadata_path):
+        raise RuntimeError(f"找不到 metadata.txt，无法确定插件版本号：{metadata_path}")
+
+    # 用 utf-8-sig 兼容可能存在的 BOM
+    with open(metadata_path, "r", encoding="utf-8-sig") as f:
+        for raw_line in f:
+            line = raw_line.strip()
+            if line.startswith("["):
+                continue  # 跳过 section 头
+            if line.startswith("version="):
+                version = line.split("=", 1)[1].strip()
+                if not version:
+                    raise RuntimeError(f"metadata.txt 中的 version 字段为空：{metadata_path}")
+                return version
+
+    raise RuntimeError(f"metadata.txt 中缺少 version 字段：{metadata_path}")
 
 
 def build_plugin_zip():
@@ -132,8 +148,14 @@ def build_plugin_zip():
     files_to_pack = []
 
     for root, dirs, files in os.walk(plugin_dir):
-        # 跳过排除的目录
-        dirs[:] = [d for d in dirs if d not in EXCLUDE_PATTERNS]
+        # 跳过排除的目录；同时一刀切跳过所有点开头的隐藏目录
+        # （.workbuddy / .git / .github / .claude 等，避免把开发期记忆文件打进发布包）
+        dirs[:] = [
+            d for d in dirs
+            if not d.startswith(".") and d not in EXCLUDE_PATTERNS
+        ]
+        # 跳过点开头的隐藏文件（macOS 的 ._xxx、.DS_Store、.env 等）
+        files[:] = [f for f in files if not f.startswith(".")]
 
         for filename in files:
             filepath = os.path.join(root, filename)

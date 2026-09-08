@@ -68,6 +68,10 @@ class QGISAgent:
         self.console_tracker = QTimer()
         self.new_editor = None
 
+        # 「跳过确认」开关：仅本次会话（进程内）有效，不做持久化，
+        # 重启 QGIS 后自动复位为 False，避免一次性勾选变成永久无确认的代码执行
+        self._skip_confirm = False
+
     def _position_toolbar_after_console(self):
         """将工具栏放到Python控制台后面"""
         try:
@@ -230,6 +234,13 @@ class QGISAgent:
         set_code_confirm_callback(self._on_code_confirm_sync)
 
         # 连接"跳过确认"开关（底部栏和配置页两个 checkbox 保持同步）
+        # 该开关仅本次会话有效，不做持久化，在 tooltip 中向用户说明
+        _skip_confirm_tip = (
+            "跳过代码执行前的确认弹窗。\n"
+            "仅本次会话有效，重启 QGIS 后自动恢复为需要确认。"
+        )
+        self.dockwidget.cbSkipConfirm.setToolTip(_skip_confirm_tip)
+        self.dockwidget.cbSkipConfirmSettings.setToolTip(_skip_confirm_tip)
         self.dockwidget.cbSkipConfirm.stateChanged.connect(self._on_skip_confirm_changed)
         self.dockwidget.cbSkipConfirmSettings.stateChanged.connect(self._on_skip_confirm_changed)
         # 互相联动
@@ -386,6 +397,14 @@ class QGISAgent:
             else:
                 selected_llm = self.live_conversation.llmID
             # 重新创建 processor 以使用新模型/温度
+            # 先关闭旧 processor：它的 QThreadPool 与在跑的 worker 无人接管，
+            # 不 shutdown 会泄漏线程池，且上一轮未结束时可能拖垮 QGIS
+            old_processor = getattr(self.live_conversation, "processor", None)
+            if old_processor is not None:
+                try:
+                    old_processor.shutdown()
+                except Exception as _e:
+                    logger.debug("关闭旧 Processor 失败，继续重建: %s", _e, exc_info=True)
             self.live_conversation.processor = self._Processor(
                 selected_llm, self.live_conversation.ID, self.dataloader, temperature=temperature
             )
@@ -410,13 +429,8 @@ class QGISAgent:
             """
             self.dockwidget.txHistory.append(user_html)
 
-            self.live_conversation.llm_response.connect(self._on_response_received)
-            self.live_conversation.llm_thinking.connect(self._on_thinking)
-            self.live_conversation.llm_tool_status.connect(self._on_tool_status)
-            self.live_conversation.llm_workflow_update.connect(self._on_workflow_update)
-            self.live_conversation.llm_code_update.connect(self._on_code_update)
-            self.live_conversation.llm_execution_log.connect(self._on_execution_log)
-            self.live_conversation.llm_interrupted.connect(self._on_response_error)
+            # 统一成对连接/断开，避免多次发送后信号重复触发与旧对象泄漏
+            self._connect_conv_signals(self.live_conversation)
             self.live_conversation.update_user_prompt(message, response_type)
 
             # 切换为发送状态：隐藏发送按钮，显示停止按钮
@@ -424,18 +438,51 @@ class QGISAgent:
             self.dockwidget.disableAllButtons()
             self.dockwidget.disableAllTextEdit()
 
+    def _connect_conv_signals(self, conv):
+        """连接一个会话的全部信号（与 _disconnect_conv_signals 成对调用）。
+
+        每次发送时都会连接，因此必须在完成/出错/中断时逐个断开，
+        否则第 N 次发送会让槽函数被触发 N 次，并且旧会话对象会被信号持有而无法回收。
+        """
+        if conv is None:
+            return
+        conv.llm_response.connect(self._on_response_received)
+        conv.llm_thinking.connect(self._on_thinking)
+        conv.llm_tool_status.connect(self._on_tool_status)
+        conv.llm_workflow_update.connect(self._on_workflow_update)
+        conv.llm_code_update.connect(self._on_code_update)
+        conv.llm_execution_log.connect(self._on_execution_log)
+        conv.llm_interrupted.connect(self._on_response_error)
+
+    def _disconnect_conv_signals(self, conv):
+        """断开 _connect_conv_signals 连接的全部信号（已断开时安全跳过）。"""
+        if conv is None:
+            return
+        pairs = (
+            ("llm_response", self._on_response_received),
+            ("llm_thinking", self._on_thinking),
+            ("llm_tool_status", self._on_tool_status),
+            ("llm_workflow_update", self._on_workflow_update),
+            ("llm_code_update", self._on_code_update),
+            ("llm_execution_log", self._on_execution_log),
+            ("llm_interrupted", self._on_response_error),
+        )
+        for signal_name, slot in pairs:
+            signal = getattr(conv, signal_name, None)
+            if signal is None:
+                continue
+            try:
+                signal.disconnect(slot)
+            except (RuntimeError, TypeError) as _e:
+                # 已断开或槽未连接时 Qt 会抛 RuntimeError/TypeError，忽略即可
+                logger.debug("断开会话信号 %s 时已无连接: %s", signal_name, _e, exc_info=True)
+
     def _on_response_received(self, response, workflow, model_path):
         if self.live_conversation is not None:
             self.dockwidget.set_sending_state(False)
             self.dockwidget.enableAllButtons()
             self.dockwidget.enableAllTextEdit()
-            self.live_conversation.llm_response.disconnect(self._on_response_received)
-            self.live_conversation.llm_thinking.disconnect(self._on_thinking)
-            try:
-                self.live_conversation.llm_tool_status.disconnect(self._on_tool_status)
-            except Exception as _e:
-                logger.debug("ignored exception", exc_info=True)
-            self.live_conversation.llm_interrupted.disconnect(self._on_response_error)
+            self._disconnect_conv_signals(self.live_conversation)
 
             # 清除流式标记
             self.dockwidget.finalizeThinking()
@@ -535,15 +582,58 @@ class QGISAgent:
         self.dockwidget.set_sending_state(False)
         self.dockwidget.enableAllButtons()
         self.dockwidget.enableAllTextEdit()
-        self.live_conversation.llm_response.disconnect(self._on_response_received)
-        self.live_conversation.llm_thinking.disconnect(self._on_thinking)
-        try:
-            self.live_conversation.llm_tool_status.disconnect(self._on_tool_status)
-        except Exception as _e:
-            logger.debug("ignored exception", exc_info=True)
-        self.live_conversation.llm_interrupted.disconnect(self._on_response_error)
+        # 与 _connect_conv_signals 成对断开，补齐 workflow/code/log 三个信号
+        self._disconnect_conv_signals(self.live_conversation)
         self.dockwidget.finalizeThinking()
-        self.dockwidget.txHistory.append(f"<p style='color:red'>错误: {html_module.escape(error_message)}</p>")
+
+        err_text = str(error_message)
+
+        # 尝试用 error_classifier 做错误分级；模块缺失或异常时降级为原始展示
+        info = None
+        try:
+            from .error_classifier import classify_error
+            info = classify_error(err_text)
+        except Exception as _e:
+            logger.debug("错误分级不可用，回退为原始错误信息展示: %s", _e, exc_info=True)
+
+        if isinstance(info, dict) and info.get("title"):
+            title = str(info.get("title"))
+            message = str(info.get("message") or err_text)
+            hint = str(info.get("hint") or "")
+            category = str(info.get("category") or "unknown")
+            retryable = bool(info.get("retryable"))
+            action = info.get("action")
+            if action == "open_settings":
+                extra = "请到「模型配置」标签页检查模型、API 端点与 API Key 是否正确。"
+                hint = f"{hint} {extra}".strip() if hint else extra
+            if retryable:
+                hint = f"{hint}（可直接重试）".strip() if hint else "可直接重试"
+        else:
+            # 降级：保持原有的原始错误展示
+            category = "unknown"
+            title = "出错了"
+            message = err_text
+            hint = ""
+
+        html_parts = [
+            f"<p style='color:red;'><b>{html_module.escape(title)}</b></p>",
+            f"<p style='margin:0;'>{html_module.escape(message)}</p>",
+        ]
+        if hint:
+            html_parts.append(
+                f"<p style='margin:0;color:#666;'>建议：{html_module.escape(hint)}</p>"
+            )
+        # 技术细节（原始堆栈）不直接铺在对话里，写入执行日志面板供排查
+        html_parts.append(
+            "<p style='margin:0;color:#888;font-size:11px;'>"
+            f"类型：{html_module.escape(category)}，技术细节已写入「报告」页签的执行日志。</p>"
+        )
+        self.dockwidget.txHistory.append("".join(html_parts))
+
+        try:
+            self.dockwidget.append_execution_log(f"❌ {title}\n{err_text}")
+        except Exception as _e:
+            logger.debug("写入执行日志失败，忽略: %s", _e, exc_info=True)
 
     def _on_code_confirm(self, tool_name, code_preview, callback):
         """代码执行确认对话框 — 借鉴 QGPT Agent 的安全确认机制。
@@ -587,21 +677,19 @@ class QGISAgent:
         return result == QMessageBox.StandardButton.Yes
 
     def _on_skip_confirm_changed(self, state):
-        """当"跳过确认"checkbox 状态变化时更新全局开关并保存"""
+        """当"跳过确认"checkbox 状态变化时更新全局开关。
+
+        注意：该开关只保存在进程内的实例属性 self._skip_confirm 中，
+        不写入 QSettings，重启 QGIS 后自动恢复为"需要确认"，
+        避免一次误勾选导致长期静默执行任意代码。
+        """
         from .qgis_tools import set_skip_all_confirms
-        set_skip_all_confirms(state == Qt.CheckState.Checked)
-        # 保存设置
-        settings = QSettings("QGIS", "QGISAgent")
-        settings.setValue("skipConfirm", state == Qt.CheckState.Checked)
+        self._skip_confirm = (state == Qt.CheckState.Checked)
+        set_skip_all_confirms(self._skip_confirm)
 
     def _load_saved_settings(self):
-        """加载保存的设置"""
+        """加载保存的设置（不含"跳过确认"，该项故意不持久化）"""
         settings = QSettings("QGIS", "QGISAgent")
-
-        # 恢复跳过确认设置
-        skip_confirm = settings.value("skipConfirm", False, type=bool)
-        self.dockwidget.cbSkipConfirm.setChecked(skip_confirm)
-        self.dockwidget.cbSkipConfirmSettings.setChecked(skip_confirm)
 
         # 恢复温度设置
         temperature = settings.value("temperature", 0, type=int)
@@ -737,8 +825,22 @@ class QGISAgent:
         self.dockwidget.updateGeneralInfo(self.live_conversation)
 
     def _on_conversation_delete(self, conversation_id: str):
+        # 删除不可恢复，先做二次确认，避免误点永久丢失整个会话
+        reply = QMessageBox.question(
+            self.dockwidget,
+            "删除会话",
+            "确定要删除这个会话吗？\n\n"
+            "会话中的全部消息与代码记录将被永久移除，删除后不可恢复。",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
         self.dataloader.delete_conversation(conversation_id)
         if self.live_conversation_id == conversation_id:
+            # 丢弃当前会话前先断开信号，避免旧对象被信号持有导致内存泄漏
+            self._disconnect_conv_signals(self.live_conversation)
             self.live_conversation = None
             self.dockwidget.txHistory.clear()
             self.dockwidget.lbTitle.clear()
