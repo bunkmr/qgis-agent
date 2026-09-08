@@ -13,12 +13,13 @@ import logging
 from datetime import datetime
 
 from qgis.PyQt import QtWidgets
-from qgis.PyQt.QtCore import pyqtSignal, QEvent, Qt
+from qgis.PyQt.QtCore import pyqtSignal, QEvent, Qt, QElapsedTimer
 from qgis.PyQt.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QLabel, QGroupBox, QPushButton,
-    QSizePolicy, QSpacerItem, QWidget, QPlainTextEdit
+    QSizePolicy, QSpacerItem, QWidget, QPlainTextEdit,
+    QLineEdit, QToolButton, QStackedWidget, QGridLayout, QApplication
 )
-from qgis.PyQt.QtGui import QFont, QPalette
+from qgis.PyQt.QtGui import QFont, QPalette, QTextDocument
 
 from .utils import handle_none_conversation, pack, unpack, format_description, create_markdown, set_font_color
 from .qgis_agent_dockwidget_base_ui import Ui_QGISAgentDockWidget
@@ -82,11 +83,131 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         if hasattr(self.txHistory, "anchorClicked"):
             self.txHistory.anchorClicked.connect(self._on_history_anchor_clicked)
 
+        # 最近一条 assistant 回复纯文本（U13 复制按钮数据来源）
+        self._last_assistant_text = ""
+        # 状态条计时器（U18）
+        self._timer = QElapsedTimer()
+
+        # ── U11/U13/U18/D5 聊天区增强控件 ──
+        self._init_chat_enhancements()
+
+    def _init_chat_enhancements(self):
+        """构建搜索条 / 复制回复 / 状态条 / 空状态示例卡片，并接入现有布局。
+
+        所有新增控件都在 __init__ 内创建，信号连接使用作用域枚举，
+        不引用任何不存在的变量；不改动 processor 与其它文件。
+        """
+        # ---- U13 搜索条（默认隐藏，Ctrl+F 唤起）----
+        self.searchBar = QLineEdit()
+        self.searchBar.setPlaceholderText("搜索对话内容… (Enter 下一处 / Shift+Enter 上一处 / Esc 关闭)")
+        self.searchBar.textChanged.connect(self._on_search_text_changed)
+        self.searchBar.returnPressed.connect(self._on_search_next)
+        self.searchBar.installEventFilter(self)
+
+        self.btnSearchPrev = QToolButton()
+        self.btnSearchPrev.setText("↑")
+        self.btnSearchPrev.setToolTip("上一个匹配")
+        self.btnSearchPrev.clicked.connect(self._on_search_prev)
+        self.btnSearchNext = QToolButton()
+        self.btnSearchNext.setText("↓")
+        self.btnSearchNext.setToolTip("下一个匹配")
+        self.btnSearchNext.clicked.connect(self._on_search_next)
+        self.btnSearchClose = QToolButton()
+        self.btnSearchClose.setText("✕")
+        self.btnSearchClose.setToolTip("关闭搜索")
+        self.btnSearchClose.clicked.connect(self._hide_search_bar)
+
+        search_layout = QHBoxLayout()
+        search_layout.setContentsMargins(0, 0, 0, 0)
+        search_layout.setSpacing(4)
+        search_layout.addWidget(self.searchBar, 1)
+        search_layout.addWidget(self.btnSearchPrev)
+        search_layout.addWidget(self.btnSearchNext)
+        search_layout.addWidget(self.btnSearchClose)
+        self.searchFrameWidget = QWidget()
+        self.searchFrameWidget.setLayout(search_layout)
+        self.searchFrameWidget.setVisible(False)
+
+        # ---- U13 复制回复按钮（面板顶部标题行右侧）----
+        self.btnCopyReply = QToolButton()
+        self.btnCopyReply.setText("📋 复制回复")
+        self.btnCopyReply.setToolTip("复制最近一条 AI 回复到剪贴板")
+        self.btnCopyReply.clicked.connect(self._on_copy_reply)
+        self.titleLayout.addWidget(self.btnCopyReply, 0, Qt.AlignmentFlag.AlignRight)
+
+        # ---- U18 底部状态条 ----
+        self.statusLabel = QLabel("就绪")
+        self.statusLabel.setStyleSheet("color: #666; font-size: 11px; padding: 2px 0;")
+        self.statusLabel.setWordWrap(False)
+        self._status_base = "就绪"
+
+        # ---- D5 空状态示例卡片 ----
+        self.emptyStateWidget = QWidget()
+        egrid = QGridLayout(self.emptyStateWidget)
+        egrid.setContentsMargins(8, 8, 8, 8)
+        egrid.setSpacing(6)
+        examples = [
+            "加载一个矢量文件",
+            "列出当前所有图层",
+            "把图层重投影到 WGS84",
+            "统计各行政区面积",
+            "生成分级设色地图",
+            "缓冲区分析 100 米",
+            "按属性筛选要素",
+            "导出当前图层为 GeoPackage",
+        ]
+        cols = 2
+        for i, text in enumerate(examples):
+            btn = QPushButton(text)
+            btn.setStyleSheet("QPushButton { text-align: left; padding: 8px 10px; }")
+            btn.clicked.connect(lambda _checked=False, t=text: self._on_example_clicked(t))
+            egrid.addWidget(btn, i // cols, i % cols)
+
+        # ---- 聊天区堆叠：历史 / 空状态 二选一显示 ----
+        self.chatStack = QStackedWidget()
+        self.chatStack.addWidget(self.txHistory)          # 页 0：历史消息区
+        self.chatStack.addWidget(self.emptyStateWidget)   # 页 1：空状态示例
+
+        # 把 txHistory 在原布局位置替换为 chatStack，再把搜索条插到其上方
+        tx_index = self.messagesLayout.indexOf(self.txHistory)
+        self.messagesLayout.replaceWidget(self.txHistory, self.chatStack)
+        self.messagesLayout.insertWidget(tx_index, self.searchFrameWidget)
+        # 状态条置于面板最底部
+        self.messagesLayout.addWidget(self.statusLabel)
+        # 仅聊天区拉伸填充，搜索条/状态条保持自然高度（不抢空间）
+        chat_index = self.messagesLayout.indexOf(self.chatStack)
+        self.messagesLayout.setStretch(tx_index, 0)    # 搜索条
+        self.messagesLayout.setStretch(chat_index, 1)  # 聊天区
+
+        # 监测 txHistory 内容变化以切换空状态/历史视图
+        self._txhistory_orig_append = self.txHistory.append
+        self._txhistory_orig_sethtml = self.txHistory.setHtml
+
+        def _wrap_append(*args, **kwargs):
+            result = self._txhistory_orig_append(*args, **kwargs)
+            self._update_empty_state()
+            return result
+
+        def _wrap_sethtml(*args, **kwargs):
+            result = self._txhistory_orig_sethtml(*args, **kwargs)
+            self._update_empty_state()
+            return result
+
+        self.txHistory.append = _wrap_append
+        self.txHistory.setHtml = _wrap_sethtml
+
+        # 初始按当前（空）内容决定显示哪一页
+        self._update_empty_state()
+
     def set_sending_state(self, is_sending):
         """切换发送/停止状态"""
         self.pbSend.setVisible(not is_sending)
         self.pbStop.setVisible(is_sending)
         self.cbModelSelector.setDisabled(is_sending)
+        if is_sending:
+            # U18：发送开始即启动计时，并给出首个阶段提示
+            self._timer.start()
+            self._set_status("🤔 思考中…")
 
     def closeEvent(self, event):
         self.closingPlugin.emit()
@@ -180,6 +301,7 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         # 历史被整体重建，思考缓冲与思考块一并重置
         self.resetThinking()
         current_html = ""
+        self._last_assistant_text = ""  # U13：重置，循环后取最后一条 assistant
         interaction_history = conversation.fetch()
         font_color = set_font_color(self.txHistory.palette().color(QPalette.ColorRole.Base))
 
@@ -211,10 +333,16 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
                     </div>
                 '''
                 current_html += new_msg
+                # U13：记录最近一条 assistant 回复的原始文本（供复制按钮使用）
+                self._last_assistant_text = msg_dict["responseText"]
 
         self.txHistory.setHtml(current_html)
         self.txHistory.setReadOnly(True)
         self.txHistory.verticalScrollBar().setValue(self.txHistory.verticalScrollBar().maximum())
+
+        # U18：最终回复已到达，停止计时并报告耗时
+        if self._timer.isValid():
+            self._set_status(f"✅ 完成（耗时 {self._format_elapsed()}）")
 
     def showThinking(self, partial_text, response_time=""):
         """
@@ -227,6 +355,8 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         try:
             if not self._thinking_active:
                 self._start_thinking(response_time)
+                # U18：思考阶段提示
+                self._set_status("🤔 思考中…")
 
             # 累积新增片段（partial_text 可能是 None）
             self._thinking_buffer += partial_text or ""
@@ -323,6 +453,122 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         except Exception as e:
             logger.debug("复制思考内容失败: %s", e, exc_info=True)
 
+    # ── U13/U18/D5 聊天区增强辅助方法 ──
+
+    def _set_status(self, text):
+        """U18：写入底部状态条（轻量反馈，不弹窗）。"""
+        try:
+            self.statusLabel.setText(text)
+        except Exception:
+            pass
+
+    def _format_elapsed(self):
+        """U18：把 QElapsedTimer 耗时格式化为友好字符串。"""
+        ms = self._timer.elapsed()
+        sec = ms / 1000.0
+        if sec < 60:
+            return f"{sec:.1f}s"
+        minutes = int(sec // 60)
+        seconds = int(sec % 60)
+        return f"{minutes}m{seconds}s"
+
+    def _update_empty_state(self):
+        """D5：根据 txHistory 是否含内容，在「历史视图 / 空状态示例」间切换。"""
+        try:
+            has_content = bool(self.txHistory.toPlainText().strip())
+            target = self.txHistory if has_content else self.emptyStateWidget
+            if self.chatStack.currentWidget() is not target:
+                self.chatStack.setCurrentWidget(target)
+        except Exception:
+            pass
+
+    def _show_search_bar(self):
+        """U13：显示并聚焦搜索条。"""
+        try:
+            self.searchFrameWidget.setVisible(True)
+            self.searchBar.setFocus()
+            self.searchBar.selectAll()
+        except Exception:
+            pass
+
+    def _hide_search_bar(self):
+        """U13：隐藏搜索条并清除高亮。"""
+        try:
+            self.searchFrameWidget.setVisible(False)
+            # 清空搜索高亮：把光标移回起点后做一次空查找
+            cursor = self.txHistory.textCursor()
+            cursor.setPosition(0)
+            self.txHistory.setTextCursor(cursor)
+        except Exception:
+            pass
+
+    def _on_search_text_changed(self, text):
+        """U13：文本变化时从顶部重新定位第一个匹配并高亮。"""
+        try:
+            if not text:
+                return
+            cursor = self.txHistory.textCursor()
+            cursor.setPosition(0)
+            self.txHistory.setTextCursor(cursor)
+            self.txHistory.find(text)
+        except Exception:
+            pass
+
+    def _on_search_next(self):
+        """U13：定位下一个匹配（Enter 触发）。"""
+        try:
+            text = self.searchBar.text()
+            if text:
+                self.txHistory.find(text)
+        except Exception:
+            pass
+
+    def _on_search_prev(self):
+        """U13：定位上一个匹配。"""
+        try:
+            text = self.searchBar.text()
+            if text:
+                self.txHistory.find(text, QTextDocument.FindFlag.FindBackward)
+        except Exception:
+            pass
+
+    def _get_last_assistant_text(self):
+        """U13：返回最近一条 assistant 回复纯文本，取不到返回空串。"""
+        return getattr(self, "_last_assistant_text", "") or ""
+
+    def _on_copy_reply(self):
+        """U13：复制最近一条 AI 回复到剪贴板。
+
+        不用 HTML inline <button onclick>：QTextBrowser 不执行 JavaScript，
+        点内联按钮无效；这里用真正的 QToolButton 触发，复制成功仅做轻量反馈。
+        """
+        try:
+            text = self._get_last_assistant_text()
+            if text:
+                QApplication.clipboard().setText(text)
+                self._set_status("📋 已复制最近回复")
+                return
+            # 兜底：取 txHistory 纯文本最后一段
+            plain = self.txHistory.toPlainText().strip()
+            if plain:
+                parts = [p for p in plain.split("\n") if p.strip()]
+                text = parts[-1] if parts else plain
+                QApplication.clipboard().setText(text)
+                logger.debug("未取到 assistant 消息，复制 txHistory 末段作为兜底")
+                self._set_status("📋 已复制（末段）")
+            else:
+                self._set_status("暂无回复可复制")
+        except Exception as e:
+            logger.debug("复制回复失败: %s", e, exc_info=True)
+
+    def _on_example_clicked(self, text):
+        """D5：示例指令填入输入框并聚焦，让用户可改后再发。"""
+        try:
+            self.ptMessage.setPlainText(text)
+            self.ptMessage.setFocus()
+        except Exception:
+            pass
+
     def _adjust_message_input_height(self, _size=None):
         """让输入框高度随内容自适应，限制在 40–140px 之间"""
         try:
@@ -338,6 +584,8 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
 
     def showToolStatus(self, status_text):
         """在聊天框中显示工具调用状态"""
+        # U18：工具/代码执行阶段提示
+        self._set_status("⚙ 执行工具…")
         status_html = f'''
             <div style="margin: 4px 0; padding: 4px 10px; border-left: 3px solid #4A90D9; border-radius: 4px; font-family: Consolas, monospace; font-size: 12px;">
                 <span style="color: #4A90D9;">🔧 {html_module.escape(status_text)}</span>
@@ -347,28 +595,39 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         self.txHistory.verticalScrollBar().setValue(self.txHistory.verticalScrollBar().maximum())
 
     def disableAllButtons(self):
-        for btn in self.findChildren(QPushButton):
-            if btn is self.pbStop:
-                continue
-            btn.setDisabled(True)
+        """U11：发送进行中只禁用「发送按钮」+「模型切换下拉」，停止按钮保持可用。
+
+        不再遍历全部 QPushButton / QPlainTextEdit，从而避免锁死输入框
+        （用户仍可预写下一条）与切到其它标签页。
+        """
+        self.pbSend.setDisabled(True)
+        self.cbModelSelector.setDisabled(True)
+        # pbStop（停止）保持可用，不在此禁用
 
     def enableAllButtons(self):
-        for btn in self.findChildren(QPushButton):
-            if btn is self.pbStop:
-                btn.setVisible(False)
-                continue
-            btn.setDisabled(False)
+        """恢复上面禁用的控件，并收起停止按钮（可见性由 set_sending_state 控制）。"""
+        self.pbSend.setDisabled(False)
+        self.cbModelSelector.setDisabled(False)
+        self.pbStop.setVisible(False)
 
     def disableAllTextEdit(self):
-        for te in self.findChildren(QPlainTextEdit):
-            te.setDisabled(True)
+        """U11：不再禁用输入框，允许用户预写下一条消息。"""
+        return
 
     def enableAllTextEdit(self):
-        for te in self.findChildren(QPlainTextEdit):
-            te.setDisabled(False)
+        """U11：与上面配套，保持输入框始终可编辑。"""
+        return
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.Type.KeyPress:
+            # U13：Ctrl+F 唤起消息区搜索条
+            if event.key() == Qt.Key.Key_F and (event.modifiers() & Qt.KeyboardModifier.ControlModifier):
+                self._show_search_bar()
+                return True
+            # U13：搜索条内 Esc 关闭
+            if obj is self.searchBar and event.key() == Qt.Key.Key_Escape:
+                self._hide_search_bar()
+                return True
             if obj is self.ptMessage:
                 if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
                     # Shift/Ctrl + Enter 换行，单独的 Enter 发送
@@ -397,6 +656,12 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
             workflow_data: 工作流数据字典
         """
         try:
+            # U18：工作流阶段提示（携带步数则报「第 N 步」，否则「规划中」）
+            steps = workflow_data.get("steps", []) if isinstance(workflow_data, dict) else []
+            if steps:
+                self._set_status(f"📋 第 {len(steps)} 步")
+            else:
+                self._set_status("📋 规划中…")
             # 生成HTML文件并保存到磁盘
             html_path = self._generate_workflow_html_file(workflow_data)
 
@@ -867,6 +1132,12 @@ body {
         self.executionLog.verticalScrollBar().setValue(
             self.executionLog.verticalScrollBar().maximum()
         )
+        # U18：错误日志（以 ❌ 开头）触发「出错」状态并停止计时
+        if isinstance(log_text, str) and log_text.lstrip().startswith("❌"):
+            if self._timer.isValid():
+                self._set_status(f"⚠ 出错（耗时 {self._format_elapsed()}）")
+            else:
+                self._set_status("⚠ 出错")
 
     def show_debug_analysis(self, analysis):
         """显示错误分析"""

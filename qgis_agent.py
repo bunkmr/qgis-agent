@@ -5,11 +5,11 @@ import re
 import html as html_module
 
 from qgis.PyQt.QtCore import (
-    QSettings, QTranslator, QCoreApplication, Qt, QTimer
+    QSettings, QTranslator, QCoreApplication, Qt, QTimer, pyqtSignal, QThread
 )
-from qgis.PyQt.QtGui import QIcon, QPalette
+from qgis.PyQt.QtGui import QIcon, QPalette, QFont
 from qgis.PyQt.QtWidgets import (
-    QAction, QDialog, QPushButton, QLineEdit,
+    QAction, QDialog, QPushButton, QLineEdit, QPlainTextEdit,
     QDockWidget, QApplication, QMessageBox, QLabel, QVBoxLayout, QHBoxLayout,
     QComboBox, QTableWidgetItem, QFrame, QToolBar
 )
@@ -36,6 +36,120 @@ def _soft_import(name):
 
 
 _HAS_LLM_LIBS = all(_soft_import(m) for m in required_modules)
+
+
+class CodeConfirmDialog(QDialog):
+    """P1-4 自定义代码执行确认对话框。
+
+    与旧实现（代码藏在 QMessageBox 的「详细」里，等于没确认）不同：
+    • 代码预览**默认展开**且只读，用户一眼可见将执行的全部内容；
+    • 提供三档授权，避免每次都手动点「执行」：
+        - 仅此一次：本次执行，下次仍确认；
+        - 本次会话允许该工具：本会话内同名工具自动放行（重启复位）；
+        - 总是允许：写入 QSettings，跨重启长期免确认。
+    """
+
+    def __init__(self, parent, tool_name, code_preview):
+        super().__init__(parent)
+        self.decision = None  # "once" | "session" | "always" | None(取消)
+        self.setWindowTitle("代码执行确认")
+        self.setMinimumSize(580, 440)
+        self.setModal(True)
+
+        layout = QVBoxLayout(self)
+
+        warn = QLabel(
+            f"即将执行 <b>{html_module.escape(tool_name)}</b>，是否继续？\n"
+            "请检查下方代码是否正确，确认无误后再点「执行」。"
+        )
+        warn.setWordWrap(True)
+        layout.addWidget(warn)
+
+        # 代码预览：默认展开、只读、等宽字体
+        code_view = QPlainTextEdit()
+        code_view.setPlainText(code_preview or "")
+        code_view.setReadOnly(True)
+        code_view.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+        mono = QFont("Consolas, Monaco, monospace")
+        mono.setPointSize(11)
+        code_view.setFont(mono)
+        layout.addWidget(code_view, 1)
+
+        # 按钮行
+        btn_once = QPushButton("仅此一次")
+        btn_session = QPushButton("本次会话允许该工具")
+        btn_always = QPushButton("总是允许")
+        btn_cancel = QPushButton("取消")
+        for _b in (btn_once, btn_session, btn_always, btn_cancel):
+            _b.setStyleSheet("QPushButton { padding: 6px 10px; }")
+        btn_cancel.setStyleSheet(
+            "QPushButton { padding: 6px 10px; background:#eeeeee; }"
+        )
+
+        row = QHBoxLayout()
+        row.addWidget(btn_once)
+        row.addWidget(btn_session)
+        row.addWidget(btn_always)
+        row.addStretch(1)
+        row.addWidget(btn_cancel)
+        layout.addLayout(row)
+
+        btn_once.clicked.connect(lambda _checked=False: self._choose("once"))
+        btn_session.clicked.connect(lambda _checked=False: self._choose("session"))
+        btn_always.clicked.connect(lambda _checked=False: self._choose("always"))
+        btn_cancel.clicked.connect(self.reject)
+
+    def _choose(self, decision):
+        self.decision = decision
+        self.accept()
+
+
+class _RagBuildWorker(QThread):
+    """P1-7 后台构建 PyQGIS API 文档索引，避免首启界面假死 10-30 秒。"""
+
+    def run(self):
+        try:
+            from .rag import DocStore, init_retriever, generate_pyqgis_docs
+            store = DocStore()
+            init_retriever(store)
+            stats = store.get_stats()
+            if stats.get("api_docs", 0) == 0:
+                generate_pyqgis_docs(store)
+        except Exception:
+            logger.debug("RAG 后台建索引异常（已忽略，不影响使用）", exc_info=True)
+
+
+class _TestConnectionWorker(QThread):
+    """D14 后台测试模型 API 连通性，避免界面假死。
+
+    finished(success: bool, message: str)
+    """
+
+    finished = pyqtSignal(bool, str)
+
+    def __init__(self, provider, model, api_key, endpoint, timeout=20):
+        super().__init__()
+        self.provider = provider
+        self.model = model
+        self.api_key = api_key
+        self.endpoint = endpoint
+        self.timeout = timeout
+
+    def run(self):
+        try:
+            from .llm_providers import get_llm_instance
+            from langchain_core.messages import HumanMessage
+            llm = get_llm_instance(
+                self.provider, self.model, self.api_key, self.endpoint,
+                temperature=0, timeout=self.timeout,
+            )
+            resp = llm.invoke([HumanMessage(content="请只回复字符 OK")])
+            text = getattr(resp, "content", str(resp))
+            if isinstance(text, list):
+                text = " ".join(str(p.get("text", p)) for p in text)
+            self.finished.emit(True, f"连接成功：{str(text)[:80]}")
+        except Exception as _e:
+            self.finished.emit(False, str(_e)[:300])
 
 
 class QGISAgent:
@@ -71,6 +185,14 @@ class QGISAgent:
         # 「跳过确认」开关：仅本次会话（进程内）有效，不做持久化，
         # 重启 QGIS 后自动复位为 False，避免一次性勾选变成永久无确认的代码执行
         self._skip_confirm = False
+
+        # ── 前台优化 S3 运行时状态 ──
+        # P1-4 代码确认三档授权：持久化「总是允许」字典（启动时从 QSettings 载入）
+        self._code_confirm_always = {}
+        # P1-4 本次会话允许的工具集合（进程内有效，重启复位）
+        self._session_allowed_tools = set()
+        # P1-7 后台 RAG 建索引线程句柄
+        self._rag_build_thread = None
 
     def _position_toolbar_after_console(self):
         """将工具栏放到Python控制台后面"""
@@ -254,12 +376,15 @@ class QGISAgent:
         # ── 恢复保存的设置 ──
         self._load_saved_settings()
 
-        # ── 初始化 RAG 索引（首次自动构建） ──
-        self._init_rag_index()
-
         self.dockwidget.closingPlugin.connect(self.onClosePlugin)
         self.iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dockwidget)
         self.dockwidget.show()
+
+        # ── D4 首次启动引导（仅首次弹出，之后持久化 firstRunDone） ──
+        self._maybe_show_first_run_guide()
+
+        # ── P1-7 RAG 建索引：移到后台线程，首启不再阻塞界面（约 10-30s） ──
+        self._init_rag_index_async()
 
         self.dataloader = DataLoader(DB_NAME)
         self.dataloader.connect()
@@ -480,6 +605,7 @@ class QGISAgent:
     def _on_response_received(self, response, workflow, model_path):
         if self.live_conversation is not None:
             self.dockwidget.set_sending_state(False)
+            self._reset_send_controls()
             self.dockwidget.enableAllButtons()
             self.dockwidget.enableAllTextEdit()
             self._disconnect_conv_signals(self.live_conversation)
@@ -580,6 +706,7 @@ class QGISAgent:
 
     def _on_response_error(self, error_message):
         self.dockwidget.set_sending_state(False)
+        self._reset_send_controls()
         self.dockwidget.enableAllButtons()
         self.dockwidget.enableAllTextEdit()
         # 与 _connect_conv_signals 成对断开，补齐 workflow/code/log 三个信号
@@ -635,46 +762,63 @@ class QGISAgent:
         except Exception as _e:
             logger.debug("写入执行日志失败，忽略: %s", _e, exc_info=True)
 
-    def _on_code_confirm(self, tool_name, code_preview, callback):
-        """代码执行确认对话框 — 借鉴 QGPT Agent 的安全确认机制。
+    def _ask_code_confirm(self, tool_name, code_preview):
+        """统一的代码执行确认入口（P1-4 三档授权）。
 
-        在 execute_pyqgis 或 execute_processing 执行前弹窗，
-        让用户确认或取消代码执行。
+        返回 True=允许执行，False=取消。
 
-        Args:
-            tool_name: 工具名称 (execute_pyqgis / execute_processing)
-            code_preview: 代码预览文本
-            callback: 确认后调用的回调函数，传入 bool (True=确认, False=取消)
+        优先级：持久化「总是允许」> 本次会话允许 > 弹窗询问。
         """
-        msg = QMessageBox()
-        msg.setWindowTitle("代码执行确认")
-        msg.setIcon(QMessageBox.Icon.Warning)
-        msg.setText(f"即将执行 {tool_name}，是否继续？")
-        msg.setInformativeText("请检查代码是否正确，确认无误后点击「执行」。")
-        msg.setDetailedText(code_preview)
-        msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-        msg.setDefaultButton(QMessageBox.StandardButton.No)
-        msg.button(QMessageBox.StandardButton.Yes).setText("执行")
-        msg.button(QMessageBox.StandardButton.No).setText("取消")
+        # 总是允许（持久化到 QSettings，跨重启有效）
+        if self._code_confirm_always.get(tool_name):
+            return True
+        # 本次会话允许该工具（进程内有效，重启复位）
+        if tool_name in self._session_allowed_tools:
+            return True
 
-        result = msg.exec()
-        callback(result == QMessageBox.StandardButton.Yes)
+        dlg = CodeConfirmDialog(self.dockwidget, tool_name, code_preview)
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            decision = dlg.decision
+            if decision == "always":
+                self._code_confirm_always[tool_name] = True
+                try:
+                    settings = QSettings("QGIS", "QGISAgent")
+                    allowed = settings.value("codeConfirmAlways", [])
+                    if not isinstance(allowed, list):
+                        allowed = []
+                    if tool_name not in allowed:
+                        allowed.append(tool_name)
+                        settings.setValue("codeConfirmAlways", allowed)
+                except Exception as _e:
+                    logger.debug("持久化「总是允许」失败，本会话仍生效: %s", _e, exc_info=True)
+            elif decision == "session":
+                self._session_allowed_tools.add(tool_name)
+            return True
+        return False
+
+    def _on_code_confirm(self, tool_name, code_preview, callback):
+        """异步代码执行确认（processor 调用，带回调）。
+
+        在 execute_pyqgis 或 execute_processing 执行前弹出
+        CodeConfirmDialog（代码默认展开 + 三档授权），让用户确认或取消。
+        """
+        try:
+            result = self._ask_code_confirm(tool_name, code_preview)
+        except Exception as _e:
+            logger.debug("代码确认异常，默认拒绝执行: %s", _e, exc_info=True)
+            result = False
+        try:
+            callback(result)
+        except Exception:
+            pass
 
     def _on_code_confirm_sync(self, tool_name, code_preview):
-        """同步版本的代码确认（用于全局回调，返回 bool）"""
-        msg = QMessageBox()
-        msg.setWindowTitle("代码执行确认")
-        msg.setIcon(QMessageBox.Icon.Warning)
-        msg.setText(f"即将执行 {tool_name}，是否继续？")
-        msg.setInformativeText("请检查代码是否正确，确认无误后点击「执行」。")
-        msg.setDetailedText(code_preview)
-        msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-        msg.setDefaultButton(QMessageBox.StandardButton.No)
-        msg.button(QMessageBox.StandardButton.Yes).setText("执行")
-        msg.button(QMessageBox.StandardButton.No).setText("取消")
-
-        result = msg.exec()
-        return result == QMessageBox.StandardButton.Yes
+        """同步版本的代码确认（用于全局回调，返回 bool）。"""
+        try:
+            return self._ask_code_confirm(tool_name, code_preview)
+        except Exception as _e:
+            logger.debug("代码确认异常，默认拒绝执行: %s", _e, exc_info=True)
+            return False
 
     def _on_skip_confirm_changed(self, state):
         """当"跳过确认"checkbox 状态变化时更新全局开关。
@@ -695,50 +839,118 @@ class QGISAgent:
         temperature = settings.value("temperature", 0, type=int)
         self.dockwidget.sliderTemperature.setValue(temperature)
 
+        # P1-4：恢复「总是允许」持久化设置（跨重启长期免确认）
+        allowed = settings.value("codeConfirmAlways", [])
+        if isinstance(allowed, list):
+            self._code_confirm_always = {t: True for t in allowed if isinstance(t, str)}
+
     def _on_temperature_changed(self, value):
         """温度滑块变化时保存设置"""
         settings = QSettings("QGIS", "QGISAgent")
         settings.setValue("temperature", value)
 
-    def _init_rag_index(self):
-        """初始化 RAG API 文档索引（首次使用时自动构建）"""
+    def _init_rag_index_async(self):
+        """P1-7：首启 RAG 建索引挪到后台线程，避免界面假死 10-30 秒。
+
+        旧实现在 UI 线程同步构建，且会先弹「是否构建」对话框，
+        导致首启时 dock 要在建完索引后才显示（体验＝卡死）。
+        现在：dock 先显示，索引在后台线程静默构建，状态条给出进度。
+        """
         try:
-            from .rag import DocStore, init_retriever, generate_pyqgis_docs
+            # 快速探测索引是否为空（只读，主线程，毫秒级）
+            from .rag import DocStore, init_retriever
             store = DocStore()
             init_retriever(store)
-            stats = store.get_stats()
-            # 如果索引为空，自动构建
-            if stats["api_docs"] == 0:
-                try:
-                    from qgis.PyQt.QtWidgets import QMessageBox
-                    reply = QMessageBox.question(
-                        None, "QGIS Agent",
-                        "首次使用需要构建 PyQGIS API 文档索引（约 10-30 秒），\n"
-                        "这将显著提升代码生成的准确性。是否立即构建？",
-                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes
-                    )
-                    if reply == QMessageBox.StandardButton.Yes:
-                        generate_pyqgis_docs(store)
-                        new_stats = store.get_stats()
-                        QMessageBox.information(
-                            None, "QGIS Agent",
-                            f"API 文档索引构建完成！\n"
-                            f"共索引 {new_stats['api_docs']} 个 API 条目。"
-                        )
-                except Exception as _e:
-                    logger.debug("ignored exception", exc_info=True)
+            empty = store.get_stats().get("api_docs", 0) == 0
+        except Exception:
+            empty = False
+            logger.debug("RAG 索引探测失败，跳过后台构建", exc_info=True)
+
+        if not empty:
+            return
+
+        _set_status = getattr(self.dockwidget, "_set_status", None)
+        if callable(_set_status):
+            _set_status("🔧 正在后台构建 API 索引…")
+
+        if getattr(self, "_rag_build_thread", None) and self._rag_build_thread.isRunning():
+            return
+        self._rag_build_thread = _RagBuildWorker()
+        self._rag_build_thread.finished.connect(self._on_rag_build_done)
+        self._rag_build_thread.start()
+
+    def _on_rag_build_done(self):
+        """RAG 后台构建完成后的轻量反馈（不弹窗，避免打扰）。"""
+        try:
+            _set_status = getattr(self.dockwidget, "_set_status", None)
+            if callable(_set_status):
+                _set_status("✅ API 索引就绪")
+        except Exception:
+            pass
+
+    def _maybe_show_first_run_guide(self):
+        """D4：首次启动引导。仅在首次弹出一次，之后持久化 firstRunDone。"""
+        try:
+            settings = QSettings("QGIS", "QGISAgent")
+            if settings.value("firstRunDone", False, type=bool):
+                return
+            QMessageBox.information(
+                self.dockwidget,
+                "欢迎使用 QGIS Agent",
+                "这是一款在 QGIS 内运行的 AI 助手插件。\n\n"
+                "• 在底部输入框直接描述 GIS 任务（如「把图层重投影到 WGS84」）；\n"
+                "• 执行 PyQGIS 代码前会弹出确认框，可勾选「总是允许」免重复确认；\n"
+                "• 首次会自动在后台构建 PyQGIS API 索引（约 10-30 秒，不卡界面）；\n"
+                "• 发送中可随时点「停止」，停止后该对话仍可继续。\n\n"
+                "更多用法见帮助页（聊天框右上角「?」）。",
+            )
+            settings.setValue("firstRunDone", True)
         except Exception as _e:
-            logger.debug("ignored exception", exc_info=True)
+            logger.debug("首启引导失败，已忽略: %s", _e, exc_info=True)
 
     def _on_stop_requested(self):
-        """用户点击停止按钮"""
+        """用户点击停止按钮 — U10 停止中间态。
+
+        点击停止后先进入「停止中…」中间态（禁用停止按钮、给出反馈），
+        直至 worker 真正结束（_on_response_received / _on_response_error）
+        才恢复界面，避免旧实现「点停止后该对话永久报废」的误导。
+
+        若当前并无在途调用，则直接恢复界面，不进入中间态。
+        """
         if self.live_conversation:
             self.live_conversation.stop()
-        self.dockwidget.set_sending_state(False)
-        self.dockwidget.enableAllButtons()
-        self.dockwidget.enableAllTextEdit()
-        self.dockwidget.finalizeThinking()
-        self.dockwidget.txHistory.append("<p style='color:#888;'>⏹ 已停止生成</p>")
+
+        if getattr(self.live_conversation, "llm_finished", True):
+            # 没有在途调用：直接恢复界面
+            self.dockwidget.set_sending_state(False)
+            self.dockwidget.enableAllButtons()
+            self.dockwidget.enableAllTextEdit()
+            self._reset_send_controls()
+            self.dockwidget.txHistory.append(
+                "<p style='color:#888;'>⏹ 没有正在进行的生成</p>"
+            )
+            return
+
+        # 进入「停止中」中间态
+        try:
+            self.dockwidget.pbStop.setText("停止中…")
+            self.dockwidget.pbStop.setEnabled(False)
+            _set_status = getattr(self.dockwidget, "_set_status", None)
+            if callable(_set_status):
+                _set_status("⏹ 正在停止…")
+        except Exception:
+            pass
+        self.dockwidget.txHistory.append(
+            "<p style='color:#888;'>⏹ 已发送停止请求</p>"
+        )
+
+    def _reset_send_controls(self):
+        """U10：恢复发送/停止按钮到初始可用状态（停止按钮文案复位为「停止」）。"""
+        try:
+            self.dockwidget.pbStop.setText("停止")
+            self.dockwidget.pbStop.setEnabled(True)
+        except Exception:
+            pass
 
     def _on_new_conversation(self):
         from .dialog_new_conversation import NewConversationDialog as NewEditDialog
@@ -949,6 +1161,55 @@ class QGISAgent:
         self._settings_row_data = {}  # row_idx -> {"llm_id": str, "name": str}
 
         self.dockwidget.btnAddModel.clicked.connect(self._add_model_row)
+
+        # D14：测试连接按钮（点击后后台线程执行，不阻塞界面）
+        self.btnTestConnection = QPushButton("🔌 测试连接")
+        self.btnTestConnection.setToolTip("用当前选中的模型测试 API 连通性（后台线程执行，不阻塞界面）")
+        self.btnTestConnection.clicked.connect(self._on_test_connection)
+        self.dockwidget.settingsLayout.addWidget(self.btnTestConnection)
+
+    def _on_test_connection(self):
+        """D14：后台测试当前选中模型的 API 连通性，避免界面假死。"""
+        llm_id = self._get_selected_llm_id()
+        if not llm_id:
+            QMessageBox.warning(
+                None, "无可用模型", "请先在「模型配置」标签页添加并选中一个模型。"
+            )
+            return
+        try:
+            provider, model_name = self.dataloader.get_llm_info(llm_id)
+            name, endpoint, api_key = self.dataloader.fetch_llm_info(llm_id)
+        except Exception as _e:
+            QMessageBox.warning(None, "读取模型失败", f"无法读取模型配置：{_e}")
+            return
+
+        btn = getattr(self, "btnTestConnection", None)
+        if btn is not None:
+            btn.setEnabled(False)
+            btn.setText("测试中…")
+        _set_status = getattr(self.dockwidget, "_set_status", None)
+        if callable(_set_status):
+            _set_status("🔌 正在测试连接…")
+
+        worker = _TestConnectionWorker(provider, model_name, api_key, endpoint, timeout=20)
+        self._test_conn_worker = worker  # 保持引用，避免被 GC 回收
+
+        def _on_done(success, message):
+            try:
+                if btn is not None:
+                    btn.setEnabled(True)
+                    btn.setText("🔌 测试连接")
+                if callable(_set_status):
+                    _set_status("✅ 连接成功" if success else "⚠ 连接失败")
+                if success:
+                    QMessageBox.information(self.dockwidget, "连接测试", message)
+                else:
+                    QMessageBox.warning(self.dockwidget, "连接测试失败", message)
+            except Exception as _e:
+                logger.debug("测试连接回调异常: %s", _e, exc_info=True)
+
+        worker.finished.connect(_on_done)
+        worker.start()
 
     def _refresh_settings_tab(self):
         """刷新模型配置表格"""

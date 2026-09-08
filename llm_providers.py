@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def get_llm_instance(provider, model, api_key, endpoint, temperature=0):
+def get_llm_instance(provider, model, api_key, endpoint, temperature=0, timeout=180):
     # 创建一个不使用系统代理的 httpx client，避免代理导致 DNS 解析失败
     # httpx 0.24.0+ 使用 proxies 参数（字典格式）
     try:
@@ -29,7 +29,8 @@ def get_llm_instance(provider, model, api_key, endpoint, temperature=0):
     }
 
     # 统一加请求超时与最小重试，避免端点不可达时线程永久挂起（表现=发送后永远无回复）
-    llm_timeout = 180
+    # timeout 可由调用方覆盖（测试连接用较短超时，对话用默认 180s）
+    llm_timeout = timeout
     llm_retries = 1
     if provider == "DeepSeek":
         llm = ChatDeepSeek(
