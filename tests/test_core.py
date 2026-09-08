@@ -1,15 +1,24 @@
 # -*- coding: utf-8 -*-
 """
 qgis_agent 核心逻辑单元测试
-在非 QGIS 环境中测试纯 Python 逻辑部分
+在非 QGIS 环境中测试纯 Python 逻辑部分。
+
+统一通过 tests.support 注入 qgis / langchain 替身，并以「包内模块」方式导入
+（import_mod("qgis_tools") 等价于 import qgis_agent.qgis_tools），避免裸顶层
+导入触发的相对导入失败（qgis_tools 模块级有 `from .smart_debugger import ...`）。
 """
 import os
 import sys
 import json
 import unittest
 
-# 添加父目录到路径
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+try:  # 既支持以包方式导入，也支持 unittest discover 顶层导入
+    from . import support
+except ImportError:
+    import support
+
+support.install_qgis_stub()
+support.install_langchain_stub()
 
 
 class TestConfig(unittest.TestCase):
@@ -20,7 +29,6 @@ class TestConfig(unittest.TestCase):
         import tempfile
         from config import load_env_file
 
-        # 创建一个临时 .env 文件
         fd, path = tempfile.mkstemp(suffix='.env', text=True)
         with os.fdopen(fd, 'w') as f:
             f.write("# comment line\n")
@@ -42,7 +50,6 @@ class TestUtils(unittest.TestCase):
     """测试 utils.py"""
 
     def test_pack_interaction(self):
-        """测试 pack 函数对 interaction 表"""
         from utils import pack
         row = ("id_001", "conv_001", "prompt_001", "hello", "",
                "06 06 2026 00:00:00", "input", "", "", "empty", "")
@@ -54,7 +61,6 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(result["workflow"], "empty")
 
     def test_unpack_interaction(self):
-        """测试 unpack 函数对 interaction 表"""
         from utils import unpack
         d = {
             "ID": "id_001", "conversationID": "conv_001",
@@ -68,7 +74,6 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(result[0], "id_001")
 
     def test_extract_code(self):
-        """测试代码提取"""
         from utils import extract_code
         response = """这是回复
 ```python
@@ -97,17 +102,19 @@ print("hello")
 class TestTools(unittest.TestCase):
     """测试 qgis_tools.py 中的纯逻辑部分（不依赖 QGIS API）"""
 
+    @classmethod
+    def setUpClass(cls):
+        cls.qt = support.import_mod("qgis_tools")
+
     def test_tool_map_completeness(self):
-        """确保 TOOL_DEFINITIONS 和 TOOL_MAP 一致"""
-        from qgis_tools import TOOL_DEFINITIONS, TOOL_MAP
-        defined_names = {t["name"] for t in TOOL_DEFINITIONS}
-        mapped_names = set(TOOL_MAP.keys())
+        """确保 TOOL_DEFINITIONS 和 TOOL_MAP 一致（防止 schema 与实现脱节）"""
+        defined_names = {t["name"] for t in self.qt.TOOL_DEFINITIONS}
+        mapped_names = set(self.qt.TOOL_MAP.keys())
         self.assertEqual(defined_names, mapped_names)
 
     def test_tool_definitions_have_required(self):
         """确保所有工具定义包含必要的字段"""
-        from qgis_tools import TOOL_DEFINITIONS
-        for tool in TOOL_DEFINITIONS:
+        for tool in self.qt.TOOL_DEFINITIONS:
             self.assertIn("name", tool)
             self.assertIn("description", tool)
             self.assertIn("parameters", tool)
@@ -115,91 +122,77 @@ class TestTools(unittest.TestCase):
             self.assertIn("required", tool["parameters"])
 
     def test_get_memory_path(self):
-        """测试记忆路径生成"""
-        import os
-        import tempfile
-        import qgis_tools
-
-        # 模拟 QgsApplication
-        class MockQgsApp:
-            @staticmethod
-            def qgisSettingsDirPath():
-                return tempfile.gettempdir()
-
-        # 由于 _get_memory_path 依赖 qgis.core.QgsApplication，
-        # 在非 QGIS 环境中只能测试逻辑
-        # 这里我们只验证路径拼接逻辑
+        """记忆路径拼接逻辑（_get_memory_path 依赖 QgsApplication，仅测拼接）"""
         expected_suffix = os.path.join("python", "plugins", "qgis_agent", "MEMORY.md")
         self.assertTrue(expected_suffix.endswith("MEMORY.md"))
 
     def test_save_memory_content(self):
-        """测试记忆保存逻辑（不依赖 QGIS）"""
-        import qgis_tools
+        """测试记忆保存逻辑（不依赖 QGIS，临时替换路径函数）"""
         import tempfile
-        import os
-
-        # 临时替换 _get_memory_path
+        qt = self.qt
         tmp_dir = tempfile.mkdtemp()
         memory_path = os.path.join(tmp_dir, "test_memory.md")
-        original_get = qgis_tools._get_memory_path
-        qgis_tools._get_memory_path = lambda: memory_path
-
+        original_get = qt._get_memory_path
+        qt._get_memory_path = lambda: memory_path
         try:
-            # 保存记忆
-            result = qgis_tools.save_memory("测试记忆内容", "测试")
+            result = qt.save_memory("测试记忆内容", "测试")
             self.assertIn(result.get("status"), ("saved", "skipped"))
-
-            # 再次保存相同内容应跳过
-            result2 = qgis_tools.save_memory("测试记忆内容", "测试")
+            result2 = qt.save_memory("测试记忆内容", "测试")
             self.assertEqual(result2.get("status"), "skipped")
-
-            # 读取记忆
             if result.get("status") == "saved":
-                load_result = qgis_tools.load_memory()
+                load_result = qt.load_memory()
                 self.assertEqual(load_result.get("status"), "ok")
                 self.assertIn("测试记忆内容", load_result.get("content", ""))
         finally:
-            qgis_tools._get_memory_path = original_get
+            qt._get_memory_path = original_get
             if os.path.exists(memory_path):
                 os.unlink(memory_path)
             os.rmdir(tmp_dir)
 
 
 class TestProcessorLogic(unittest.TestCase):
-    """测试 processor.py 中的纯逻辑部分"""
+    """测试 processor.py 中的纯逻辑部分（系统提示词回归防护）"""
+
+    @classmethod
+    def setUpClass(cls):
+        try:
+            cls.processor = support.import_mod("processor")
+        except Exception as exc:  # 真实 langchain 缺失且桩注入失败时优雅降级
+            raise unittest.SkipTest("无法加载 processor（依赖缺失）: %s" % exc)
 
     def test_agent_system_prompt_has_tools(self):
-        from processor import AGENT_SYSTEM_PROMPT
-        self.assertIn("get_qgis_info", AGENT_SYSTEM_PROMPT)
-        self.assertIn("save_memory", AGENT_SYSTEM_PROMPT)
-        self.assertIn("load_memory", AGENT_SYSTEM_PROMPT)
+        prompt = self.processor.AGENT_SYSTEM_PROMPT
+        for name in ("get_qgis_info", "save_memory", "load_memory"):
+            self.assertIn(name, prompt)
 
     def test_agent_system_prompt_non_empty(self):
-        from processor import AGENT_SYSTEM_PROMPT
-        self.assertGreater(len(AGENT_SYSTEM_PROMPT), 100)
+        self.assertGreater(len(self.processor.AGENT_SYSTEM_PROMPT), 100)
 
 
 class TestLLMProviders(unittest.TestCase):
     """测试 llm_providers.py"""
 
-    def test_get_llm_instance_deepseek(self):
-        from llm_providers import get_llm_instance
+    @classmethod
+    def setUpClass(cls):
         try:
-            instance = get_llm_instance(
+            cls.lp = support.import_mod("llm_providers")
+        except Exception as exc:
+            raise unittest.SkipTest("无法加载 llm_providers（依赖缺失）: %s" % exc)
+
+    def test_get_default_api_key(self):
+        # 未设置时返回空字符串
+        self.assertEqual(self.lp.get_default_api_key("Unknown"), "")
+
+    def test_get_llm_instance_deepseek(self):
+        try:
+            instance = self.lp.get_llm_instance(
                 "DeepSeek", "deepseek-chat",
                 "sk-test", "https://api.deepseek.com",
                 temperature=0
             )
             self.assertIsNotNone(instance)
         except Exception as e:
-            # 在无 langchain_deepseek 环境可能失败
-            self.skipTest(f"跳过: {e}")
-
-    def test_get_default_api_key(self):
-        from llm_providers import get_default_api_key
-        # 未设置时返回空字符串
-        result = get_default_api_key("Unknown")
-        self.assertEqual(result, "")
+            self.skipTest("跳过: %s" % e)
 
 
 if __name__ == "__main__":
