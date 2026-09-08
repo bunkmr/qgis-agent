@@ -336,10 +336,7 @@ class QGISAgent:
         from .dataloader import DataLoader
         from .conversation import Conversation
         from .dialog_new_conversation import NewConversationDialog
-        try:
-            from .qgis_agent_dockwidget_v2 import QGISAgentDockWidgetV2 as QGISAgentDockWidget
-        except ImportError:
-            from .qgis_agent_dockwidget import QGISAgentDockWidget
+        from .qgis_agent_dockwidget_v2 import QGISAgentDockWidgetV2 as QGISAgentDockWidget
         from .utils import (
             generate_unique_id, get_current_timestamp, pack, extract_code, set_font_color
         )
