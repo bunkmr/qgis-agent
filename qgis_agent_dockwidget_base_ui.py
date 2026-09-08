@@ -1,3 +1,5 @@
+import os
+
 from qgis.PyQt import QtCore, QtWidgets
 
 
@@ -240,6 +242,17 @@ class Ui_QGISAgentDockWidget(object):
         self.aboutLayout.setContentsMargins(4, 4, 4, 4)
         self.aboutLayout.setSpacing(4)
 
+        # >>> 手工追加（非 Designer 生成；若重新生成 .ui 需一并保留）<<<
+        # HELP.html 是仓库内最完整的中文帮助，但历史上没有任何代码打开它（孤儿文件）。
+        # 这里只往既有 aboutLayout 追加一个按钮，不改动其它布局结构；
+        # 点击后用系统默认浏览器打开随包分发的 HELP.html。
+        self.pbOpenFullHelp = QtWidgets.QPushButton("📖 打开完整帮助文档 (HELP.html)")
+        self.pbOpenFullHelp.setObjectName("pbOpenFullHelp")
+        self.pbOpenFullHelp.setToolTip("在默认浏览器中打开插件目录下的 HELP.html")
+        self.pbOpenFullHelp.clicked.connect(self._open_full_help)
+        self.aboutLayout.addWidget(self.pbOpenFullHelp)
+        # <<< 手工追加结束 <<<
+
         # 帮助内容显示区域
         self.aboutWebView = QtWidgets.QTextBrowser()
         self.aboutWebView.setOpenExternalLinks(True)
@@ -348,9 +361,97 @@ class Ui_QGISAgentDockWidget(object):
         self.retranslateUi()
         QtCore.QMetaObject.connectSlotsByName(QGISAgentDockWidget)
 
+    def _plugin_version(self):
+        """运行时读取插件版本号（唯一真源：config.PLUGIN_VERSION ← metadata.txt）。
+
+        本文件是 Designer 风格文件，不应硬编码版本号（硬编码必然随发版过期）。
+        读取失败时返回占位文案，绝不回退到某个历史版本号。
+        """
+        for mod in (".config", "config", "qgis_agent.config"):
+            try:
+                module = __import__(mod, fromlist=["PLUGIN_VERSION"])
+                version = getattr(module, "PLUGIN_VERSION", "")
+                if version:
+                    return version
+            except Exception:
+                continue
+        return "以插件管理器显示为准"
+
+    def _build_tools_rows(self):
+        """从 qgis_tools.TOOL_DEFINITIONS 动态生成内置工具表格行。
+
+        工具数量会随版本增长，硬编码清单必然过期（旧版此处只写了 6 个）。
+        读取失败时降级为文字提示，不让帮助页崩溃。
+        """
+        try:
+            try:
+                from .qgis_tools import TOOL_DEFINITIONS
+            except ImportError:
+                from qgis_tools import TOOL_DEFINITIONS
+        except Exception:
+            # TODO: 工具清单读取失败时的降级分支；定位并修复导入问题后可保留作保险
+            return ('<tr><td colspan="3">工具清单暂时无法显示，请点击上方'
+                    '「打开完整帮助文档」查看完整列表。</td></tr>')
+
+        rows = []
+        for tool in TOOL_DEFINITIONS:
+            name = tool.get("name", "")
+            if not name:
+                continue
+            desc = tool.get("description", "") or ""
+            desc = desc.split("。")[0].split("；")[0]
+            if len(desc) > 40:
+                desc = desc[:40] + "…"
+            rows.append(
+                "<tr><td><code>%s</code></td><td>%s</td><td>🔧 工具</td></tr>"
+                % (name, desc)
+            )
+        if not rows:
+            return '<tr><td colspan="3">未加载到工具定义。</td></tr>'
+        return "\n".join(rows)
+
+    def _help_file_path(self):
+        """返回随包分发的 HELP.html 绝对路径；不存在时返回 None。"""
+        try:
+            path = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "HELP.html"
+            )
+            return path if os.path.isfile(path) else None
+        except Exception:
+            return None
+
+    def _open_full_help(self):
+        """用系统默认浏览器打开 HELP.html；文件缺失时优雅降级（不抛异常）。"""
+        path = self._help_file_path()
+        if not path:
+            QtWidgets.QMessageBox.information(
+                None,
+                "QGIS Agent",
+                "未找到完整帮助文档 HELP.html。\n"
+                "请重新安装插件，或在线查看：\n"
+                "https://github.com/bunkmr/qgis-agent",
+            )
+            return
+
+        try:
+            from qgis.PyQt.QtGui import QDesktopServices  # Qt5 / Qt6 均在 QtGui
+        except ImportError:  # pragma: no cover - 兜底，正常路径不会走到
+            try:
+                from qgis.PyQt.QtCore import QDesktopServices
+            except ImportError:
+                QDesktopServices = None
+
+        url = QtCore.QUrl.fromLocalFile(path)
+        if QDesktopServices is None or not QDesktopServices.openUrl(url):
+            QtWidgets.QMessageBox.information(
+                None,
+                "QGIS Agent",
+                "无法自动打开帮助文档，请手动打开：\n%s" % path,
+            )
+
     def _get_about_html(self):
         """生成帮助/关于页面的HTML内容（纯HTML/CSS，不依赖JavaScript）"""
-        return """
+        html = """
 <!DOCTYPE html>
 <html>
 <head>
@@ -517,16 +618,17 @@ a:hover {
 <body>
 
 <h1>🗺️ QGIS Agent</h1>
-<p class="version">版本 2.1.0 | 将大语言模型嵌入QGIS的智能助手</p>
+<p class="version">版本 __PLUGIN_VERSION__ | 将大语言模型嵌入QGIS的智能助手</p>
 
 <div class="feature-box">
 <h3>✨ 核心亮点</h3>
 <ul>
-<li>📚 <strong>RAG API 文档检索</strong> - 380+ PyQGIS API 文档</li>
-<li>🧰 <strong>679 个 Processing 工具</strong> - 完整的工具文档</li>
-<li>🐛 <strong>SmartDebugger</strong> - 智能调试系统</li>
-<li>🔄 <strong>工作流固化</strong> - 可复用的任务流程</li>
-<li>❓ <strong>主动提问</strong> - 识别模糊请求</li>
+<li>📚 <strong>RAG API 文档检索</strong> - 检索本地 PyQGIS API 文档</li>
+<li>🧰 <strong>679 个 Processing 工具文档</strong> - tool_docs/ 下每个算法一份 TOML 参考</li>
+<li>🐛 <strong>SmartDebugger</strong> - 工具失败自动诊断并改写重试（v2.2.0 起已接入）</li>
+<li>🛡️ <strong>安全护栏</strong> - PyQGIS 代码 AST 扫描、危险操作确认、不可信数据净化</li>
+<li>🔄 <strong>工作流固化</strong> - 可复用的任务流程 <span style="color:#ffd966;">【规划中，当前版本不可用】</span></li>
+<li>❓ <strong>主动提问</strong> - 识别模糊请求 <span style="color:#ffd966;">【规划中，当前版本不可用】</span></li>
 </ul>
 </div>
 
@@ -547,8 +649,8 @@ a:hover {
 <div class="arch-arrow">↓</div>
 
 <div class="arch-title">📚 RAG 引擎</div>
-<div class="arch-item"><span class="arch-icon">📖</span> <strong>DocStore</strong> - SQLite FTS5 (380+ API)</div>
-<div class="arch-item"><span class="arch-icon">🧰</span> <strong>ToolDocs</strong> - 679 个 Processing 工具</div>
+<div class="arch-item"><span class="arch-icon">📖</span> <strong>DocStore</strong> - SQLite FTS5（API 文档运行时构建，数量随 QGIS 版本变化）</div>
+<div class="arch-item"><span class="arch-icon">🧰</span> <strong>ToolDocs</strong> - 679 个 Processing 算法/工具参考</div>
 
 <div class="arch-arrow">↓</div>
 
@@ -606,8 +708,9 @@ a:hover {
 <tr><td>几何错误</td><td>✅</td><td>修复几何</td></tr>
 </table>
 
-<h3>🔄 工作流固化</h3>
-<p>将对话中的工具调用序列保存为可重用工作流：</p>
+<h3>🔄 工作流固化 <span style="color:#c0392b;">【规划中，当前版本不可用】</span></h3>
+<p>将对话中的工具调用序列保存为可重用工作流（<code>workflow_recorder.py</code> /
+<code>workflow_executor.py</code> 代码已存在，但尚未接入对话链路）：</p>
 
 <div class="flow-container">
 <div class="flow-step">📝 第一次对话</div>
@@ -619,8 +722,8 @@ a:hover {
 <div class="flow-step">⚡ 直接执行</div>
 </div>
 
-<h3>❓ 主动提问</h3>
-<p>识别模糊请求，主动向用户澄清：</p>
+<h3>❓ 主动提问 <span style="color:#c0392b;">【规划中，当前版本不可用】</span></h3>
+<p>识别模糊请求，主动向用户澄清（代码已存在但尚未接入对话链路，当前不会触发）：</p>
 <pre>
 用户: 分析一下
 Agent: 请具体说明要分析什么：
@@ -631,19 +734,16 @@ Agent: 请具体说明要分析什么：
 
 <h2>📋 内置工具</h2>
 
+<p>下表由 <code>qgis_tools.TOOL_DEFINITIONS</code> 动态生成，数量随版本变化：</p>
+
 <table>
 <tr><th>工具</th><th>功能</th><th>分类</th></tr>
-<tr><td><code>get_qgis_info</code></td><td>获取项目信息</td><td>📊 查询</td></tr>
-<tr><td><code>add_vector_layer</code></td><td>添加矢量图层</td><td>📂 管理</td></tr>
-<tr><td><code>execute_processing</code></td><td>执行 Processing 算法</td><td>⚙️ 分析</td></tr>
-<tr><td><code>execute_pyqgis</code></td><td>执行 PyQGIS 代码</td><td>🐍 高级</td></tr>
-<tr><td><code>search_pyqgis_api</code></td><td>检索 API 文档</td><td>📚 RAG</td></tr>
-<tr><td><code>render_map</code></td><td>渲染地图截图</td><td>📸 输出</td></tr>
+__TOOLS_TABLE_ROWS__
 </table>
 
 <h2>🔌 工具文档系统</h2>
 
-<p>内置 <strong>679 个 QGIS Processing 工具</strong> 文档：</p>
+<p>内置 <strong>679 个 QGIS Processing 算法/工具参考文档</strong>（tool_docs/ 下每个算法一份 TOML）：</p>
 
 <div class="flow-container">
 <div class="flow-step">👤 用户请求</div>
@@ -690,7 +790,7 @@ Agent: 请具体说明要分析什么：
 
 <table>
 <tr><th>问题</th><th>解决方案</th></tr>
-<tr><td>插件无法加载</td><td>检查 QGIS 版本 ≥ 3.0</td></tr>
+<tr><td>插件无法加载</td><td>检查 QGIS 版本 ≥ 3.22（插件元数据要求的最低版本）</td></tr>
 <tr><td>API 调用失败</td><td>检查网络连接和 API 密钥</td></tr>
 <tr><td>代码执行错误</td><td>查看 SmartDebugger 的修复建议</td></tr>
 <tr><td>图层加载失败</td><td>检查文件路径是否正确</td></tr>
@@ -698,24 +798,22 @@ Agent: 请具体说明要分析什么：
 
 <h2>📄 更新日志</h2>
 
-<h3>v2.1.0 (2026-06-12)</h3>
+<h3>v2.2.0（开发中）</h3>
 <ul>
-<li>✨ 集成 SmartDebugger 智能调试系统</li>
-<li>✨ 添加 Task Graph 任务流程可视化</li>
-<li>✨ 添加 Query Tuning 查询优化</li>
-<li>✨ 集成 679 个 Processing 工具文档</li>
-<li>✨ 添加 Code Review 代码审查</li>
-<li>✨ 添加 Workflow Recorder 工作流录制</li>
-<li>✨ 添加 Workflow Executor 工作流执行</li>
-<li>✨ 添加 Clarification Manager 主动提问</li>
+<li>🐛 SmartDebugger 接线：工具失败自动诊断并回灌 LLM 改写重试</li>
+<li>🛡️ 安全：PyQGIS 代码 AST 静态扫描、危险操作确认、不可信数据净化</li>
+<li>💬 体验：错误信息分级为中文可操作提示；Enter 发送 / Shift+Enter 换行</li>
+<li>🐛 修复「点停止后该对话永久报废」</li>
 </ul>
 
-<h3>v1.2.0</h3>
+<h3>v2.1.3 (2026-09-02)</h3>
 <ul>
-<li>✅ RAG API 文档检索</li>
-<li>✅ Cookbook 自我进化</li>
-<li>✅ 15 个内置 QGIS 工具</li>
+<li>✅ QGIS 4（PyQt6）兼容；本地 / 自托管模型 API Key 可留空</li>
+<li>✅ Cloudflare 403 自动规避（附加浏览器 User-Agent）</li>
+<li>🐛 修复「点击发送无反应」：无活动对话自动创建，异常改为可见红字提示</li>
 </ul>
+
+<h2>🔗 相关链接</h2>
 
 <h2>🔗 相关链接</h2>
 <ul>
@@ -736,6 +834,11 @@ Inspired by SpatialAnalysisAgent (GIBD, Penn State University)
 </body>
 </html>
 """
+        # 版本号 / 工具清单不在此处硬编码（本文件为 Designer 风格文件，硬编码会随发版过期），
+        # 统一在运行时注入：版本号取 config.PLUGIN_VERSION，工具行取 qgis_tools.TOOL_DEFINITIONS。
+        return (html
+                .replace("__PLUGIN_VERSION__", self._plugin_version())
+                .replace("__TOOLS_TABLE_ROWS__", self._build_tools_rows()))
 
     def retranslateUi(self):
         pass

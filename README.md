@@ -13,6 +13,17 @@
 
 QGIS Agent 是 QGIS 的 AI 原生插件——用自然语言直接操控 QGIS，无需编写 PyQGIS 代码。集成 **RAG API 文档检索**和 **Cookbook 自我进化**，让 AI 写的代码更准确、越用越聪明。
 
+## ⚠️ 功能状态说明（请先读这段）
+
+本项目文档同时包含**当前可用功能**与**路线图规划**。为避免「装了才发现用不了」，下表状态以代码接线情况为准：
+
+| 状态 | 含义 | 涉及功能 |
+|------|------|----------|
+| ✅ **可用** | 已接入主对话链路，当前版本真实可用 | 自然语言操控、19 个内置工具、RAG 检索、tool_docs（679 条）、Cookbook、SmartDebugger、Query Tuning、多模型 |
+| 🚧 **规划中 · 尚未接入** | 代码已存在但**零生产引用 / 未接线，当前版本无法使用** | 技能系统（[`skills/`](skills)）、工作流固化（`workflow_recorder.py` / `workflow_executor.py`）、主动提问（`clarification_manager.py`）、任务图（`task_graph.py`）、Code Review（`code_reviewer.py`）、Agent Loop（[`agent_loop/`](agent_loop)） |
+
+> 下方亮点表中带 🚧 的功能**不要在文档中当作已发布能力对待**。宁可少宣传，也不让用户装了发现用不了。
+
 ## ✨ 核心亮点
 
 | 亮点 | 说明 |
@@ -23,15 +34,17 @@ QGIS Agent 是 QGIS 的 AI 原生插件——用自然语言直接操控 QGIS，
 | 🔒 **代码安全确认** | 执行 PyQGIS/Processing 前弹窗确认，杜绝误操作 |
 | 🧵 **线程安全** | LLM 调用在工作线程执行，QGIS API 操作通过 QTimer 调度回主线程 |
 | 🧠 **多模型** | 支持 DeepSeek、OpenAI、GLM、Gemini、MiMo 等所有 OpenAI 兼容 API |
-| 🔌 **Skills 系统** *(实验性)* | 可扩展的技能插件架构，支持网络搜索、GIS 数据查询等功能（尚未接入主对话链路） |
-| 🐛 **SmartDebugger** *(实验性)* | 智能调试系统，错误模式识别与修复建议（尚未接入主对话链路） |
-| 📊 **Task Graph** *(实验性)* | 任务流程图可视化，NetworkX + PyVis 支持（尚未接入主对话链路） |
-| 🎯 **Query Tuning** | 用户查询优化，自动分解 GIS 任务（已接入） |
-| 📋 **Tool Docs** | 679 条 QGIS Processing 算法参考（TOML），已接入 RAG，执行 Processing 时自动检索算法签名 |
-| 🔍 **Code Review** *(实验性)* | 代码审查机制（尚未接入主对话链路） |
-| 🔄 **Workflow Recorder** *(实验性)* | 记录对话中的工具调用序列，保存为可重用工作流（尚未接入主对话链路） |
-| 🚀 **Workflow Executor** *(实验性)* | 在新工程中直接执行保存的工作流（尚未接入主对话链路） |
-| ❓ **Clarification Manager** *(实验性)* | 识别模糊请求，主动向用户澄清（尚未接入主对话链路） |
+| 🐛 **SmartDebugger** ✅ | 工具调用失败时自动诊断，并把诊断结论回灌 LLM 改写重试（v2.2.0 起已接入主链路） |
+| 📊 **Task Graph** 🚧 | 任务流程图可视化，NetworkX + PyVis 支持（`task_graph.py` 未接线，当前不可用） |
+| 🎯 **Query Tuning** ✅ | 用户查询优化，自动分解 GIS 任务（已接入） |
+| 📋 **Tool Docs** ✅ | **679 条** QGIS Processing 算法/工具参考（TOML，每算法一份），已接入 RAG，执行 Processing 时自动检索算法签名 |
+| 🔍 **Code Review** 🚧 | 代码审查机制（`code_reviewer.py` 未接线，当前不可用） |
+| 🔌 **Skills 系统** 🚧 | 可扩展的技能插件架构（`skills/` 零生产引用，当前不可用） |
+| 🔄 / 🚀 **Workflow Recorder / Executor** 🚧 | 记录并复用对话中的工具调用序列（两个模块均未接线，当前不可用） |
+| ❓ **Clarification Manager** 🚧 | 识别模糊请求并主动澄清（`clarification_manager.py` 未接线，当前不可用） |
+
+> 🚧 = **规划中 · 尚未接入**，当前版本装上也用不了；✅ = 已接入主对话链路。
+> 状态判定依据：代码是否被主对话链路引用，而非模块是否存在。
 
 ## 🏗️ 架构概览
 
@@ -53,7 +66,7 @@ graph TB
     subgraph TOOLS["🔩 QGIS 工具层 — 主线程调度"]
         direction LR
         F["📞 call_tool()<br/><small>线程桥</small>"]
-        G["🧰 15+ QGIS 工具"]
+        G["🧰 19 个 QGIS 工具"]
         H["🗺️ QGIS API<br/><small>QgsProject / iface / Processing</small>"]
     end
 
@@ -96,6 +109,24 @@ graph TB
 - 💬 对话名默认取首条消息前 20 字，不再强制弹窗命名
 
 详见 [CHANGELOG.md](CHANGELOG.md)。
+
+## 🆕 v2.2.0（开发中）已完成的能力
+
+> 这一批是**安全与内核接线**，对应提交 `bf5321b`，均已落地可用。
+
+**安全**
+
+- **不可信数据净化**：图层名、属性值等外部数据回喂 LLM 前先净化并截断，避免提示词注入与上下文爆炸
+- **PyQGIS 代码 AST 静态扫描**：执行前做模块白名单 + 危险调用黑名单检查
+- **危险操作确认扩展**：`remove_layer` / `load_project` / `save_project` 纳入确认清单，`render_map` 覆盖文件时确认
+- **「跳过确认」不再持久化**：仅当前进程有效，重启后自动恢复确认
+
+**内核 / 体验**
+
+- **SmartDebugger 自动诊断重试**：工具调用失败自动诊断，并把诊断结论回灌 LLM 改写重试，不再一错就停
+- **错误分级提示**：新增 `error_classifier.py`，把原始异常翻译成中文可操作的提示
+- **修复「点停止后该对话永久报废」**
+- 思考过程改为累积显示；输入框 **Enter 发送 / Shift+Enter 换行**
 
 ## 📥 安装
 
@@ -184,18 +215,35 @@ cp -r qgis_agent/ ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/
 | `load_project` | 加载 QGIS 项目 | 💾 项目 |
 | `save_memory` | 保存长期记忆 | 🧠 记忆 |
 | `load_memory` | 加载长期记忆 | 🧠 记忆 |
+| `get_algorithm_parameters` | 查询 Processing 算法的参数定义 | 📚 RAG |
+| `get_layer_profile` | 生成图层数据概览（字段、范围等） | 📊 查询 |
+| `set_layer_renderer` | 设置图层渲染样式（分级设色等） | 🎨 渲染 |
+| `reproject_layer` | 图层投影转换 | ⚙️ 空间分析 |
 
-## 📚 RAG API 文档覆盖
+> 共 **19** 个内置工具，与代码中 `qgis_tools.TOOL_DEFINITIONS` 保持一致。
 
-RAG 系统包含以下来源的 API 文档：
+## 📚 RAG 文档覆盖
+
+RAG 系统包含两类文档，**两者口径不同，请勿混用数字**：
+
+**① 随包分发的 Processing 算法/工具参考（静态、可精确统计）**
+
+| 项目 | 数量 | 说明 |
+|------|------|------|
+| `tool_docs/*.toml` | **679** | 每个 QGIS Processing 算法一份 TOML 参考（参数、返回值、示例）。统计口径：`ls tool_docs/*.toml \| wc -l` |
+| `tool_docs_index.json` | 679 条对应索引 | 供 RAG 快速检索 |
+
+**② 运行时构建的 PyQGIS API 文档（动态、随 QGIS 版本变化）**
 
 | 来源 | 数量 | 说明 |
 |------|------|------|
 | 官方 API 文档 | 运行时构建 | 核心类的完整方法签名（QgsVectorLayer, QgsGeometry, QgsFeature 等），首次运行由 official_doc_scraper / doc_generator 生成 |
-| 运行时反射 | 200+ | 从 QGIS 运行时提取的方法签名 |
-| Processing 算法 | 100+ | 所有已安装的 Processing 算法 |
+| 运行时反射 | 运行时反射生成 | 从当前 QGIS 运行时提取的方法签名（随版本/环境变化，无固定值） |
+| Processing 算法 | 等于当前 QGIS 已安装算法数 | 非固定值 |
 | 手动补充 | 11 | 常用操作速查 |
-| **总计** | **380+** | 完整的 QGIS API 覆盖 |
+
+> 说明：早期文档中的「380+ API 文档」是运行时索引的**估算值**，无法静态核实且与上面的 679 条算法参考不是同一口径，已移除。
+> 对外宣传请统一使用：**679 个 Processing 算法/工具文档条目**（`tool_docs/` 实际文件数）。
 
 ### 覆盖的核心类
 
@@ -242,11 +290,14 @@ qgis_agent/
 └── requirements.txt             # Python 依赖
 ```
 
-## 🔌 技能系统（实验性）
+## 🔌 技能系统 🚧 规划中 · 当前不可用
 
-QGIS Agent 支持可扩展的技能插件系统：
+> ⚠️ **当前版本无法使用。** `skills/` 包下的实现在生产链路中**零引用**，既没有注册入口也没有调用点。
+> 以下内容是**路线图设计**，不是可用功能说明。
 
-### 内置技能
+QGIS Agent 规划中的可扩展技能插件系统：
+
+### 内置技能（均不可用）
 
 | 技能 | 功能 |
 |------|------|

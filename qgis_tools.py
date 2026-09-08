@@ -11,12 +11,14 @@ import sys
 import ast
 import re
 import json
+import difflib
 import builtins
+import tempfile
 import traceback
 from qgis.core import (
     Qgis, QgsProject, QgsApplication, QgsVectorLayer, QgsRasterLayer,
     QgsMapLayer, QgsCoordinateReferenceSystem, QgsMapSettings,
-    QgsMapRendererParallelJob,
+    QgsMapRendererParallelJob, QgsWkbTypes,
     QgsPalLayerSettings, QgsVectorLayerSimpleLabeling, QgsTextFormat
 )
 from qgis.PyQt.QtCore import QSize, QObject
@@ -969,6 +971,1037 @@ def load_memory() -> dict:
 
 
 # ──────────────────────────────────────────────
+# 算法参数 / 图层档案 / 渲染 / 投影转换工具
+# ──────────────────────────────────────────────
+
+def _find_layer(layer_id_or_name: str):
+    """按 ID 或名称查找图层，找不到时返回 None"""
+    project = QgsProject.instance()
+    layer = project.mapLayer(layer_id_or_name)
+    if layer:
+        return layer
+    for _lid, lyr in project.mapLayers().items():
+        if lyr.name() == layer_id_or_name:
+            return lyr
+    return None
+
+
+def _enum_value(cls, enum_name: str, value_name: str):
+    """按作用域枚举取值（PyQt5 扁平写法 / PyQt6 作用域写法双兼容）。
+
+    依次尝试 cls.<enum_name>.<value_name> 与 cls.<value_name>，
+    都取不到时返回 None（交由调用方回退）。
+    """
+    for holder_name in (enum_name, None):
+        try:
+            holder = cls if holder_name is None else getattr(cls, holder_name)
+            return getattr(holder, value_name)
+        except Exception:
+            continue
+    return None
+
+
+# ──────────────────────────────────────────────
+# 1. get_algorithm_parameters
+# ──────────────────────────────────────────────
+
+def _processing_flag_names(flags_value: int) -> list:
+    """把参数 flags 位掩码翻译为可读名称列表（枚举作用域双兼容）"""
+    try:
+        from qgis.core import QgsProcessingParameterDefinition as _Def
+    except Exception as e:
+        logger.debug("QgsProcessingParameterDefinition 导入失败: %s", e, exc_info=True)
+        return []
+
+    names = []
+    for value_name in ("FlagOptional", "FlagAdvanced", "FlagHidden", "FlagIsModelOutput"):
+        flag = _enum_value(_Def, "Flag", value_name)
+        if flag is None:
+            flag = getattr(_Def, value_name, None)
+        try:
+            if flag is not None and (int(flags_value) & int(flag)):
+                names.append(value_name)
+        except Exception as e:
+            logger.debug("解析参数标记 %s 失败: %s", value_name, e, exc_info=True)
+    return names
+
+
+def _describe_processing_parameter(param) -> dict:
+    """把单个 Processing 参数定义转为可序列化 dict"""
+    flags_value = 0
+    try:
+        flags_value = int(param.flags())
+    except Exception as e:
+        logger.debug("读取参数 flags 失败: %s", e, exc_info=True)
+
+    flag_names = _processing_flag_names(flags_value)
+    optional = "FlagOptional" in flag_names
+    if not optional:
+        # 少数版本未暴露 Flag 枚举，退化为探测 isOptional()
+        try:
+            is_optional = getattr(param, "isOptional", None)
+            if callable(is_optional):
+                optional = bool(is_optional())
+        except Exception as e:
+            logger.debug("探测参数可选性失败: %s", e, exc_info=True)
+
+    default_value = None
+    try:
+        raw_default = param.defaultValue()
+        if raw_default is None:
+            default_value = None
+        elif isinstance(raw_default, (bool, int, float, str)):
+            default_value = raw_default
+        else:
+            # 默认值可能来自模型文件，属不可信输入
+            default_value = _sanitize_untrusted(raw_default, 200)
+    except Exception as e:
+        logger.debug("读取参数默认值失败: %s", e, exc_info=True)
+
+    info = {
+        "name": _sanitize_untrusted(param.name(), 120),
+        "description": _sanitize_untrusted(param.description(), 300),
+        "type": _sanitize_untrusted(param.type(), 60),
+        "python_class": _sanitize_untrusted(type(param).__name__, 80),
+        "default_value": default_value,
+        "optional": optional,
+        "flags": flag_names,
+    }
+
+    # 枚举/数值/字段类参数的取值约束，帮助 LLM 正确赋值
+    for attr in ("options", "minimum", "maximum"):
+        try:
+            getter = getattr(param, attr, None)
+            if not callable(getter):
+                continue
+            value = getter()
+            info[attr] = value if isinstance(value, (bool, int, float, str)) else _sanitize_untrusted(value, 200)
+        except Exception as e:
+            logger.debug("读取参数 %s 失败: %s", attr, e, exc_info=True)
+    return info
+
+
+def _suggest_algorithm_ids(query: str, limit: int = 5) -> list:
+    """在 Processing 注册表中模糊匹配算法 id，返回候选列表"""
+    try:
+        algorithms = QgsApplication.processingRegistry().algorithms() or []
+    except Exception as e:
+        logger.debug("枚举 Processing 算法失败: %s", e, exc_info=True)
+        return []
+
+    text = str(query or "").strip().lower()
+    tail = text.split(":")[-1] if text else ""
+    scored = []
+    for alg in algorithms:
+        try:
+            alg_id = alg.id()
+            display = alg.displayName() if hasattr(alg, "displayName") else alg.name()
+        except Exception:
+            continue
+        if not alg_id:
+            continue
+        alg_id_l = alg_id.lower()
+        score = difflib.SequenceMatcher(None, text, alg_id_l).ratio() if text else 0.0
+        if tail and tail in alg_id_l:
+            score += 0.5
+        elif text and text in f"{alg_id_l} {str(display).lower()}":
+            score += 0.25
+        scored.append((score, alg_id, display))
+
+    scored.sort(key=lambda item: item[0], reverse=True)
+    suggestions = []
+    for score, alg_id, display in scored:
+        if len(suggestions) >= limit:
+            break
+        if score < 0.2:
+            continue
+        suggestions.append({
+            "id": _sanitize_untrusted(alg_id, 120),
+            "name": _sanitize_untrusted(display, 120),
+        })
+    return suggestions
+
+
+def _truncate_algorithm_result(result: dict, max_chars: int = _MAX_FEATURE_RESULT_CHARS) -> dict:
+    """算法参数过多时按返回值长度截断（复用 _truncate_result 的长度度量）"""
+    result = _truncate_result(result, max_chars)
+    parameters = result.get("parameters")
+    if not isinstance(parameters, list):
+        return result
+
+    before = len(parameters)
+    while parameters and _dump_len(result) > max_chars:
+        parameters.pop()
+    if _dump_len(result) > max_chars:
+        result["parameters"] = []
+    if len(parameters) < before:
+        result["parameter_count"] = len(parameters)
+        result["truncated"] = f"...(参数过多，已截断 {before - len(parameters)} 个参数)"
+    return result
+
+
+def get_algorithm_parameters(algorithm_id: str) -> dict:
+    """查询 QGIS Processing 算法的真实参数定义。
+
+    返回算法 id、名称、分组以及每个参数的名称、描述、类型、默认值、
+    是否可选。在调用 execute_processing 之前必须先调用本工具查询算法
+    的真实参数名，不要凭记忆猜测或编造参数；算法 id 不存在时会返回
+    名字相近的候选算法 id，便于自我纠正。
+    """
+    try:
+        registry = QgsApplication.processingRegistry()
+        if registry is None:
+            return {"error": "Processing 注册表未初始化，本工具需在 QGIS 桌面环境中运行。"}
+
+        alg = registry.algorithmById(algorithm_id)
+        if alg is None:
+            suggestions = _suggest_algorithm_ids(algorithm_id)
+            error = f"未找到算法: {algorithm_id}"
+            if suggestions:
+                error += "。是否想找: " + ", ".join(s["id"] for s in suggestions)
+            return {
+                "error": error,
+                "suggestions": suggestions,
+                "hint": "请从 suggestions 中选一个正确的算法 id 重新调用本工具，确认参数后再调用 execute_processing。",
+            }
+
+        parameters = []
+        for param in (alg.parameterDefinitions() or []):
+            try:
+                parameters.append(_describe_processing_parameter(param))
+            except Exception as e:
+                logger.debug("解析算法参数失败: %s", e, exc_info=True)
+
+        result = {
+            "id": _sanitize_untrusted(alg.id(), 120),
+            "name": _sanitize_untrusted(
+                alg.displayName() if hasattr(alg, "displayName") else alg.name(), 200
+            ),
+            "group": _sanitize_untrusted(alg.group() if hasattr(alg, "group") else "", 120),
+            "parameter_count": len(parameters),
+            "parameters": parameters,
+        }
+        return _truncate_algorithm_result(result)
+    except Exception as e:
+        logger.debug("get_algorithm_parameters 失败: %s", e, exc_info=True)
+        return {"error": f"查询算法参数失败: {str(e)}"}
+
+
+# ──────────────────────────────────────────────
+# 2. get_layer_profile
+# ──────────────────────────────────────────────
+
+def _geometry_type_name(layer) -> str:
+    """矢量图层几何类型名称（兼容 QGIS 3.22~3.40 的枚举作用域差异）"""
+    try:
+        geom_type = QgsWkbTypes.geometryType(layer.wkbType())
+    except Exception as e:
+        logger.debug("QgsWkbTypes.geometryType 失败，回退 layer.geometryType(): %s", e, exc_info=True)
+        geom_type = layer.geometryType()
+
+    names = {}
+    try:
+        names = {
+            QgsWkbTypes.GeometryType.PointGeometry: "Point",
+            QgsWkbTypes.GeometryType.LineGeometry: "Line",
+            QgsWkbTypes.GeometryType.PolygonGeometry: "Polygon",
+            QgsWkbTypes.GeometryType.NullGeometry: "NoGeometry",
+            QgsWkbTypes.GeometryType.UnknownGeometry: "Unknown",
+        }
+    except AttributeError as e:
+        logger.debug("作用域几何枚举不可用，回退整数映射: %s", e, exc_info=True)
+    if not names:
+        names = {0: "Point", 1: "Line", 2: "Polygon", 3: "NoGeometry", 4: "Unknown"}
+    return names.get(geom_type, str(geom_type))
+
+
+def _build_layer_profile(layer) -> dict:
+    """构造单个图层的精简档案"""
+    profile = {
+        "id": layer.id(),
+        # 图层名来自数据源/工程文件，属不可信输入
+        "name": _sanitize_untrusted(layer.name(), 120),
+        "type": _get_layer_type(layer),
+    }
+
+    crs = layer.crs()
+    profile["crs"] = {
+        "authid": _sanitize_untrusted(crs.authid() if crs else "", 60),
+        "description": _sanitize_untrusted(crs.description() if crs else "", 150),
+    }
+
+    try:
+        ext = layer.extent()
+        profile["extent"] = {
+            "xmin": round(ext.xMinimum(), 6),
+            "ymin": round(ext.yMinimum(), 6),
+            "xmax": round(ext.xMaximum(), 6),
+            "ymax": round(ext.yMaximum(), 6),
+        }
+    except Exception as e:
+        logger.debug("读取图层范围失败: %s", e, exc_info=True)
+
+    if layer.type() == QgsMapLayer.LayerType.VectorLayer:
+        profile["geometry_type"] = _geometry_type_name(layer)
+        try:
+            profile["wkb_type"] = _sanitize_untrusted(QgsWkbTypes.displayString(layer.wkbType()), 60)
+            profile["has_z"] = bool(QgsWkbTypes.hasZ(layer.wkbType()))
+            profile["has_m"] = bool(QgsWkbTypes.hasM(layer.wkbType()))
+        except Exception as e:
+            logger.debug("读取 WKB 类型信息失败: %s", e, exc_info=True)
+
+        feature_count = layer.featureCount()
+        try:
+            if feature_count is None or feature_count < 0:
+                provider = layer.dataProvider()
+                feature_count = provider.featureCount() if provider is not None else -1
+        except Exception as e:
+            logger.debug("读取要素数失败: %s", e, exc_info=True)
+        profile["feature_count"] = feature_count
+
+        fields = []
+        for fld in layer.fields():
+            try:
+                fields.append({
+                    # 字段名来自数据源，属不可信输入
+                    "name": _sanitize_untrusted(fld.name(), 120),
+                    "type": _sanitize_untrusted(fld.typeName(), 60),
+                    "length": fld.length(),
+                    "precision": fld.precision(),
+                })
+            except Exception as e:
+                logger.debug("读取字段信息失败: %s", e, exc_info=True)
+        profile["fields"] = fields[:50]
+        if len(fields) > 50:
+            profile["fields_truncated"] = f"...(共 {len(fields)} 个字段，仅返回前 50 个)"
+
+        try:
+            provider = layer.dataProvider()
+            if provider is not None:
+                profile["provider"] = _sanitize_untrusted(provider.name(), 60)
+        except Exception as e:
+            logger.debug("读取数据源 provider 失败: %s", e, exc_info=True)
+
+    elif layer.type() == QgsMapLayer.LayerType.RasterLayer:
+        for attr, key in (("bandCount", "band_count"), ("width", "width"), ("height", "height")):
+            try:
+                profile[key] = getattr(layer, attr)()
+            except Exception as e:
+                logger.debug("读取栅格属性 %s 失败: %s", attr, e, exc_info=True)
+        try:
+            profile["resolution"] = {
+                "x": layer.rasterUnitsPerPixelX(),
+                "y": layer.rasterUnitsPerPixelY(),
+            }
+        except Exception as e:
+            logger.debug("读取栅格分辨率失败: %s", e, exc_info=True)
+        try:
+            provider = layer.dataProvider()
+            if provider is not None:
+                profile["data_type"] = _sanitize_untrusted(provider.dataType(1), 60)
+        except Exception as e:
+            logger.debug("读取栅格数据类型失败: %s", e, exc_info=True)
+
+    return profile
+
+
+def get_layer_profile(layer_id: str = None) -> dict:
+    """获取图层的精简档案（几何类型、要素数、坐标系、范围、字段列表）。
+
+    矢量图层返回几何类型、要素数、CRS(authid+描述)、Extent(bbox)、
+    字段列表(名称/类型/长度)以及是否含 Z/M；栅格图层返回波段数、
+    分辨率、宽高、数据类型。不传 layer_id 时返回当前工程所有图层的
+    档案（最多 20 个）。在空间分析或拼装 Processing 参数之前先用本
+    工具"看一眼数据"，可避免字段名不匹配与坐标系遗漏两类错误。
+    """
+    try:
+        project = QgsProject.instance()
+
+        if layer_id:
+            layer = _find_layer(layer_id)
+            if not layer:
+                return {
+                    "error": f"未找到图层: {layer_id}",
+                    "hint": "可先调用 get_qgis_info 查看当前工程中的图层名称与 id。",
+                }
+            return _truncate_result({"layer": _build_layer_profile(layer)})
+
+        layers = list(project.mapLayers().values())
+        profiles = []
+        for lyr in layers[:20]:
+            try:
+                profiles.append(_build_layer_profile(lyr))
+            except Exception as e:
+                logger.debug("构建图层档案失败: %s", e, exc_info=True)
+
+        result = {
+            "project_crs": _sanitize_untrusted(project.crs().authid(), 60),
+            "layer_count": len(layers),
+            "returned": len(profiles),
+            "layers": profiles,
+        }
+        if len(layers) > 20:
+            result["truncated"] = f"...(仅返回前 20 个图层，共 {len(layers)} 个)"
+        return _truncate_result(result)
+    except Exception as e:
+        logger.debug("get_layer_profile 失败: %s", e, exc_info=True)
+        return {"error": f"获取图层档案失败: {str(e)}"}
+
+
+# ──────────────────────────────────────────────
+# 3. set_layer_renderer
+# ──────────────────────────────────────────────
+
+# 色带取不到时的兜底调色板
+_FALLBACK_PALETTE = [
+    "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
+    "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf",
+]
+
+
+def _get_color_ramp(color_ramp: str):
+    """按名称取色带，取不到依次回退 Viridis 与内置渐变，返回 (ramp, 名称)"""
+    try:
+        from qgis.core import QgsStyle, QgsGradientColorRamp
+
+        style = QgsStyle.defaultStyle()
+        if style is not None:
+            for name in (color_ramp, "Viridis"):
+                if not name:
+                    continue
+                try:
+                    ramp = style.colorRamp(str(name))
+                except Exception as e:
+                    logger.debug("读取色带 %s 失败: %s", name, e, exc_info=True)
+                    ramp = None
+                if ramp is not None:
+                    return ramp, str(name)
+        return QgsGradientColorRamp(QColor("#f7fbff"), QColor("#08306b")), "fallback_gradient"
+    except Exception as e:
+        logger.debug("构造色带失败，使用内置调色板: %s", e, exc_info=True)
+        return None, None
+
+
+def _pick_color(ramp, index: int, total: int):
+    """从色带取第 index 个颜色，色带不可用时回退内置调色板"""
+    ratio = 0.5 if total <= 1 else index / float(total - 1)
+    if ramp is not None:
+        try:
+            return ramp.color(ratio)
+        except Exception as e:
+            logger.debug("色带取色失败: %s", e, exc_info=True)
+    return QColor(_FALLBACK_PALETTE[index % len(_FALLBACK_PALETTE)])
+
+
+def _default_symbol(layer):
+    """按图层几何类型构造默认符号（兼容 defaultSymbol 参数类型差异）"""
+    try:
+        from qgis.core import QgsSymbol, QgsMarkerSymbol, QgsLineSymbol, QgsFillSymbol
+    except Exception as e:
+        logger.debug("渲染符号模块导入失败: %s", e, exc_info=True)
+        return None
+
+    geom_type = layer.geometryType()
+    symbol = None
+    try:
+        symbol = QgsSymbol.defaultSymbol(geom_type)
+    except TypeError:
+        try:
+            symbol = QgsSymbol.defaultSymbol(int(geom_type))
+        except Exception as e:
+            logger.debug("defaultSymbol(int) 失败: %s", e, exc_info=True)
+    except Exception as e:
+        logger.debug("defaultSymbol 失败: %s", e, exc_info=True)
+
+    if symbol is None:
+        try:
+            factories = {0: QgsMarkerSymbol, 1: QgsLineSymbol, 2: QgsFillSymbol}
+            factory = factories.get(int(geom_type), QgsMarkerSymbol)
+            symbol = factory.createSimple({})
+        except Exception as e:
+            logger.debug("createSimple 兜底失败: %s", e, exc_info=True)
+    return symbol
+
+
+def _collect_unique_values(layer, field: str, limit: int = 100) -> list:
+    """取字段唯一值（优先 uniqueValues，失败时遍历要素）"""
+    values = []
+    fields = layer.fields()
+    index = -1
+    for getter in ("lookupField", "indexOf"):
+        method = getattr(fields, getter, None)
+        if callable(method):
+            try:
+                index = int(method(field))
+                break
+            except Exception as e:
+                logger.debug("%s 取字段索引失败: %s", getter, e, exc_info=True)
+    if index >= 0:
+        try:
+            values = list(layer.uniqueValues(index))
+        except Exception as e:
+            logger.debug("uniqueValues(int) 失败: %s", e, exc_info=True)
+            values = []
+    if not values:
+        try:
+            values = list(layer.uniqueValues(field))
+        except Exception as e:
+            logger.debug("uniqueValues(str) 失败: %s", e, exc_info=True)
+            values = []
+    if not values:
+        seen = set()
+        try:
+            for feat in layer.getFeatures():
+                value = feat.attribute(field)
+                try:
+                    key = value
+                    hash(key)
+                except TypeError:
+                    key = str(value)
+                    value = key
+                if key not in seen:
+                    seen.add(key)
+                    values.append(value)
+                if len(values) >= limit:
+                    break
+        except Exception as e:
+            logger.debug("遍历要素取唯一值失败: %s", e, exc_info=True)
+
+    try:
+        values = sorted(values, key=lambda v: (v is None, str(v)))
+    except Exception as e:
+        logger.debug("唯一值排序失败: %s", e, exc_info=True)
+    return values[:limit]
+
+
+def _build_single_renderer(layer, ramp):
+    """单一符号渲染器"""
+    from qgis.core import QgsSingleSymbolRenderer
+
+    symbol = _default_symbol(layer)
+    if symbol is None:
+        return None
+    try:
+        symbol.setColor(_pick_color(ramp, 0, 1))
+    except Exception as e:
+        logger.debug("设置符号颜色失败: %s", e, exc_info=True)
+    return QgsSingleSymbolRenderer(symbol)
+
+
+def _build_categorized_renderer(layer, field: str, ramp, limit: int = 100):
+    """分类渲染器（按字段唯一值），返回 (renderer, 值列表)"""
+    from qgis.core import QgsCategorizedSymbolRenderer, QgsRendererCategory
+
+    values = _collect_unique_values(layer, field, limit)
+    symbol = _default_symbol(layer)
+    if symbol is None:
+        return None, values
+
+    renderer = QgsCategorizedSymbolRenderer(field, [])
+    total = len(values) or 1
+    for i, value in enumerate(values):
+        try:
+            sym = symbol.clone()
+            sym.setColor(_pick_color(ramp, i, total))
+            label = "(空值)" if value is None else _sanitize_untrusted(value, 80)
+            renderer.addCategory(QgsRendererCategory(value, sym, str(label)))
+        except Exception as e:
+            logger.debug("构造分类类别失败: %s", e, exc_info=True)
+    return renderer, values
+
+
+def _get_classification_method(mode: str):
+    """按名称取分级方法（QGIS 3.10+ 分类方法注册表），返回 (method, 规范名)"""
+    alias = {
+        "equalinterval": "EqualInterval", "equal": "EqualInterval", "等间距": "EqualInterval",
+        "quantile": "Quantile", "equalcount": "Quantile", "分位数": "Quantile",
+        "jenks": "Jenks", "naturalbreaks": "Jenks", "natural breaks": "Jenks", "自然间断": "Jenks",
+        "stddev": "StdDev", "standarddeviation": "StdDev", "标准差": "StdDev",
+        "pretty": "Pretty",
+    }
+    raw = str(mode or "EqualInterval").strip()
+    key = raw.lower().replace(" ", "").replace("-", "").replace("_", "")
+    name = alias.get(key, raw)
+
+    try:
+        if int(Qgis.QGIS_VERSION_INT) >= 31000:
+            registry = QgsApplication.classificationMethodRegistry()
+            if registry is not None and hasattr(registry, "method"):
+                found = registry.method(name) or registry.method("EqualInterval")
+                if found is not None:
+                    method = found.clone() if hasattr(found, "clone") else found
+                    return method, name
+    except Exception as e:
+        logger.debug("分级方法注册表不可用: %s", e, exc_info=True)
+    return None, name
+
+
+def _graduated_mode_enum(mode: str):
+    """旧版 QGIS 的 QgsGraduatedSymbolRenderer.Mode 枚举值（新版无需）"""
+    try:
+        from qgis.core import QgsGraduatedSymbolRenderer as _R
+    except Exception as e:
+        logger.debug("QgsGraduatedSymbolRenderer 导入失败: %s", e, exc_info=True)
+        return None
+
+    mapping = {
+        "EqualInterval": "EqualInterval",
+        "Quantile": "Quantile",
+        "Jenks": "Jenks",
+        "StdDev": "StdDev",
+        "Pretty": "Pretty",
+    }
+    return _enum_value(_R, "Mode", mapping.get(mode, "EqualInterval"))
+
+
+def _build_graduated_renderer(layer, field: str, ramp, classes: int, mode: str):
+    """分级渲染器（按字段数值区间），返回 (renderer, 分级区间列表)"""
+    from qgis.core import QgsGraduatedSymbolRenderer
+
+    method, method_name = _get_classification_method(mode)
+    mode_enum = _graduated_mode_enum(method_name)
+    symbol = _default_symbol(layer)
+    if symbol is None:
+        return None, []
+
+    renderer = QgsGraduatedSymbolRenderer()
+    try:
+        renderer.setClassAttribute(field)
+    except Exception as e:
+        logger.debug("setClassAttribute 失败: %s", e, exc_info=True)
+    try:
+        if hasattr(renderer, "setSourceSymbol"):
+            renderer.setSourceSymbol(symbol.clone())
+    except Exception as e:
+        logger.debug("setSourceSymbol 失败: %s", e, exc_info=True)
+
+    method_used = "default"
+    if method is not None and hasattr(renderer, "setClassificationMethod"):
+        try:
+            renderer.setClassificationMethod(method)
+            method_used = method_name
+        except Exception as e:
+            logger.debug("setClassificationMethod 失败: %s", e, exc_info=True)
+    if method_used == "default" and mode_enum is not None and hasattr(renderer, "setMode"):
+        try:
+            renderer.setMode(mode_enum)
+            method_used = method_name
+        except Exception as e:
+            logger.debug("setMode 失败: %s", e, exc_info=True)
+
+    try:
+        try:
+            # QGIS 3.10+ 使用已设置的分类方法
+            renderer.updateClasses(layer, classes)
+        except TypeError:
+            # 旧版签名需要显式传入 Mode 枚举
+            renderer.updateClasses(layer, mode_enum, classes)
+    except Exception as e:
+        logger.debug("updateClasses 失败: %s", e, exc_info=True)
+        return None, []
+
+    if ramp is not None:
+        try:
+            if hasattr(renderer, "updateColorRamp"):
+                renderer.updateColorRamp(ramp)
+            else:
+                renderer.setColorRamp(ramp)
+        except Exception as e:
+            logger.debug("应用色带失败: %s", e, exc_info=True)
+
+    ranges = []
+    try:
+        for rng in renderer.ranges():
+            ranges.append({
+                "lower": rng.lowerValue(),
+                "upper": rng.upperValue(),
+                "label": _sanitize_untrusted(rng.label(), 80),
+            })
+    except Exception as e:
+        logger.debug("读取分级区间失败: %s", e, exc_info=True)
+    return renderer, ranges
+
+
+def set_layer_renderer(
+    layer_id: str,
+    renderer_type: str = "single",
+    field: str = None,
+    color_ramp: str = "Viridis",
+    classes: int = 5,
+    mode: str = "EqualInterval",
+) -> dict:
+    """设置矢量图层的渲染样式（符号化）。
+
+    支持三种渲染类型：single=单一符号；categorized=按字段唯一值分类
+    设色（适合类型、名称等离散字段）；graduated=按字段数值区间分级
+    设色（适合高度、面积、人口等连续数值字段，例如"对建筑图层按高度
+    字段分级设色"）。设置后会立即重绘图层并刷新图例与画布。
+
+    Args:
+        layer_id: 图层名称或ID
+        renderer_type: single / categorized / graduated
+        field: 分类或分级所依据的字段名（categorized/graduated 必填）
+        color_ramp: 色带名称，如 Viridis / RdYlGn / Spectral / Blues
+        classes: graduated 的分级数量
+        mode: graduated 的分级方式: EqualInterval / Quantile / Jenks / StdDev
+    """
+    rtype = str(renderer_type or "single").strip().lower()
+    if rtype not in ("single", "categorized", "graduated"):
+        return {"error": f"不支持的渲染类型: {renderer_type}（可选 single / categorized / graduated）"}
+    if rtype != "single" and not field:
+        return {"error": "categorized / graduated 渲染必须通过 field 指定字段名"}
+
+    try:
+        # 提前探测渲染 API 是否可用（各 QGIS 版本类名一致，但导入失败需明确报错）
+        from qgis.core import (
+            QgsCategorizedSymbolRenderer,  # noqa: F401
+            QgsGraduatedSymbolRenderer,  # noqa: F401
+            QgsSingleSymbolRenderer,  # noqa: F401
+        )
+    except Exception as e:
+        logger.debug("渲染模块导入失败: %s", e, exc_info=True)
+        return {"error": f"渲染模块导入失败: {str(e)}"}
+
+    layer = _find_layer(layer_id)
+    if not layer:
+        return {"error": f"未找到图层: {layer_id}"}
+    if layer.type() != QgsMapLayer.LayerType.VectorLayer:
+        return {"error": f"图层 {layer.name()} 不是矢量图层，无法设置渲染"}
+
+    if rtype != "single":
+        field_names = [f.name() for f in layer.fields()]
+        if field not in field_names:
+            return {
+                "error": f"字段 '{field}' 不存在。可用字段: {[_sanitize_untrusted(n, 120) for n in field_names]}",
+                "hint": "可先调用 get_layer_profile 查看真实字段名。",
+            }
+
+    try:
+        classes = max(1, min(int(classes or 5), 100))
+    except Exception as e:
+        logger.debug("分级数量非法，回退 5: %s", e, exc_info=True)
+        classes = 5
+
+    ramp, ramp_name = _get_color_ramp(color_ramp)
+    detail = {}
+    try:
+        if rtype == "single":
+            renderer = _build_single_renderer(layer, ramp)
+        elif rtype == "categorized":
+            renderer, values = _build_categorized_renderer(layer, field, ramp)
+            detail = {
+                "categories": len(values),
+                "values": [_sanitize_untrusted(v, 80) for v in values[:20]],
+            }
+        else:
+            renderer, ranges = _build_graduated_renderer(layer, field, ramp, classes, mode)
+            detail = {"classes": len(ranges), "ranges": ranges}
+    except Exception as e:
+        logger.debug("构造渲染器失败: %s", e, exc_info=True)
+        return {"error": f"构造渲染器失败: {str(e)}"}
+
+    if renderer is None:
+        return {"error": f"构造 {rtype} 渲染器失败，请确认图层几何类型与字段类型是否匹配"}
+
+    try:
+        layer.setRenderer(renderer)
+    except Exception as e:
+        logger.debug("setRenderer 失败: %s", e, exc_info=True)
+        return {"error": f"应用渲染器失败: {str(e)}"}
+
+    layer.triggerRepaint()
+
+    # 刷新图例符号与画布（无 GUI 场景下 iface 可能为 None）
+    try:
+        if iface is not None:
+            if hasattr(iface, "layerTreeView") and iface.layerTreeView() is not None:
+                iface.layerTreeView().refreshLayerSymbology(layer.id())
+            if iface.mapCanvas() is not None:
+                iface.mapCanvas().refresh()
+    except Exception as e:
+        logger.debug("刷新图层符号失败: %s", e, exc_info=True)
+
+    result = {
+        "layer": _sanitize_untrusted(layer.name(), 120),
+        "layer_id": layer.id(),
+        "renderer_type": rtype,
+        "color_ramp": ramp_name,
+        "message": f"已为图层 '{layer.name()}' 设置 {rtype} 渲染",
+    }
+    if rtype != "single":
+        result["field"] = field
+    if rtype == "graduated":
+        result["mode"] = mode
+    result.update(detail)
+    return result
+
+
+# ──────────────────────────────────────────────
+# 4. reproject_layer
+# ──────────────────────────────────────────────
+
+# 解析失败时回给 LLM 的常见坐标系提示
+_COMMON_CRS_HINTS = [
+    "EPSG:4326（WGS 84 经纬度）",
+    "EPSG:3857（Web Mercator，网络底图常用）",
+    "EPSG:4490（CGCS2000 经纬度）",
+    "EPSG:32650（WGS 84 / UTM 50N）",
+]
+
+_CRS_ALIASES = {
+    "wgs84": "EPSG:4326", "wgs 84": "EPSG:4326",
+    "cgcs2000": "EPSG:4490", "cgcs 2000": "EPSG:4490",
+    "webmercator": "EPSG:3857", "web mercator": "EPSG:3857", "pseudo mercator": "EPSG:3857",
+    "utm50n": "EPSG:32650",
+}
+
+
+def _parse_crs(target_crs: str):
+    """解析目标坐标系，返回 (crs, 错误信息)；成功时错误信息为 None"""
+    raw = str(target_crs or "").strip()
+    if not raw:
+        return None, "target_crs 不能为空。常见取值: " + "; ".join(_COMMON_CRS_HINTS)
+
+    candidates = [raw]
+    alias = _CRS_ALIASES.get(raw.lower())
+    if alias:
+        candidates.insert(0, alias)
+    if raw.isdigit():
+        candidates.append(f"EPSG:{raw}")
+
+    for candidate in candidates:
+        # 新版 QGIS：createFromUserInput 支持 "EPSG:4326"/"4326"/"WGS 84"/proj 串
+        if hasattr(QgsCoordinateReferenceSystem, "createFromUserInput"):
+            try:
+                crs = QgsCoordinateReferenceSystem.createFromUserInput(candidate)
+                if crs is not None and crs.isValid():
+                    return crs, None
+            except Exception as e:
+                logger.debug("createFromUserInput(%s) 失败: %s", candidate, e, exc_info=True)
+        try:
+            crs = QgsCoordinateReferenceSystem(candidate)
+            if crs.isValid():
+                return crs, None
+        except Exception as e:
+            logger.debug("QgsCoordinateReferenceSystem(%s) 失败: %s", candidate, e, exc_info=True)
+
+    return None, f"无法解析坐标系: {raw}。常见取值: " + "; ".join(_COMMON_CRS_HINTS)
+
+
+def _driver_for_path(path: str) -> str:
+    """按输出文件扩展名推断 OGR 驱动名"""
+    ext = os.path.splitext(path)[1].lower()
+    return {
+        ".shp": "ESRI Shapefile",
+        ".gpkg": "GPKG",
+        ".geojson": "GeoJSON",
+        ".json": "GeoJSON",
+        ".kml": "KML",
+        ".gml": "GML",
+    }.get(ext, "GPKG")
+
+
+def _default_reproject_path(layer, crs) -> str:
+    """未指定输出路径时，在工程目录（或临时目录）生成 原名_坐标系.gpkg"""
+    base = os.path.splitext(os.path.basename(layer.name()))[0] or "layer"
+    base = re.sub(r'[\\/:*?"<>|]+', "_", base).strip()[:80] or "layer"
+    authid = (crs.authid() or "custom").replace(":", "_")
+    project_file = QgsProject.instance().fileName()
+    out_dir = os.path.dirname(project_file) if project_file else tempfile.gettempdir()
+    return os.path.join(out_dir, f"{base}_{authid}.gpkg")
+
+
+def _parse_writer_error(ret):
+    """统一解析 QgsVectorFileWriter 返回值 → (错误码 int, 错误信息 str)"""
+    message = ""
+    if isinstance(ret, (tuple, list)):
+        err = ret[0]
+        if len(ret) > 1:
+            message = str(ret[1] or "")
+    else:
+        err = ret
+    try:
+        code = int(err)
+    except Exception:
+        code = -1
+    return code, message
+
+
+def _write_vector_with_crs(layer, path: str, crs, driver_name: str = "GPKG") -> str:
+    """手写降级写出（坐标转换 + 写文件），返回空串表示成功，否则返回错误信息"""
+    try:
+        from qgis.core import QgsVectorFileWriter, QgsCoordinateTransform
+    except Exception as e:
+        return f"写出模块导入失败: {str(e)}"
+
+    transform = None
+    try:
+        transform = QgsCoordinateTransform(layer.crs(), crs, QgsProject.instance())
+    except Exception as e:
+        logger.debug("构造坐标转换失败: %s", e, exc_info=True)
+
+    # 新版 API（QGIS 3.2+）：SaveVectorOptions
+    try:
+        options = QgsVectorFileWriter.SaveVectorOptions()
+        options.driverName = driver_name
+        options.fileEncoding = "UTF-8"
+        if transform is not None:
+            options.ct = transform
+        code, message = _parse_writer_error(QgsVectorFileWriter.writeAsVectorFormat(layer, path, options))
+        # WriterError.NoError 在所有版本中均为 0
+        if code == 0:
+            return ""
+        logger.debug("SaveVectorOptions 写出失败: code=%s msg=%s", code, message)
+    except Exception as e:
+        logger.debug("SaveVectorOptions 写出异常: %s", e, exc_info=True)
+
+    # 旧版 API：位置参数签名
+    try:
+        code, message = _parse_writer_error(
+            QgsVectorFileWriter.writeAsVectorFormat(layer, path, "UTF-8", crs, driver_name)
+        )
+        if code == 0:
+            return ""
+        return f"写出失败: {message}"
+    except Exception as e:
+        return f"写出失败: {str(e)}"
+
+
+def reproject_layer(
+    layer_id: str,
+    target_crs: str,
+    output_path: str = None,
+    add_to_project: bool = True,
+) -> dict:
+    """将矢量图层重投影（坐标转换）到目标坐标系并输出为新文件。
+
+    target_crs 接受 "EPSG:4326"、"4326"、"WGS 84"、"CGCS2000" 等
+    多种写法。需要把图层在经纬度与投影坐标系之间转换时使用本工具，
+    不要手工拼装 native:reprojectlayer 的 TARGET_CRS 参数。内部优先
+    走 Processing 算法，失败时降级为手写写出。
+
+    Args:
+        layer_id: 图层名称或ID
+        target_crs: 目标坐标系
+        output_path: 输出文件路径(.gpkg/.shp)，不指定则自动生成
+        add_to_project: 是否将结果图层加入当前工程
+    """
+    layer = _find_layer(layer_id)
+    if not layer:
+        return {"error": f"未找到图层: {layer_id}"}
+    if layer.type() != QgsMapLayer.LayerType.VectorLayer:
+        return {
+            "error": f"图层 {layer.name()} 不是矢量图层，暂不支持重投影",
+            "hint": "栅格重投影请调用 execute_processing 使用 gdal:warpreproject。",
+        }
+
+    crs, crs_error = _parse_crs(target_crs)
+    if crs is None:
+        return {"error": crs_error}
+
+    if output_path:
+        out_path = output_path
+        try:
+            if os.path.exists(out_path) and not _skip_all_confirms:
+                preview = json.dumps(
+                    {
+                        "layer": _sanitize_untrusted(layer.name(), 120),
+                        "output_path": _sanitize_untrusted(out_path, 300),
+                        "target_crs": _sanitize_untrusted(crs.authid(), 60),
+                    },
+                    ensure_ascii=False, indent=2,
+                )
+                if not _request_confirmation("reproject_layer", f"将覆盖已存在的文件：\n{preview}"):
+                    return {"error": "用户取消了 reproject_layer 操作。"}
+        except Exception as e:
+            logger.debug("reproject_layer 覆盖确认检查失败: %s", e, exc_info=True)
+            return {"error": "确认通道未就绪，已拒绝覆盖已存在的文件。"}
+    else:
+        out_path = _default_reproject_path(layer, crs)
+
+    # 禁止输出路径指向源图层数据源，避免原始数据被就地改写
+    try:
+        if os.path.exists(layer.source()) and os.path.abspath(out_path) == os.path.abspath(layer.source()):
+            return {
+                "error": "输出路径与源图层数据源相同，已拒绝执行以避免覆盖原始数据: "
+                         + _sanitize_untrusted(out_path, 300)
+            }
+    except Exception as e:
+        logger.debug("源路径比对失败，跳过: %s", e, exc_info=True)
+
+    out_dir = os.path.dirname(os.path.abspath(out_path))
+    if out_dir and not os.path.exists(out_dir):
+        try:
+            os.makedirs(out_dir, exist_ok=True)
+        except Exception as e:
+            logger.debug("创建输出目录失败: %s", e, exc_info=True)
+            return {"error": f"无法创建输出目录: {_sanitize_untrusted(out_dir, 300)}"}
+
+    method_used = None
+    try:
+        import processing
+        target_value = crs.authid() or crs.toWkt()
+        try:
+            processing.run(
+                "native:reprojectlayer",
+                {"INPUT": layer, "TARGET_CRS": target_value, "OUTPUT": out_path},
+            )
+        except Exception as first_error:
+            # 部分版本不接受 QgsVectorLayer 作为 INPUT，退化为数据源路径
+            logger.debug("processing INPUT 传图层失败，改用数据源: %s", first_error, exc_info=True)
+            processing.run(
+                "native:reprojectlayer",
+                {"INPUT": layer.source(), "TARGET_CRS": target_value, "OUTPUT": out_path},
+            )
+        method_used = "native:reprojectlayer"
+    except Exception as e:
+        logger.debug("native:reprojectlayer 失败，降级手写写出: %s", e, exc_info=True)
+
+    if method_used is None:
+        write_error = _write_vector_with_crs(layer, out_path, crs, _driver_for_path(out_path))
+        if write_error:
+            return {"error": f"重投影失败: {write_error}"}
+        method_used = "QgsVectorFileWriter"
+
+    if not os.path.exists(out_path):
+        return {"error": f"重投影执行完成但未找到输出文件: {_sanitize_untrusted(out_path, 300)}"}
+
+    out_name = f"{layer.name()}_{crs.authid() or 'reprojected'}"
+    out_layer = QgsVectorLayer(out_path, out_name, "ogr")
+    if not out_layer.isValid():
+        return {"error": f"输出文件无法作为矢量图层加载: {_sanitize_untrusted(out_path, 300)}"}
+
+    added = False
+    if add_to_project:
+        try:
+            canvas = iface.mapCanvas() if iface is not None else None
+            if canvas is not None:
+                canvas.setRenderFlag(False)
+            try:
+                QgsProject.instance().addMapLayer(out_layer)
+                added = True
+            finally:
+                if canvas is not None:
+                    canvas.setRenderFlag(True)
+                    from qgis.PyQt.QtCore import QTimer
+                    QTimer.singleShot(50, canvas.refresh)
+        except Exception as e:
+            logger.debug("重投影结果加入工程失败: %s", e, exc_info=True)
+
+    return {
+        "source_layer": _sanitize_untrusted(layer.name(), 120),
+        "source_crs": _sanitize_untrusted(layer.crs().authid(), 60),
+        "target_crs": _sanitize_untrusted(crs.authid(), 60),
+        "output_path": _sanitize_untrusted(out_path, 300),
+        "output_layer": _sanitize_untrusted(out_layer.name(), 120),
+        "feature_count": out_layer.featureCount(),
+        "method": method_used,
+        "added_to_project": added,
+        "message": f"已将图层 '{layer.name()}' 重投影到 {crs.authid() or target_crs}",
+    }
+
+
+# ──────────────────────────────────────────────
 # 工具注册表（用于 LLM function calling）
 # ──────────────────────────────────────────────
 
@@ -1143,6 +2176,58 @@ TOOL_DEFINITIONS = [
             "required": ["output_path"],
         },
     },
+    {
+        "name": "get_algorithm_parameters",
+        "description": "查询 QGIS Processing 算法的真实参数定义（参数名、描述、类型、默认值、是否可选）。在调用 execute_processing 之前必须先调用本工具查询算法的真实参数名，不要凭记忆猜测参数；算法 id 不存在时会返回名字相近的候选算法 id，便于自我纠正。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "algorithm_id": {"type": "string", "description": "算法ID，如 native:buffer、native:clip、qgis:dissolve、gdal:contour"},
+            },
+            "required": ["algorithm_id"],
+        },
+    },
+    {
+        "name": "get_layer_profile",
+        "description": "获取图层的精简档案：几何类型、要素数、坐标系(CRS authid+描述)、空间范围(Extent bbox)、字段列表(名称/类型/长度)、是否含Z/M；栅格图层则返回波段数、分辨率、宽高、数据类型。不传 layer_id 时返回当前工程所有图层的档案（最多20个）。在空间分析或拼装 Processing 参数之前先用本工具“看一眼数据”，可避免字段名不匹配、坐标系遗漏两类错误。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "layer_id": {"type": "string", "description": "图层名称或ID；不传则返回当前工程所有图层的档案"},
+            },
+            "required": [],
+        },
+    },
+    {
+        "name": "set_layer_renderer",
+        "description": "设置矢量图层的渲染样式（符号化）。三种类型：single=单一符号；categorized=按字段唯一值分类设色（适合类型、名称、用地性质等离散字段）；graduated=按字段数值区间分级设色（适合高度、面积、人口等连续数值字段，如“对建筑图层按高度字段分级设色”）。设置后立即重绘图层并刷新图例与画布。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "layer_id": {"type": "string", "description": "图层名称或ID"},
+                "renderer_type": {"type": "string", "description": "渲染类型: single(单一符号) / categorized(分类) / graduated(分级)，默认 single"},
+                "field": {"type": "string", "description": "分类或分级所依据的字段名，categorized 与 graduated 必填"},
+                "color_ramp": {"type": "string", "description": "色带名称，如 Viridis / RdYlGn / Spectral / Blues，默认 Viridis"},
+                "classes": {"type": "integer", "description": "分级数量(graduated)，默认 5"},
+                "mode": {"type": "string", "description": "分级方式(graduated): EqualInterval(等间距) / Quantile(分位数) / Jenks(自然间断) / StdDev(标准差)，默认 EqualInterval"},
+            },
+            "required": ["layer_id", "renderer_type"],
+        },
+    },
+    {
+        "name": "reproject_layer",
+        "description": "将矢量图层重投影（坐标转换）到目标坐标系并输出为新文件，可选择加入当前工程。target_crs 支持 'EPSG:4326'、'4326'、'WGS 84'、'CGCS2000' 等多种写法。需要在经纬度与投影坐标系之间转换图层时使用本工具，不要手工拼装 native:reprojectlayer 的 TARGET_CRS 参数。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "layer_id": {"type": "string", "description": "图层名称或ID"},
+                "target_crs": {"type": "string", "description": "目标坐标系，如 EPSG:4326 / 3857 / 4490 / 'WGS 84' / 'CGCS2000'"},
+                "output_path": {"type": "string", "description": "输出文件路径(.gpkg/.shp)，不指定则自动生成到工程目录(或临时目录)，命名为 原名_目标坐标系.gpkg"},
+                "add_to_project": {"type": "boolean", "description": "是否将结果图层加入当前工程，默认 true"},
+            },
+            "required": ["layer_id", "target_crs"],
+        },
+    },
 ]
 
 # 工具名 → 函数映射
@@ -1162,6 +2247,10 @@ TOOL_MAP = {
     "save_project": save_project,
     "load_project": load_project,
     "render_map": render_map,
+    "get_algorithm_parameters": get_algorithm_parameters,
+    "get_layer_profile": get_layer_profile,
+    "set_layer_renderer": set_layer_renderer,
+    "reproject_layer": reproject_layer,
 }
 
 

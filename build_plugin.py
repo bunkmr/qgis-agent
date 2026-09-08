@@ -53,7 +53,8 @@ EXCLUDE_PATTERNS = [
     "tests",  # 测试文件
     "scripts",  # 脚本文件
     "help",  # 帮助文档源（rst/Makefile）
-    "i18n",  # 翻译源文件
+    # 注意：i18n 不再排除。这里放的是编译产物 *.qm（INCLUDE_PATTERNS 白名单已放行），
+    # 源翻译 *.ts 不在白名单内，不会进包。此前排除 i18n 导致翻译文件永不进 ZIP。
     # ZIP / 旧版本文件
     "*.zip",
     "qgis_agent_v*",

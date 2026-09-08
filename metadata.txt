@@ -3,26 +3,30 @@ name=QGIS Agent
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
 description=LLM-powered intelligent assistant for QGIS. Supports natural language to operate QGIS tools.
-version=2.1.3
+version=2.2.0
 author=bunkmr
 email=bunkr@qq.com
 about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It allows you to control QGIS through natural language conversations, including: viewing project info, adding/removing layers, executing Processing algorithms, running PyQGIS code, setting layer labels, rendering maps, and more.
 
     Features:
     - Natural language interface for QGIS operations
-    - 15 built-in QGIS tools driven by natural language (PyQGIS / Processing)
-    - Bundled reference catalog of 679 QGIS tool & API definitions (tool_docs/)
+    - 19 built-in QGIS tools driven by natural language (PyQGIS / Processing)
+    - Bundled reference catalog: 679 Processing algorithm/tool entries, one TOML per algorithm (tool_docs/)
     - RAG-enhanced API documentation retrieval
     - Cookbook self-evolution mechanism
     - Long-term memory support
     - Multiple LLM providers (DeepSeek, Mimo, GLM, Gemini, etc.)
+    - Safety: PyQGIS AST static scan, confirmation for dangerous ops, untrusted data sanitization
+
+    Planned / not yet wired (do NOT expect these to work in this release):
+    skills system, workflow recording & replay, proactive clarification, task graph
 
     External dependencies (install via pip before use):
     langchain_core, langchain_openai, langchain_deepseek, httpx, psutil
 
 tracker=https://github.com/bunkmr/qgis-agent/issues
 repository=https://github.com/bunkmr/qgis-agent
-tags=ai,agent,llm,qgis,assistant,automation,deepseek,openai,人工智能,中文,空间分析
+tags=ai,agent,llm,qgis,assistant,automation,deepseek,openai,人工智能,自然语言处理,中文,空间分析,GIS
 homepage=https://github.com/bunkmr/qgis-agent
 category=Analysis
 icon=icon.png
@@ -31,13 +35,10 @@ deprecated=False
 hasProcessingProvider=no
 server=no
 changelog=
-    v2.1.3 更新内容：
-    修复：修复对话历史读取异常，重新打开插件后可以接着上次的聊天继续。
-    修复：修复任务执行结果解析错误，长时间任务不再中途中断或无响应。
-    修复：修复交互记录保存失败的问题，操作历史可以正常保留。
-    新增：兼容 QGIS 4（Qt6）环境，新版 QGIS 上界面显示与交互恢复正常。
-    新增：没有会话时自动新建，并按开头文字自动命名，省去手动点击。
-    新增：自托管模型可不填 API Key；请求带浏览器标识，减少被网站拦截。
-    改进：出错时界面直接显示红色错误提示，不再悄悄失败让人一头雾水。
-    改进：优化接口超时与重试策略，网络不稳定时响应更快、更稳。
-    改进：依赖自动安装改为进程内 pip 并加白名单，更安全可控。
+    v2.2.0 更新内容：
+    【新增】4 个高频工具：查询算法真实参数(get_algorithm_parameters)、查看图层档案(get_layer_profile)、分级/分类设色(set_layer_renderer)、坐标转换(reproject_layer)。
+    【修复】危险操作确认扩展到 5 类（删图层/打开工程/保存工程/覆盖渲染）；跳过确认不再永久生效（仅本次会话）；点"停止"后对话可恢复。
+    【修复】SmartDebugger 自动诊断并改写重试，复杂任务成功率提升；出错改为中文分级提示，不再甩英文堆栈。
+    【改进】思考过程改为累积展示、Enter 发送 / Shift+Enter 换行；属性表等不可信数据统一净化，阻断提示词注入。
+    【发布】最低兼容 QGIS 3.22；打包剔除开发记忆文件；如实标注"技能/工作流/任务图"等为规划中功能。
+    完整版本历史见 CHANGELOG.md。
