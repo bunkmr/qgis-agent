@@ -38,13 +38,13 @@ def get_theme_css() -> str:
         "}"
     )
 
+    # 必须用 qgis.PyQt（QGIS 自带绑定），不能用独立的 PyQt5/PyQt6：
+    #   - QGIS4/Qt6 环境下没有 PyQt5；
+    #   - 独立的 PyQt6 与 QGIS 内部 PyQt6 命名空间冲突，且可能与 QGIS 编译的 Qt 版本不一致。
+    # 懒加载 + ImportError 回退：无 QGIS（如单元测试）时返回中性灰 fallback。
     try:
-        try:
-            from PyQt5.QtWidgets import QApplication
-            from PyQt5.QtGui import QPalette
-        except ImportError:
-            from PyQt6.QtWidgets import QApplication
-            from PyQt6.QtGui import QPalette
+        from qgis.PyQt.QtWidgets import QApplication
+        from qgis.PyQt.QtGui import QPalette
     except ImportError:
         return fallback
 

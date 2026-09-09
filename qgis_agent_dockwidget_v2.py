@@ -82,7 +82,8 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         self._last_thinking_text = ""
 
         # 输入框高度随内容自适应（40–140px）
-        self.ptMessage.document().sizeChanged.connect(self._adjust_message_input_height)
+        # 注意：Qt6 已移除 QTextDocument.sizeChanged 信号，改用 QTextEdit.textChanged（Qt5/Qt6 通用）
+        self.ptMessage.textChanged.connect(self._adjust_message_input_height)
         self._adjust_message_input_height()
 
         # 思考块内的「复制」入口（锚点 #copy-thinking）

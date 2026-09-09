@@ -1,5 +1,12 @@
 # 更新日志
 
+## [2.3.1] - 2026-09-09
+
+### 兼容（Qt5 / Qt6 双兼容，真机 QGIS 4.2.1 / Qt6 实例化验证通过）
+- 🔧 `thinking_display.py` 取色改用 `qgis.PyQt`（移除硬编码 PyQt5/PyQt6：Qt6 环境下 PyQt5 不存在，独立 PyQt6 会与 QGIS 内部绑定冲突）
+- 🔧 输入框自适应高度信号由 `QTextDocument.sizeChanged`（Qt6 已移除）改为 `QTextEdit.textChanged`（Qt5/Qt6 通用）
+- 📌 最低兼容 QGIS 3.22（覆盖 QGIS 3.22~4.x，Qt5 与 Qt6 全兼容）
+
 ## [2.3.0] - 2026-09-08
 
 ### 规划中特性全部接入（死代码清理收口）
