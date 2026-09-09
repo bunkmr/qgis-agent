@@ -1,7 +1,12 @@
+import logging
+
 from qgis.PyQt.QtCore import pyqtSignal, QObject
 
 from .utils import get_current_timestamp, pack, extract_code
 from .processor import Processor
+from .clarification_manager import ClarificationManager
+
+logger = logging.getLogger(__name__)
 
 
 class Conversation(QObject):
@@ -13,6 +18,7 @@ class Conversation(QObject):
     llm_code_update = pyqtSignal(str)  # 代码更新
     llm_execution_log = pyqtSignal(str)  # 执行日志
     llm_interrupted = pyqtSignal(str)
+    clarificationRequested = pyqtSignal(str)  # 主动澄清：需要向用户追问
 
     def __init__(self, conversation_id: str, dataloader):
         super().__init__()
@@ -29,6 +35,10 @@ class Conversation(QObject):
         self.processor.execution_log.connect(self.llm_execution_log.emit)
         self.modified = get_current_timestamp()
         self.code_list = []
+        # 主动澄清：模糊请求检测与待澄清的原始请求
+        self.clarification_manager = ClarificationManager()
+        self._pending_request = None
+        self._pending_response_type = None
 
     @property
     def ID(self):
@@ -90,8 +100,31 @@ class Conversation(QObject):
 
     def update_user_prompt(self, message, response_type):
         if self.llm_finished:
+            # 主动澄清：若请求模糊，暂停发给 LLM 并请求用户补充
+            try:
+                question = self.clarification_manager.get_clarification_response(message)
+            except Exception:
+                logger.debug("clarification check failed; proceed as normal", exc_info=True)
+                question = None
+            if question:
+                self._pending_request = message
+                self._pending_response_type = response_type
+                self.clarificationRequested.emit(question)
+                return
             self.messageCount += 1  # 在发送时 +1，不再在回调中重复 +1
             return self._update_llm_response(message, response_type)
+
+    def provide_clarification(self, answer: str):
+        """用户提供澄清答案后，将「原请求 + 澄清答案」一起重新走正常流程"""
+        if not self.llm_finished or not self._pending_request:
+            return
+        original_request = self._pending_request
+        pending_type = self._pending_response_type
+        self._pending_request = None
+        self._pending_response_type = None
+        combined_message = f"{original_request}\n{answer}"
+        self.messageCount += 1
+        self._update_llm_response(combined_message, pending_type)
 
     def _update_llm_response(self, message, response_type):
         self.llm_finished = False

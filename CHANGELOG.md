@@ -1,5 +1,16 @@
 # 更新日志
 
+## [2.3.0] - 2026-09-08
+
+### 规划中特性全部接入（死代码清理收口）
+- **代码审查(code_reviewer)**：代码执行确认前自动 LLM 安全审查，后台 QThread 不卡界面，结果展示 issues/suggestions
+- **主动澄清(clarification_manager)**：用户请求模糊时主动追问，澄清后与原请求合并重跑
+- **技能系统(skills)**：新增 `run_skill` 工具，LLM 可调用内置技能（web_search 等）
+- **工作流录制/回放**：录制对话中的工具操作为工作流，可一键回放（workflow_store + dockwidget UI）
+- **任务图(task_graph)**：复杂多步请求可选分解为有序步骤执行（默认关闭）
+- 删除空壳 `thinking_widget.py`（功能已由 thinking_display.py 覆盖）；工具数 19→20
+
+
 ## [2.2.1] - 2026-09-08
 
 ### 改进（前台 / UI 体验优化）

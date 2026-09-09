@@ -17,7 +17,8 @@ from qgis.PyQt.QtCore import pyqtSignal, QEvent, Qt, QElapsedTimer
 from qgis.PyQt.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QLabel, QGroupBox, QPushButton,
     QSizePolicy, QSpacerItem, QWidget, QPlainTextEdit,
-    QLineEdit, QToolButton, QStackedWidget, QGridLayout, QApplication
+    QLineEdit, QToolButton, QStackedWidget, QGridLayout, QApplication,
+    QComboBox
 )
 from qgis.PyQt.QtGui import QFont, QPalette, QTextDocument
 
@@ -63,6 +64,11 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
 
         self.pbStop.clicked.connect(self.stopRequested.emit)
 
+        # 当前对话引用（来自 updateConversation/updateGeneralInfo），用于拿到 processor
+        self._live_conversation = None
+        # 工作流录制状态（绑定到当前 processor）
+        self._is_recording = False
+
         self.ptMessage.installEventFilter(self)
         self.ptSearchConversationCard.installEventFilter(self)
 
@@ -90,6 +96,9 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
 
         # ── U11/U13/U18/D5 聊天区增强控件 ──
         self._init_chat_enhancements()
+
+        # ── 工作流录制 / 回放控件 ──
+        self._init_workflow_controls()
 
     def _init_chat_enhancements(self):
         """构建搜索条 / 复制回复 / 状态条 / 空状态示例卡片，并接入现有布局。
@@ -291,6 +300,7 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
 
     @handle_none_conversation
     def updateGeneralInfo(self, conversation):
+        self._live_conversation = conversation
         self.lbTitle.setText(conversation.title)
         self.lbDescription.setText(format_description(conversation.description))
         self.lbMetadata.setText(conversation.get_metadata())
@@ -300,6 +310,10 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         """更新对话历史显示"""
         # 历史被整体重建，思考缓冲与思考块一并重置
         self.resetThinking()
+        # 记录当前对话引用，供工作流录制 / 回放按钮访问 processor
+        self._live_conversation = conversation
+        # 切换到新对话时复位录制 UI（录制状态绑定到当前 processor）
+        self._reset_recording_ui()
         current_html = ""
         self._last_assistant_text = ""  # U13：重置，循环后取最后一条 assistant
         interaction_history = conversation.fetch()
@@ -645,6 +659,191 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
                     self.searchPressed.emit(self.ptSearchConversationCard.toPlainText())
                     return True
         return super().eventFilter(obj, event)
+
+    # ── 工作流录制 / 回放控件 ──
+
+    def _init_workflow_controls(self):
+        """构建工作流录制 / 回放控件，并接入 workflowLayout（tbWorkflow 标签页）。
+
+        控件均在 __init__ 内创建，信号连接使用作用域枚举；不改动 processor 与其它文件。
+        """
+        # 录制 / 回放容器（插到工作流标题下方）
+        wf_group = QGroupBox("工作流录制 / 回放")
+        wf_layout = QVBoxLayout(wf_group)
+        wf_layout.setContentsMargins(6, 6, 6, 6)
+        wf_layout.setSpacing(4)
+
+        # 第一行：录制切换按钮 + 录制状态标签
+        rec_row = QHBoxLayout()
+        rec_row.setSpacing(6)
+        self.btnRecordToggle = QPushButton("● 开始录制")
+        self.btnRecordToggle.setObjectName("btnRecordToggle")
+        self.btnRecordToggle.setToolTip("开启后将本次对话操作录制为一个可回放的工作流")
+        self.btnRecordToggle.clicked.connect(self._on_toggle_recording)
+
+        self.lblRecStatus = QLabel("状态: 未录制")
+        self.lblRecStatus.setObjectName("lblRecStatus")
+        self.lblRecStatus.setStyleSheet("color: #888; font-size: 11px;")
+
+        rec_row.addWidget(self.btnRecordToggle)
+        rec_row.addWidget(self.lblRecStatus, 1)
+        wf_layout.addLayout(rec_row)
+
+        # 第二行：回放下拉 + 回放按钮 + 刷新按钮
+        pb_row = QHBoxLayout()
+        pb_row.setSpacing(6)
+        self.cmbWorkflow = QComboBox()
+        self.cmbWorkflow.setObjectName("cmbWorkflow")
+        self.cmbWorkflow.setInsertPolicy(QComboBox.InsertPolicy.InsertAtBottom)
+        self.cmbWorkflow.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+        self.btnPlaybackWorkflow = QPushButton("▶ 回放工作流")
+        self.btnPlaybackWorkflow.setObjectName("btnPlaybackWorkflow")
+        self.btnPlaybackWorkflow.setToolTip("回放选中的工作流")
+        self.btnPlaybackWorkflow.clicked.connect(self._on_playback_workflow)
+
+        self.btnRefreshWorkflows = QPushButton("⟳")
+        self.btnRefreshWorkflows.setObjectName("btnRefreshWorkflows")
+        self.btnRefreshWorkflows.setToolTip("刷新工作流列表")
+        self.btnRefreshWorkflows.setFixedWidth(32)
+        self.btnRefreshWorkflows.clicked.connect(self._refresh_workflow_list)
+
+        pb_row.addWidget(self.cmbWorkflow, 1)
+        pb_row.addWidget(self.btnPlaybackWorkflow)
+        pb_row.addWidget(self.btnRefreshWorkflows)
+        wf_layout.addLayout(pb_row)
+
+        # 插到工作流标题下方（lblWorkflowTitle 之后）
+        title_index = self.workflowLayout.indexOf(self.lblWorkflowTitle)
+        self.workflowLayout.insertWidget(title_index + 1, wf_group)
+
+        # 切到工作流标签页时自动刷新列表（another connection to currentChanged，互不干扰）
+        self.twTabs.currentChanged.connect(self._on_workflow_tab_shown)
+
+        # 初始按当前（无对话）状态刷新一次列表
+        self._refresh_workflow_list()
+
+    def _reset_recording_ui(self):
+        """复位录制按钮与状态标签到「未录制」。"""
+        try:
+            self._is_recording = False
+            self.btnRecordToggle.setText("● 开始录制")
+            self.btnRecordToggle.setStyleSheet("")
+            self.lblRecStatus.setText("状态: 未录制")
+            self.lblRecStatus.setStyleSheet("color: #888; font-size: 11px;")
+        except Exception:
+            pass
+
+    def _get_processor(self):
+        """从当前对话引用取出 processor；取不到返回 None。"""
+        conv = getattr(self, "_live_conversation", None)
+        if conv is not None and getattr(conv, "processor", None) is not None:
+            return conv.processor
+        return None
+
+    def _on_workflow_tab_shown(self, index):
+        """切到工作流标签页时刷新列表。"""
+        try:
+            if index == self.twTabs.indexOf(self.tbWorkflow):
+                self._refresh_workflow_list()
+        except Exception:
+            pass
+
+    def _refresh_workflow_list(self):
+        """调用 processor.list_workflows() 填充下拉框；列表为空时禁用回放按钮。"""
+        try:
+            self.cmbWorkflow.clear()
+            processor = self._get_processor()
+            if processor is None:
+                self.btnPlaybackWorkflow.setDisabled(True)
+                return
+            workflows = processor.list_workflows()
+            if not workflows:
+                self.btnPlaybackWorkflow.setDisabled(True)
+                return
+            self.cmbWorkflow.addItems(workflows)
+            self.btnPlaybackWorkflow.setDisabled(False)
+        except Exception as e:
+            logger.debug("刷新工作流列表失败: %s", e, exc_info=True)
+            self._append_chat_error(f"刷新工作流列表失败: {e}")
+
+    def _on_toggle_recording(self):
+        """开始 / 停止录制切换按钮的槽函数。"""
+        processor = self._get_processor()
+        if processor is None:
+            self._append_chat_error("无法访问 processor：请先创建或打开一个对话。")
+            return
+        try:
+            if not self._is_recording:
+                processor.start_recording()
+                self._is_recording = True
+                self.btnRecordToggle.setText("■ 停止录制")
+                self.btnRecordToggle.setStyleSheet(
+                    "QPushButton { background-color: #FA7070; color: white; font-weight: bold; }"
+                )
+                self.lblRecStatus.setText("状态: 录制中…")
+                self.lblRecStatus.setStyleSheet("color: #C0392B; font-size: 11px; font-weight: bold;")
+                self._set_status("⏺ 录制中…")
+            else:
+                processor.stop_recording()
+                self._reset_recording_ui()
+                self._set_status("⏹ 录制已停止")
+                # 新录制的工作流会出现在列表中，刷新一次
+                self._refresh_workflow_list()
+        except Exception as e:
+            logger.debug("切换录制状态失败: %s", e, exc_info=True)
+            self._append_chat_error(f"录制操作失败: {e}")
+
+    def _on_playback_workflow(self):
+        """回放选中的工作流。"""
+        name = self.cmbWorkflow.currentText()
+        if not name:
+            self._append_chat_error("请先在下拉框中选择一个要回放的工作流。")
+            return
+        processor = self._get_processor()
+        if processor is None:
+            self._append_chat_error("无法访问 processor：请先创建或打开一个对话。")
+            return
+        try:
+            result = processor.run_workflow(name)
+            self._set_status(f"▶ 正在回放工作流: {name}")
+            if isinstance(result, dict) and result.get("error"):
+                self._append_chat_error(f"回放工作流失败: {result.get('error')}")
+            else:
+                self._append_chat_info(f"已触发工作流回放: {name}")
+        except Exception as e:
+            logger.debug("回放工作流失败: %s", e, exc_info=True)
+            self._append_chat_error(f"回放工作流失败: {e}")
+
+    def _append_chat_error(self, text):
+        """在聊天框以红字追加错误提示（不静默吞异常）。"""
+        try:
+            safe = html_module.escape(str(text))
+            self.txHistory.append(
+                f'<div style="margin: 4px 0; padding: 4px 10px; '
+                f'border-left: 3px solid #C0392B; color: #C0392B; font-size: 12px;">'
+                f'⚠ {safe}</div>'
+            )
+            self.txHistory.verticalScrollBar().setValue(
+                self.txHistory.verticalScrollBar().maximum()
+            )
+        except Exception:
+            pass
+
+    def _append_chat_info(self, text):
+        """在聊天框以蓝字追加信息提示。"""
+        try:
+            safe = html_module.escape(str(text))
+            self.txHistory.append(
+                f'<div style="margin: 4px 0; padding: 4px 10px; '
+                f'border-left: 3px solid #2980B9; color: #2980B9; font-size: 12px;">'
+                f'ℹ {safe}</div>'
+            )
+            self.txHistory.verticalScrollBar().setValue(
+                self.txHistory.verticalScrollBar().maximum()
+            )
+        except Exception:
+            pass
 
     # ── 工作流可视化方法 ──
 

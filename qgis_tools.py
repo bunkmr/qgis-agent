@@ -2002,6 +2002,63 @@ def reproject_layer(
 
 
 # ──────────────────────────────────────────────
+# 技能系统（skills/）接线
+# ──────────────────────────────────────────────
+
+_skill_manager = None  # 延迟初始化的全局 SkillManager 单例
+
+
+def run_skill(skill_name: str, **params) -> str:
+    """运行一个已注册的技能（如 web_search、gis_data_search、format_results）。
+
+    内部通过 skills 包的 SkillManager 查找并执行该技能，返回结果字符串。
+    该工具本身也注册进 TOOL_DEFINITIONS，使 LLM 可以直接调用技能。
+    """
+    global _skill_manager
+    try:
+        from .skills.skill_manager import get_skill_manager
+        from .skills.builtins import register_builtin_skills
+    except Exception as _e:
+        logger.debug("导入 skills 模块失败: %s", _e, exc_info=True)
+        return f"技能系统不可用（模块导入失败）: {_e}"
+
+    try:
+        if _skill_manager is None:
+            _skill_manager = get_skill_manager()
+        # 确保内置技能已注册（只注册一次）
+        if not _skill_manager.get_all():
+            try:
+                register_builtin_skills(_skill_manager)
+            except Exception as _e:
+                logger.debug("注册内置技能失败（可忽略）: %s", _e, exc_info=True)
+
+        result = _skill_manager.execute(skill_name, **params)
+        return _format_skill_result(result)
+    except Exception as _e:
+        logger.debug("run_skill 执行异常: %s", _e, exc_info=True)
+        return f"执行技能 '{skill_name}' 失败: {_e}"
+
+
+def _format_skill_result(result) -> str:
+    """把 SkillResult 规整为字符串（供 LLM / 用户阅读）"""
+    if result is None:
+        return "(技能无返回结果)"
+    if hasattr(result, "success"):
+        if result.success:
+            out = result.output
+            if out is None:
+                return "(技能执行成功，无输出)"
+            if isinstance(out, (dict, list)):
+                try:
+                    return json.dumps(out, ensure_ascii=False, indent=2)
+                except Exception:
+                    return str(out)
+            return str(out)
+        return f"(技能执行失败: {result.error})"
+    return str(result)
+
+
+# ──────────────────────────────────────────────
 # 工具注册表（用于 LLM function calling）
 # ──────────────────────────────────────────────
 
@@ -2228,6 +2285,23 @@ TOOL_DEFINITIONS = [
             "required": ["layer_id", "target_crs"],
         },
     },
+    {
+        "name": "run_skill",
+        "description": "运行一个已注册的技能（skill）。可用于联网搜索、GIS 数据源检索、结果格式化等扩展能力。可用技能示例：web_search(网络搜索, 参数 query/num_results/engine)、gis_data_search(GIS 数据源检索, 参数 query/data_type)、format_results(格式化搜索结果, 参数 results/format)。技能由 skills 系统管理，调用前无需关心其内部实现。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "skill_name": {"type": "string", "description": "要运行的技能名称，如 web_search / gis_data_search / format_results"},
+                "query": {"type": "string", "description": "搜索类技能的查询词（web_search / gis_data_search 使用）"},
+                "num_results": {"type": "integer", "description": "返回结果数量（web_search 使用，默认 5）"},
+                "engine": {"type": "string", "description": "搜索引擎：duckduckgo / google / bing（web_search 使用，默认 duckduckgo）"},
+                "data_type": {"type": "string", "description": "数据类型：vector / raster / all（gis_data_search 使用，默认 all）"},
+                "results": {"type": "array", "description": "待格式化的结果列表（format_results 使用）"},
+                "format": {"type": "string", "description": "输出格式：markdown / html / json（format_results 使用，默认 markdown）"},
+            },
+            "required": ["skill_name"],
+        },
+    },
 ]
 
 # 工具名 → 函数映射
@@ -2251,6 +2325,7 @@ TOOL_MAP = {
     "get_layer_profile": get_layer_profile,
     "set_layer_renderer": set_layer_renderer,
     "reproject_layer": reproject_layer,
+    "run_skill": run_skill,
 }
 
 

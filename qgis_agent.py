@@ -11,7 +11,7 @@ from qgis.PyQt.QtGui import QIcon, QPalette, QFont
 from qgis.PyQt.QtWidgets import (
     QAction, QDialog, QPushButton, QLineEdit, QPlainTextEdit,
     QDockWidget, QApplication, QMessageBox, QLabel, QVBoxLayout, QHBoxLayout,
-    QComboBox, QTableWidgetItem, QFrame, QToolBar
+    QComboBox, QTableWidgetItem, QFrame, QToolBar, QInputDialog
 )
 from qgis.utils import iface
 
@@ -47,13 +47,16 @@ class CodeConfirmDialog(QDialog):
         - 仅此一次：本次执行，下次仍确认；
         - 本次会话允许该工具：本会话内同名工具自动放行（重启复位）；
         - 总是允许：写入 QSettings，跨重启长期免确认。
+    • 「代码审查」区由 code_reviewer 在后台线程产出后异步回填（apply_review），
+      仅作展示与提示，不改变上述三档授权逻辑。
     """
 
     def __init__(self, parent, tool_name, code_preview):
         super().__init__(parent)
         self.decision = None  # "once" | "session" | "always" | None(取消)
+        self._review_worker = None  # 由 _start_code_review 挂上，便于收尾时断开
         self.setWindowTitle("代码执行确认")
-        self.setMinimumSize(580, 440)
+        self.setMinimumSize(580, 520)
         self.setModal(True)
 
         layout = QVBoxLayout(self)
@@ -74,6 +77,18 @@ class CodeConfirmDialog(QDialog):
         mono.setPointSize(11)
         code_view.setFont(mono)
         layout.addWidget(code_view, 1)
+
+        # 代码审查区：先占位，审查线程返回后由 apply_review 回填
+        self.reviewStatus = QLabel("🔍 代码审查：正在后台审查…")
+        self.reviewStatus.setWordWrap(True)
+        self.reviewStatus.setStyleSheet("QLabel { color:#666; }")
+        layout.addWidget(self.reviewStatus)
+
+        self.reviewView = QPlainTextEdit()
+        self.reviewView.setReadOnly(True)
+        self.reviewView.setPlainText("审查进行中，可直接决定是否执行，无需等待。")
+        self.reviewView.setMaximumHeight(130)
+        layout.addWidget(self.reviewView)
 
         # 按钮行
         btn_once = QPushButton("仅此一次")
@@ -98,6 +113,46 @@ class CodeConfirmDialog(QDialog):
         btn_session.clicked.connect(lambda _checked=False: self._choose("session"))
         btn_always.clicked.connect(lambda _checked=False: self._choose("always"))
         btn_cancel.clicked.connect(self.reject)
+
+    def apply_review(self, review, summary):
+        """异步回填代码审查结果（在 UI 线程由信号触发）。
+
+        review: code_reviewer.review_code() 的返回字典；summary: 人类可读摘要。
+        任何字段缺失都按「审查不可用」降级展示，绝不影响授权按钮。
+        """
+        try:
+            review = review if isinstance(review, dict) else {}
+            issues = [str(i) for i in (review.get("issues") or [])]
+            suggestions = [str(s) for s in (review.get("suggestions") or [])]
+
+            if not review:
+                self.reviewStatus.setText("🔍 代码审查：不可用（已跳过）")
+                self.reviewStatus.setStyleSheet("QLabel { color:#888; }")
+            elif issues:
+                self.reviewStatus.setText(
+                    f"❌ 代码审查：发现 {len(issues)} 个问题、{len(suggestions)} 条建议，请谨慎执行"
+                )
+                self.reviewStatus.setStyleSheet("QLabel { color:#c0392b; font-weight:bold; }")
+            else:
+                self.reviewStatus.setText(
+                    f"✅ 代码审查：未发现问题（{len(suggestions)} 条建议）"
+                )
+                self.reviewStatus.setStyleSheet("QLabel { color:#27793f; }")
+
+            lines = []
+            if issues:
+                lines.append("问题：")
+                lines.extend(f"  - {i}" for i in issues)
+            if suggestions:
+                lines.append("建议：")
+                lines.extend(f"  - {s}" for s in suggestions)
+            if summary:
+                lines.append("")
+                lines.append("审查摘要：")
+                lines.append(str(summary))
+            self.reviewView.setPlainText("\n".join(lines) or "审查未返回内容。")
+        except Exception:
+            logger.debug("回填代码审查结果失败（不影响确认流程）", exc_info=True)
 
     def _choose(self, decision):
         self.decision = decision
@@ -152,6 +207,47 @@ class _TestConnectionWorker(QThread):
             self.finished.emit(False, str(_e)[:300])
 
 
+class _CodeReviewWorker(QThread):
+    """后台跑 code_reviewer.CodeReviewer，把审查结果异步回填到确认对话框。
+
+    审查会调 LLM.invoke（10-30 秒量级），放在 UI 线程会把确认框卡死，
+    因此这里统一走 QThread：结果通过 reviewFinished 发回主线程。
+    llm 为 None 或 LLM 审查异常时降级为 CodeReviewer(None) 的规则兜底。
+
+    reviewFinished(review: dict, summary: str)
+    """
+
+    reviewFinished = pyqtSignal(dict, str)
+
+    def __init__(self, llm, code, tool_name, tool_id, user_query):
+        super().__init__()
+        self.llm = llm
+        self.code = code
+        self.tool_name = tool_name
+        self.tool_id = tool_id
+        self.user_query = user_query
+
+    def _review_with(self, llm):
+        from .code_reviewer import CodeReviewer
+        reviewer = CodeReviewer(llm)
+        review = reviewer.review_code(
+            self.code, self.tool_name, self.tool_id, self.user_query
+        )
+        return review, reviewer.get_review_summary(review)
+
+    def run(self):
+        try:
+            review, summary = self._review_with(self.llm)
+        except Exception:
+            logger.debug("LLM 代码审查失败，回退规则兜底审查", exc_info=True)
+            try:
+                review, summary = self._review_with(None)
+            except Exception:
+                logger.debug("规则兜底审查也失败，跳过代码审查展示", exc_info=True)
+                review, summary = {}, ""
+        self.reviewFinished.emit(review if isinstance(review, dict) else {}, str(summary or ""))
+
+
 class QGISAgent:
     def __init__(self, iface):
         self.iface = iface
@@ -193,6 +289,10 @@ class QGISAgent:
         self._session_allowed_tools = set()
         # P1-7 后台 RAG 建索引线程句柄
         self._rag_build_thread = None
+        # 代码审查后台线程句柄（可能同时有多个确认框，逐个保活直到跑完）
+        self._code_review_threads = []
+        # 最近一次用户提问，供代码审查提供上下文
+        self._last_user_query = ""
 
     def _position_toolbar_after_console(self):
         """将工具栏放到Python控制台后面"""
@@ -281,6 +381,13 @@ class QGISAgent:
                 self.console_tracker.stop()
         except Exception as _e:
             logger.debug("ignored exception", exc_info=True)
+        # 2b) 等在跑的代码审查线程收尾，避免 QThread 被销毁时仍在运行导致退出崩溃
+        for _t in list(getattr(self, "_code_review_threads", [])):
+            try:
+                if _t.isRunning():
+                    _t.wait(3000)
+            except Exception as _e:
+                logger.debug("等待代码审查线程结束失败，忽略: %s", _e, exc_info=True)
         # 3) 关闭 dock 并断开信号（不 delete，交给 QGIS 自行回收，避免向已销毁对象发信号崩溃）
         try:
             if self.dockwidget is not None:
@@ -465,6 +572,9 @@ class QGISAgent:
         if not message:
             return
 
+        # 记录本轮提问，供代码审查作为上下文
+        self._last_user_query = message
+
         if self.live_conversation is None:
             # 没有活动对话时，自动用当前选中模型创建对话，避免发送时反复弹出"新建对话"对话框
             try:
@@ -575,6 +685,48 @@ class QGISAgent:
         conv.llm_code_update.connect(self._on_code_update)
         conv.llm_execution_log.connect(self._on_execution_log)
         conv.llm_interrupted.connect(self._on_response_error)
+        self._connect_clarification_signal(conv)
+
+    def _connect_clarification_signal(self, conv):
+        """连接主动澄清追问信号（每个会话对象只连一次）。
+
+        clarificationRequested 由 conversation 在用户请求模糊时 emit；
+        它跨多轮发送持续有效，因此不随 _disconnect_conv_signals 断开，
+        用 _clarification_wired 标记避免重复连接导致弹多个追问框。
+        """
+        if conv is None or getattr(conv, "_clarification_wired", False):
+            return
+        signal = getattr(conv, "clarificationRequested", None)
+        if signal is None:
+            return
+        try:
+            signal.connect(self._on_clarification_requested)
+            conv._clarification_wired = True
+        except Exception:
+            logger.debug("连接 clarificationRequested 失败，澄清追问不可用", exc_info=True)
+
+    def _on_clarification_requested(self, question):
+        """用户请求模糊时弹出追问输入框，并把补充信息回传给会话。"""
+        try:
+            text, ok = QInputDialog.getText(
+                self.dockwidget, "需要补充信息", str(question)
+            )
+        except Exception:
+            logger.debug("弹出澄清追问输入框失败，跳过本次追问", exc_info=True)
+            return
+
+        if not ok or not text or not text.strip():
+            return
+
+        conv = getattr(self, "live_conversation", None)
+        provide = getattr(conv, "provide_clarification", None)
+        if not callable(provide):
+            logger.debug("会话未实现 provide_clarification，丢弃澄清回答")
+            return
+        try:
+            provide(text.strip())
+        except Exception:
+            logger.debug("回传澄清回答失败", exc_info=True)
 
     def _disconnect_conv_signals(self, conv):
         """断开 _connect_conv_signals 连接的全部信号（已断开时安全跳过）。"""
@@ -774,7 +926,11 @@ class QGISAgent:
             return True
 
         dlg = CodeConfirmDialog(self.dockwidget, tool_name, code_preview)
-        if dlg.exec() == QDialog.DialogCode.Accepted:
+        # 弹窗前启动代码审查：审查在后台线程跑，结果异步回填，不阻塞对话框显示
+        self._start_code_review(dlg, tool_name, code_preview)
+        accepted = dlg.exec() == QDialog.DialogCode.Accepted
+        self._detach_code_review(dlg)
+        if accepted:
             decision = dlg.decision
             if decision == "always":
                 self._code_confirm_always[tool_name] = True
@@ -792,6 +948,51 @@ class QGISAgent:
                 self._session_allowed_tools.add(tool_name)
             return True
         return False
+
+    def _start_code_review(self, dlg, tool_name, code_preview):
+        """在后台线程对待执行代码做安全审查，结果回填到确认对话框。
+
+        取当前会话的 llm（拿不到就传 None，由 CodeReviewer 走规则兜底）；
+        审查全程不阻塞 UI：对话框先显示，审查完成后才更新「代码审查」区。
+        """
+        llm = None
+        try:
+            conv = getattr(self, 'live_conversation', None)
+            proc = getattr(conv, 'processor', None)
+            llm = getattr(proc, 'llm', None)
+        except Exception:
+            logger.debug("获取会话 llm 失败，代码审查改用规则兜底", exc_info=True)
+
+        try:
+            # 清掉已跑完的线程句柄，避免列表无限增长
+            self._code_review_threads = [
+                t for t in self._code_review_threads if t.isRunning()
+            ]
+            worker = _CodeReviewWorker(
+                llm, code_preview or "", tool_name, tool_name,
+                getattr(self, "_last_user_query", "") or "",
+            )
+            worker.reviewFinished.connect(dlg.apply_review)
+            dlg._review_worker = worker
+            self._code_review_threads.append(worker)
+            worker.start()
+        except Exception:
+            logger.debug("启动代码审查线程失败，跳过审查展示", exc_info=True)
+            try:
+                dlg.apply_review({}, "")
+            except Exception:
+                logger.debug("代码审查占位区更新失败，忽略", exc_info=True)
+
+    def _detach_code_review(self, dlg):
+        """对话框关闭后断开审查回填，避免向即将销毁的对话框发信号。"""
+        worker = getattr(dlg, "_review_worker", None)
+        if worker is None:
+            return
+        try:
+            worker.reviewFinished.disconnect(dlg.apply_review)
+        except (RuntimeError, TypeError) as _e:
+            logger.debug("断开代码审查信号时已无连接: %s", _e, exc_info=True)
+        dlg._review_worker = None
 
     def _on_code_confirm(self, tool_name, code_preview, callback):
         """异步代码执行确认（processor 调用，带回调）。

@@ -1,3 +1,5 @@
+import os
+import re
 import traceback as tb
 
 from qgis.PyQt.QtCore import QThreadPool, pyqtSignal, QObject
@@ -8,6 +10,7 @@ from .llm_providers import get_llm_instance
 from .utils import get_current_timestamp, pack
 from .response_worker import ReflectStreamWorker, ToolAgentWorker
 from .qgis_tools import TOOL_DEFINITIONS, call_tool
+from .workflow_store import WorkflowStore
 
 # ── RAG 模块 ──
 from .rag import DocStore, APIDocRetriever, Cookbook
@@ -210,6 +213,18 @@ class Processor(QObject):
             logger.debug("SmartDebugger 构造失败，自动诊断功能不可用: %s", _e, exc_info=True)
             self.debugger = None
 
+        # ── 工作流录制 / 回放（默认关闭，不破坏现有线性单步流程）──
+        try:
+            self._workflow_store = WorkflowStore()
+        except Exception as _e:
+            logger.debug("WorkflowStore 初始化失败（录制功能不可用）: %s", _e, exc_info=True)
+            self._workflow_store = None
+        # 工具执行器：回放工作流 / 任务图重放时复用 call_tool
+        self._tool_executor = call_tool
+
+        # ── 任务图（task_graph）可选分支开关：默认关闭 ──
+        self.use_task_graph = False
+
     @staticmethod
     def _debug_history_path():
         """调试历史文件路径；拿不到插件目录时返回 None，交给 SmartDebugger 使用默认路径。"""
@@ -262,6 +277,174 @@ class Processor(QObject):
         except Exception as _e:
             logger.debug("SmartDebugger 诊断工具错误失败: %s", _e, exc_info=True)
             return None
+
+    # ──────────────────────────────────────────────
+    # 工作流录制 / 回放（供 UI 调用，签名严格固定）
+    # ──────────────────────────────────────────────
+
+    def list_workflows(self) -> list:
+        """列出所有已保存工作流的名称。"""
+        if self._workflow_store is None:
+            return []
+        try:
+            return self._workflow_store.list_workflows()
+        except Exception as _e:
+            logger.debug("list_workflows 失败: %s", _e, exc_info=True)
+            return []
+
+    def run_workflow(self, name: str) -> dict:
+        """按序回放一个已保存工作流，内部用 call_tool（self._tool_executor）重放每一步。"""
+        if self._workflow_store is None:
+            return {"name": name, "total": 0, "success": 0,
+                    "results": [], "error": "工作流存储不可用"}
+        try:
+            return self._workflow_store.run_workflow(name, self._tool_executor)
+        except Exception as _e:
+            logger.debug("run_workflow 失败: %s", _e, exc_info=True)
+            return {"name": name, "total": 0, "success": 0,
+                    "results": [], "error": str(_e)}
+
+    def start_recording(self):
+        """开始录制工具调用（默认关闭，需显式开启）。"""
+        if self._workflow_store is None:
+            return
+        try:
+            self._workflow_store.start_recording()
+        except Exception as _e:
+            logger.debug("start_recording 失败: %s", _e, exc_info=True)
+
+    def stop_recording(self):
+        """停止录制工具调用（缓冲保留，等待调用方 save_workflow 命名保存）。"""
+        if self._workflow_store is None:
+            return
+        try:
+            self._workflow_store.stop_recording()
+        except Exception as _e:
+            logger.debug("stop_recording 失败: %s", _e, exc_info=True)
+
+    def is_recording(self) -> bool:
+        """当前是否正在录制。"""
+        if self._workflow_store is None:
+            return False
+        try:
+            return self._workflow_store.is_recording()
+        except Exception as _e:
+            logger.debug("is_recording 失败: %s", _e, exc_info=True)
+            return False
+
+    def get_recording_buffer(self) -> list:
+        """返回当前录制缓冲（供调用方在 stop_recording 后命名保存）。"""
+        if self._workflow_store is None:
+            return []
+        try:
+            return self._workflow_store.get_recording_buffer()
+        except Exception as _e:
+            logger.debug("get_recording_buffer 失败: %s", _e, exc_info=True)
+            return []
+
+    def save_current_workflow(self, name: str) -> bool:
+        """把当前录制缓冲保存为命名工作流（stop_recording 后调用）。"""
+        if self._workflow_store is None:
+            return False
+        try:
+            self._workflow_store.save_workflow(name, self._workflow_store.get_recording_buffer())
+            return True
+        except Exception as _e:
+            logger.debug("save_current_workflow 失败: %s", _e, exc_info=True)
+            return False
+
+    # ──────────────────────────────────────────────
+    # 任务图（task_graph）—— 可选分支，默认关闭（见 self.use_task_graph）
+    # 说明：task_graph.py 中的 TaskGraph 负责可视化/摘要；分解与执行逻辑放在此处，
+    #       以免改动既有文件。generate 返回 list[TaskStep]，execute 顺序执行并返回 list。
+    # ──────────────────────────────────────────────
+
+    def set_task_graph_enabled(self, enabled: bool):
+        """开启 / 关闭任务图分解执行分支。"""
+        self.use_task_graph = bool(enabled)
+
+    def _task_graph_generate(self, plan: str) -> list:
+        """把复杂请求启发式拆成有序步骤，返回 list[TaskStep]。
+
+        优先使用 task_graph.TaskStep；若导入失败则退化为普通 dict，保证最小可用。
+        """
+        try:
+            from .task_graph import TaskStep
+        except Exception:
+            TaskStep = None
+
+        # 简单拆句：按中英文标点 / 换行 / 分号切分
+        pieces = re.split(r"[。！？!?\n；;]+", plan or "")
+        steps = []
+        idx = 0
+        for piece in pieces:
+            piece = piece.strip().strip("，,。. ").strip()
+            if not piece:
+                continue
+            idx += 1
+            if TaskStep is not None:
+                steps.append(TaskStep(
+                    step_id=f"tg_step_{idx}",
+                    name=f"步骤{idx}",
+                    description=piece,
+                    status="pending",
+                ))
+            else:
+                steps.append({
+                    "step_id": f"tg_step_{idx}",
+                    "name": f"步骤{idx}",
+                    "description": piece,
+                    "status": "pending",
+                })
+        return steps
+
+    def _task_graph_execute(self, steps: list, tool_executor) -> list:
+        """顺序执行分解出的步骤，返回每个步骤的结果列表。
+
+        tool_executor 为可调用的「步骤执行器」（接收一个步骤描述文本，返回结果）。
+        """
+        results = []
+        for step in steps:
+            desc = step.description if hasattr(step, "description") else step.get("description", "")
+            try:
+                res = tool_executor(desc) if callable(tool_executor) else None
+                ok = True
+            except Exception as _e:
+                logger.debug("task_graph 步骤执行失败: %s", _e, exc_info=True)
+                res = f"(步骤执行失败: {_e})"
+                ok = False
+            if hasattr(step, "status"):
+                step.status = "completed" if ok else "failed"
+            results.append({"step": desc, "result": res, "ok": ok})
+        return results
+
+    def run_task_graph(self, plan: str, thinking_callback=None, tool_status_callback=None) -> str:
+        """任务图分解 + 顺序执行并汇总（可选分支入口）。
+
+        默认关闭；打开后把用户请求拆成有序步骤，逐步骤走现有线性对话流程（含工具调用），
+        最终把各步结果汇总返回。临时关闭 use_task_graph 防止递归重入。
+        """
+        steps = self._task_graph_generate(plan)
+        if thinking_callback:
+            thinking_callback(f"\n🧩 任务图已分解出 {len(steps)} 个步骤\n")
+
+        prev = self.use_task_graph
+        self.use_task_graph = False
+        try:
+            def _exec(desc):
+                text, _ = self.agent_chat(desc, thinking_callback, tool_status_callback)
+                return text
+
+            executed = self._task_graph_execute(steps, _exec)
+        finally:
+            self.use_task_graph = prev
+
+        lines = [f"## 任务图执行结果（共 {len(steps)} 步）", ""]
+        for item in executed:
+            lines.append(f"### {item['step']}")
+            lines.append(str(item["result"]))
+            lines.append("")
+        return "\n".join(lines).strip()
 
     def cancel(self):
         """设置中断标志，后台线程会在下一轮循环前检查；同时关闭 http 客户端中断在途请求。"""
@@ -336,6 +519,16 @@ class Processor(QObject):
             "steps": [],
             "summary": ""
         }
+
+        # ── 可选分支：任务图（task_graph）模式 ──
+        # 默认关闭（self.use_task_graph=False），绝不破坏现有线性单步流程；
+        # 仅当显式打开时，把请求分解为有序步骤并顺序执行、汇总。
+        if self.use_task_graph:
+            try:
+                summary = self.run_task_graph(user_input, thinking_callback, tool_status_callback)
+                return summary, "withTaskGraph"
+            except Exception as _e:
+                logger.debug("task_graph 分支失败，回退到线性流程: %s", _e, exc_info=True)
 
         # ── Query Tuning: 优化用户查询 ──
         # 改写结果会作为一条 SystemMessage 真正进入 messages 参与后续推理，避免白烧一次 LLM 往返。
@@ -558,6 +751,13 @@ class Processor(QObject):
                         # 更新工作流步骤状态为完成
                         if workflow_data["steps"]:
                             workflow_data["steps"][-1]["status"] = "completed"
+
+                        # ── 工作流录制：工具调用成功后追加一步（默认关闭，仅在录制中生效）──
+                        if self._workflow_store is not None and self._workflow_store.is_recording():
+                            try:
+                                self._workflow_store.record_step(tool_name, tool_args, result)
+                            except Exception as _e:
+                                logger.debug("录制步骤失败（已忽略）: %s", _e, exc_info=True)
                 except Exception as e:
                     error_msg = f"{str(e)}\n{tb.format_exc()}"
                     tool_error = str(e)

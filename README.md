@@ -20,7 +20,7 @@ QGIS Agent 是 QGIS 的 AI 原生插件——用自然语言直接操控 QGIS，
 | 状态 | 含义 | 涉及功能 |
 |------|------|----------|
 | ✅ **可用** | 已接入主对话链路，当前版本真实可用 | 自然语言操控、19 个内置工具、RAG 检索、tool_docs（679 条）、Cookbook、SmartDebugger、Query Tuning、多模型 |
-| 🚧 **规划中 · 尚未接入** | 代码已存在但**零生产引用 / 未接线，当前版本无法使用** | 技能系统（[`skills/`](skills)）、工作流固化（`workflow_recorder.py` / `workflow_executor.py`）、主动提问（`clarification_manager.py`）、任务图（`task_graph.py`）、Code Review（`code_reviewer.py`）、Agent Loop（[`agent_loop/`](agent_loop)） |
+| ✅ **已接入 v2.3.0** | 全部规划中特性完成接线并可用 | 代码审查、主动澄清、技能系统（`skills/`）、工作流录制回放、任务图（`task_graph.py`，默认关） |
 
 > 下方亮点表中带 🚧 的功能**不要在文档中当作已发布能力对待**。宁可少宣传，也不让用户装了发现用不了。
 
