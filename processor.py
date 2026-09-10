@@ -2,7 +2,7 @@ import os
 import re
 import traceback as tb
 
-from qgis.PyQt.QtCore import QThreadPool, pyqtSignal, QObject
+from qgis.PyQt.QtCore import QThreadPool, pyqtSignal, QObject, QSettings
 
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
@@ -159,7 +159,11 @@ class Processor(QObject):
         model_name, endpoint, api_key = dataloader.fetch_llm_info(llm_id)
         self.model_name = model_name
         self.provider = llm_id.split("::", 1)[0]
-        self.llm = get_llm_instance(self.provider, model_name, api_key, endpoint, temperature=temperature)
+        browser_tls = bool(QSettings("QGIS", "QGISAgent").value("use_browser_tls", False))
+        self.llm = get_llm_instance(
+            self.provider, model_name, api_key, endpoint,
+            temperature=temperature, browser_tls=browser_tls,
+        )
         self.output_parser = StrOutputParser()
         self.threadpool = QThreadPool()
         # 线程执行完立即退出，不要在池中常驻，否则 QGIS 关闭时这些线程会让进程无法退出。

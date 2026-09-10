@@ -194,9 +194,10 @@ class _TestConnectionWorker(QThread):
         try:
             from .llm_providers import get_llm_instance
             from langchain_core.messages import HumanMessage
+            browser_tls = bool(QSettings("QGIS", "QGISAgent").value("use_browser_tls", False))
             llm = get_llm_instance(
                 self.provider, self.model, self.api_key, self.endpoint,
-                temperature=0, timeout=self.timeout,
+                temperature=0, timeout=self.timeout, browser_tls=browser_tls,
             )
             resp = llm.invoke([HumanMessage(content="请只回复字符 OK")])
             text = getattr(resp, "content", str(resp))

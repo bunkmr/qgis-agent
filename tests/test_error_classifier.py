@@ -53,6 +53,8 @@ class TestCategoryRouting(ClassifierTestCase):
         ("Temporary failure in name resolution", "connection"),
         ("Max retries exceeded with url: /v1/chat/completions", "connection"),
         ("无法连接到服务器", "connection"),
+        ("httpcore.ConnectError during start_tls: [Errno 54] Connection reset by peer", "tls_blocked"),
+        ("curl: SSL_ERROR_SYSCALL after ClientHello", "tls_blocked"),
         ("This model's maximum context length is 8192 tokens", "context_length"),
         ("Please reduce the length of the messages", "context_length"),
         ("上下文过长，请精简历史", "context_length"),

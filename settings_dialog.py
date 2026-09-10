@@ -1,6 +1,6 @@
 import uuid
 
-from qgis.PyQt import QtWidgets
+from qgis.PyQt import QtCore, QtWidgets
 
 from .settings_dialog_ui import Ui_SettingsDialog
 
@@ -11,6 +11,18 @@ class SettingsDialog(QtWidgets.QDialog, Ui_SettingsDialog):
         self.dataloader = dataloader
         self._row_data = {}  # row_idx -> {"llm_id": str, "name": str}
         self.setupUi(self)
+
+        # 「浏览器指纹 TLS」开关：绕过 Cloudflare 等按 JA3 拦截非浏览器客户端的网关
+        self.cbBrowserTls = QtWidgets.QCheckBox(
+            "使用浏览器指纹 TLS（绕过 Cloudflare 等反爬网关，需额外 pip install curl_cffi）"
+        )
+        self.cbBrowserTls.setToolTip(
+            "开启后用 curl_cffi 伪装 Chrome 的 TLS 指纹，可绕过按 JA3 拦截非浏览器客户端的网关；"
+            "仅当接口连不上且确认是网关拦截时才需开启，且需自行 pip 安装 curl_cffi。"
+        )
+        self.cbBrowserTls.setChecked(bool(QtCore.QSettings("QGIS", "QGISAgent").value("use_browser_tls", False)))
+        # 放在「保存 / 取消」按钮上方
+        self.verticalLayout.insertWidget(self.verticalLayout.count() - 1, self.cbBrowserTls)
 
         self._load_config()
 
@@ -99,4 +111,5 @@ class SettingsDialog(QtWidgets.QDialog, Ui_SettingsDialog):
             self.dataloader.insert_llm_config(llm_id, name, endpoint, api_key)
 
         self.dataloader.reload_llm_config()
+        QtCore.QSettings("QGIS", "QGISAgent").setValue("use_browser_tls", self.cbBrowserTls.isChecked())
         self.accept()

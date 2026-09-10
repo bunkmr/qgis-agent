@@ -3,7 +3,7 @@ name=QGIS Agent
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
 description=LLM-powered intelligent assistant for QGIS. Supports natural language to operate QGIS tools.
-version=2.3.1
+version=2.3.2
 author=bunkmr
 email=bunkr@qq.com
 about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It allows you to control QGIS through natural language conversations, including: viewing project info, adding/removing layers, executing Processing algorithms, running PyQGIS code, setting layer labels, rendering maps, and more.
@@ -24,6 +24,8 @@ about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It al
 
     External dependencies (install via pip before use):
     langchain_core, langchain_openai, langchain_deepseek, httpx, psutil
+    Optional (only for the "Browser-fingerprint TLS" option in settings; not required by default):
+    curl_cffi  # 绕过 Cloudflare 等按 JA3 拦截非浏览器客户端的网关
 
 tracker=https://github.com/bunkmr/qgis-agent/issues
 repository=https://github.com/bunkmr/qgis-agent
@@ -36,6 +38,10 @@ deprecated=False
 hasProcessingProvider=no
 server=no
 changelog=
+    v2.3.2 更新内容：
+    【新增】浏览器指纹 TLS（可选逃生舱）：当模型接口被 Cloudflare 等反爬网关在 TLS 握手阶段按客户端指纹（JA3）拦截时，可在「模型配置」中开启「浏览器指纹 TLS」选项，用 curl_cffi 伪装 Chrome 指纹绕过（实测可连通 ai.zhaosh.fun）。默认关闭，不引入额外依赖，不影响默认发布路径。
+    【改进】错误分级新增「TLS 握手被拦截」专属分类：连接失败时直接提示是网关指纹拦截，并给出「换官方接口 / 开启浏览器指纹 TLS」的可操作建议，不再只显示泛泛的"网络连接失败"。
+    【兼容】Qt5/Qt6 双兼容（同 v2.3.1）。
     v2.3.1 更新内容：
     【兼容】Qt5/Qt6 双兼容修复（真机 QGIS 4.2.1 / Qt6 实例化验证通过）：
       - thinking_display.py 取色改用 qgis.PyQt（移除硬编码 PyQt5/PyQt6，Qt6 下会加载失败或与 QGIS 绑定冲突）；
