@@ -9,19 +9,20 @@
 - 🔒 **特权工具默认不放行**：`execute_pyqgis` / `execute_processing` / `remove_layer` / `load_project` / `save_project` / `run_skill` 既不出现在外部 Agent 的工具清单里，直接调用也会被拒绝；即便放行，每次执行仍会走既有的三档授权弹窗。
 - 🔒 **凭据存放**：端口与令牌写入 `~/.qgis_agent/mcp_session.json`（文件 0600、目录 0700），服务停止即删除，供 MCP Server 自动发现。
 - 🛡 **协议层加固**：单行请求 4MB 上限 + 分块读取（不用 `readline`，避免对端持续发送无换行字节流撑爆内存）；连接空闲 10 分钟超时（避免空闲连接占满名额）；工作线程异常一律转结构化错误，不影响进程。
-- 🧪 新增 71 个单测（协议层 37 + MCP Server 27 + 依赖探测健壮性 7），全套 237 个单测通过；QGIS 4.2.1 真机端到端 43/43 通过（真实 socket + 真实 stdio 子进程走完整 MCP 握手）。
+- 🧪 新增 82 个单测（协议层 37 + MCP Server 27 + 依赖健壮性 18），全套 248 个单测通过；QGIS 4.2.1 真机端到端 43/43 通过（真实 socket + 真实 stdio 子进程走完整 MCP 握手）。
 
 ### 修复
 - 🐛 **「浏览器兼容 TLS」开关此前点不到**：该开关只存在于 `settings_dialog.py`，而该对话框已无任何调用方（死代码）。现已并入实际可见的「模型配置」页，并删除这两个死文件。
 - 🐛 `run_skill` 会执行用户技能目录下的 Python 代码，此前经 MCP 通道可免确认调用，现纳入特权工具集合。
 - 🐛 **依赖探测不再只认 ImportError**：`_soft_import` 原来仅捕获 `ImportError`，而依赖「装了一半」时抛出的常是别的异常——例如 pydantic 与 pydantic-core 版本错配抛 `SystemError`、macOS 上框架/动态库加载失败抛 `OSError`。这类异常会从模块顶层逃逸，导致**整个插件加载失败且界面没有任何提示**。现统一兜住，转为「缺少依赖」对话框。（QGIS 3.44.14 真机实测复现）
 - 🐛 **locale 取值不再崩溃**：`QSettings().value("locale/userLocale")` 在 QGIS 尚未注册 locale 时返回 `None`，原实现直接 `[0:2]` 切片会 `TypeError` 打断 `QGISAgent.__init__`。现加默认值兜底。
+- 🐛 **`PackageManager.check_dependencies()` 也只认 ImportError（同源缺陷的第二处出口）**：`__import__("langchain_core")` 抛出的 `SystemError` 从这里逃逸出 `run()`，界面同样只剩一条日志 Traceback。现在把结果拆成**「确实没装」（可自动安装）**与**「装了但加载不了」（只诊断、绝不重装）**两类——对后者重装上层依赖只会把用户的 Python 环境改得更乱。同时自动解析异常里的版本号，直接给出可执行命令，例如 `pip install --force-reinstall "pydantic-core==2.46.4"`。
 
 ### 改进
 - 📝 措辞中性化：移除源码 / `metadata.txt` / `README` 中「绕过 Cloudflare / 伪装指纹 / 反爬」等表述，改为描述网关行为与兼容性处理，避免上架评审歧义。
 - 📝 `metadata.txt` 补充 MCP 能力说明与安全模型，明确可选依赖与零依赖组件。
 - 🧪 真机验收扩展：新增「安装后验收」脚本，直接针对已安装副本走 `classFactory → initGui → run` 全链路，并在 **QGIS 4.2.1 (Qt6/Py3.12) 47/47** 与 **QGIS 3.44.14 (Qt5/PyQt5/Py3.12) 46/46** 双版本全绿。
-- 🧪 新增 7 个依赖探测健壮性回归测试（含源码级约束，防止被改回窄捕获）。
+- 🧪 新增 18 个依赖健壮性回归测试（含源码级约束，防止被改回窄捕获；以及「装了但坏了」绝不被误判为「缺失」而触发重装）。另有专项真机验证脚本，在 QGIS 3.44.14 上真实复现 pydantic 版本错配场景，确认 `run()` 不再抛异常且提示内容准确（17/17 通过）。
 
 ## [Unreleased]
 

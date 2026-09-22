@@ -432,30 +432,64 @@ class QGISAgent:
 
     def run(self):
         if not _HAS_LLM_LIBS:
-            msg = QMessageBox()
-            msg.setWindowTitle("缺少依赖")
-            msg.setText("QGIS Agent 需要安装以下 Python 库：")
-            detail = "\n".join(f"• {m}" for m in required_modules)
-            msg.setInformativeText(detail + "\n\n是否尝试自动安装？")
-            msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-            msg.setDefaultButton(QMessageBox.StandardButton.Yes)
-            if msg.exec() == QMessageBox.StandardButton.Yes:
-                missing = package_manager.check_dependencies()
-                if missing:
-                    ok = package_manager.install_missing()
-                    if ok:
-                        QMessageBox.information(None, "安装成功", "依赖安装完成，请重启 QGIS 后重新启用插件。")
-                    else:
-                        QMessageBox.warning(None, "安装失败",
-                                            "自动安装失败，请在 OSGeo4W Shell 中手动运行：\n\n"
-                                            f"pip install {' '.join(required_modules)}")
-                else:
-                    QMessageBox.information(None, "已就绪", "依赖已安装，请重启 QGIS。")
+            # 依赖不可用时必须给出**可见且准确**的反馈。历史上此处的异常会
+            # 直接逃逸出 run()，表现为「插件启用后毫无反应，只有一条日志
+            # Traceback」——用户根本不知道发生了什么。
+            try:
+                self._handle_missing_dependencies()
+            except Exception:
+                logger.warning("依赖提示流程异常", exc_info=True)
+                QMessageBox.warning(
+                    None, "依赖不可用",
+                    "QGIS Agent 的 Python 依赖无法正常加载。\n\n"
+                    "请打开「QGIS Agent」面板的日志或 QGIS 的 Python 控制台查看详细信息。")
             return
 
         if not self.plugin_is_active:
             self.plugin_is_active = True
             self._init_plugin()
+
+    def _handle_missing_dependencies(self):
+        """依赖不可用时的交互流程：区分「没装」与「装了但坏了」。
+
+        「装了但坏了」（版本错配、动态库加载失败等）不提供自动安装：
+        重装上层包通常救不回来，反而会把用户的 Python 环境改得更乱。
+        此时只给出诊断信息与排查方向。
+        """
+        package_manager.check_dependencies()
+
+        # 情况一：模块找得到，但一导入就报错。
+        if package_manager.broken:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setWindowTitle("依赖已安装但无法加载")
+            msg.setText("以下 Python 库可以找到，但导入时报错，插件无法继续启动：")
+            msg.setInformativeText(
+                package_manager.broken_report() + "\n\n" + package_manager.hint_text())
+            msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+            msg.exec()
+            return
+
+        # 情况二：确实没有 → 询问是否自动安装。
+        if not package_manager.missing:
+            QMessageBox.information(None, "已就绪", "依赖已安装，请重启 QGIS。")
+            return
+
+        msg = QMessageBox()
+        msg.setWindowTitle("缺少依赖")
+        msg.setText("QGIS Agent 需要安装以下 Python 库：")
+        detail = "\n".join(f"• {m}" for m in package_manager.missing)
+        msg.setInformativeText(detail + "\n\n是否尝试自动安装？")
+        msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        msg.setDefaultButton(QMessageBox.StandardButton.Yes)
+        if msg.exec() == QMessageBox.StandardButton.Yes:
+            ok = package_manager.install_missing()
+            if ok:
+                QMessageBox.information(None, "安装成功", "依赖安装完成，请重启 QGIS 后重新启用插件。")
+            else:
+                QMessageBox.warning(None, "安装失败",
+                                    "自动安装失败，请在 OSGeo4W Shell 中手动运行：\n\n"
+                                    f"pip install {' '.join(required_modules)}")
 
     def _init_plugin(self):
         from .dataloader import DataLoader

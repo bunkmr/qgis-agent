@@ -5,9 +5,11 @@
 这里改成"以 metadata.txt 为唯一真源"的一致性校验，版本号升级无需改测试。
 """
 
+import builtins
 import os
 import re
 import unittest
+from unittest import mock
 
 try:  # 既支持以包方式导入（qgis_agent.tests.test_x）
     from . import support
@@ -183,6 +185,129 @@ class TestPackageManager(unittest.TestCase):
         pm.check_dependencies()
         pm.missing = []
         self.assertTrue(pm.install_missing())
+
+
+class TestPackageManagerBrokenDependencies(unittest.TestCase):
+    """依赖「装了但坏了」不得被误判成「没装」，更不能触发自动安装。
+
+    回归背景：QGIS 安装包自带 pydantic 与 pydantic-core 版本错配时，
+    `import langchain_core` 抛的是 SystemError 而非 ImportError。
+    旧实现只捕获 ImportError，异常直接逃逸出 run()，用户看到的现象是
+    「插件启用后毫无反应、只有一条日志 Traceback」。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        mod = support.import_mod("package_manager")
+        cls.PackageManager = mod.PackageManager
+        # 模块级函数挂到类上会变成绑定方法，必须包一层 staticmethod
+        cls.describe_broken_dependency = staticmethod(mod.describe_broken_dependency)
+        cls.broken_dependency_hint = staticmethod(mod.broken_dependency_hint)
+
+    @staticmethod
+    def _import_patch(exc_map):
+        """构造一个 __import__ 替身：命中 exc_map 的模块名按指定异常抛出，其余走真实导入。"""
+        real_import = builtins.__import__
+
+        def _fake(name, *args, **kwargs):
+            if name in exc_map:
+                raise exc_map[name]
+            return real_import(name, *args, **kwargs)
+
+        return _fake
+
+    def test_systemerror_is_classified_as_broken_not_missing(self):
+        """版本错配抛 SystemError → 归入 broken，而不是 missing"""
+        err = SystemError(
+            "The installed pydantic-core version (2.48.0) is incompatible with the "
+            "current pydantic version, which requires 2.46.4.")
+        pm = self.PackageManager(["langchain_deepseek"])
+        with mock.patch("builtins.__import__",
+                        side_effect=self._import_patch({"langchain_deepseek": err})):
+            missing = pm.check_dependencies()
+        self.assertEqual(missing, [], "SystemError 不应被当成「缺失」")
+        self.assertEqual([n for n, _ in pm.broken], ["langchain_deepseek"])
+
+    def test_importerror_still_classified_as_missing(self):
+        """真正的缺失仍然归入 missing（可自动安装）"""
+        pm = self.PackageManager(["langchain_deepseek"])
+        with mock.patch("builtins.__import__",
+                        side_effect=self._import_patch(
+                            {"langchain_deepseek": ImportError("No module named 'x'")})):
+            missing = pm.check_dependencies()
+        self.assertEqual(missing, ["langchain_deepseek"])
+        self.assertEqual(pm.broken, [])
+
+    def test_oserror_is_classified_as_broken(self):
+        """动态库加载失败抛 OSError → 同样归入 broken"""
+        pm = self.PackageManager(["langchain_core"])
+        with mock.patch("builtins.__import__",
+                        side_effect=self._import_patch(
+                            {"langchain_core": OSError("dlopen failed")})):
+            missing = pm.check_dependencies()
+        self.assertEqual(missing, [])
+        self.assertEqual(len(pm.broken), 1)
+
+    def test_check_dependencies_never_raises(self):
+        """check_dependencies 本身绝不向外抛异常（GUI 调用方不再需要防御）"""
+        pm = self.PackageManager(["langchain_core", "langchain_openai"])
+        boom = {"langchain_core": SystemError("x"), "langchain_openai": ValueError("y")}
+        with mock.patch("builtins.__import__", side_effect=self._import_patch(boom)):
+            try:
+                pm.check_dependencies()
+            except Exception as exc:  # noqa: BLE001
+                self.fail("check_dependencies 抛出异常: %r" % (exc,))
+
+    def test_broken_modules_never_auto_installed(self):
+        """broken 里的模块不得进退安装流程（重装只会把环境改得更乱）"""
+        pm = self.PackageManager(["langchain_core"])
+        pm.missing = []
+        pm.broken = [("langchain_core", SystemError("version mismatch"))]
+        with mock.patch("pip.main") as fake_pip:
+            self.assertTrue(pm.install_missing())
+        self.assertFalse(fake_pip.called, "broken 模块不应触发 pip 安装")
+
+    def test_broken_report_contains_module_and_exception(self):
+        pm = self.PackageManager(["langchain_core"])
+        pm.broken = [("langchain_core", SystemError("版本不匹配"))]
+        report = pm.broken_report()
+        self.assertIn("langchain_core", report)
+        self.assertIn("SystemError", report)
+        self.assertIn("版本不匹配", report)
+
+    def test_report_is_empty_without_broken(self):
+        pm = self.PackageManager(["langchain_core"])
+        pm.broken = []
+        self.assertEqual(pm.broken_report(), "")
+        self.assertEqual(pm.hint_text(), "")
+
+    def test_describe_truncates_long_message(self):
+        text = self.describe_broken_dependency("m", RuntimeError("x" * 5000), limit=100)
+        self.assertLess(len(text), 200)
+        self.assertIn("…", text)
+
+    def test_hint_recognises_pydantic_mismatch(self):
+        """pydantic / pydantic-core 错配要解析出两个版本号并给出可执行命令"""
+        err = SystemError(
+            "The installed pydantic-core version (2.48.0) is incompatible with the "
+            "current pydantic version, which requires 2.46.4. If you encounter this "
+            "error, make sure that you haven't upgraded pydantic-core manually.")
+        hint = self.broken_dependency_hint([("langchain_core", err)])
+        self.assertIn("pydantic", hint)
+        self.assertIn("并非插件缺陷", hint)
+        self.assertIn("2.48.0", hint)
+        self.assertIn('pydantic-core==2.46.4"', hint)   # 命令里的版本号不得带尾随点
+
+    def test_hint_pydantic_without_versions(self):
+        """只有 pydantic 字样但没版本号时，也不能崩，要退化为通用建议"""
+        hint = self.broken_dependency_hint(
+            [("langchain_core", SystemError("pydantic-core is incompatible"))])
+        self.assertIn("pydantic", hint)
+        self.assertIn("虚拟环境", hint)
+
+    def test_hint_generic_for_other_errors(self):
+        hint = self.broken_dependency_hint([("langchain_core", OSError("dlopen failed"))])
+        self.assertIn("手动 import", hint)
 
 
 if __name__ == "__main__":
