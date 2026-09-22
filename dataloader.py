@@ -308,6 +308,8 @@ class DataLoader:
             packed = pack(row, "interaction")
             if packed["conversationID"] in packed["ID"]:
                 processed.append(list(row) + [int(packed["ID"][len(packed["conversationID"]):])])
+        if not processed:
+            return None
         sorted_rows = sorted(processed, key=lambda x: x[-1])
         return sorted_rows[-1][:-1]
 

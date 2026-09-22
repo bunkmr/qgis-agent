@@ -251,10 +251,8 @@ def create_markdown(markdown_text: str) -> str:
         if in_code:
             if line.strip().startswith("```"):
                 in_code = False
-                out.append(
-                    f'<pre><code class="qa-code">'
-                    f'{html_module.escape("\n".join(code_buf))}</code></pre>'
-                )
+                escaped = html_module.escape("\n".join(code_buf))
+                out.append(f'<pre><code class="qa-code">{escaped}</code></pre>')
             else:
                 code_buf.append(raw)
             continue

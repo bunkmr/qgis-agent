@@ -3,3 +3,7 @@ langchain_openai >= 0.3.4
 langchain_deepseek >= 0.1.1
 httpx >= 0.24.0
 psutil
+tomli; python_version < "3.11"
+# 可选依赖（默认不需要）：
+# curl_cffi  # 浏览器指纹 TLS（Cloudflare JA3 逃生舱）
+# duckduckgo_search  # web_search 技能

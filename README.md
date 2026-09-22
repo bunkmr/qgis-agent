@@ -2,9 +2,9 @@
 
 > 🗺️ 将大语言模型 (LLM) 嵌入 QGIS 的智能助手插件 —— 用自然语言操控 QGIS 完成地理空间任务。
 
-[![QGIS](https://img.shields.io/badge/QGIS-3.0+-589632?logo=qgis&style=flat-square)](https://qgis.org/)
+[![QGIS](https://img.shields.io/badge/QGIS-3.22+-589632?logo=qgis&style=flat-square)](https://qgis.org/)
 [![Python](https://img.shields.io/badge/Python-3.7+-3776AB?logo=python&style=flat-square)](https://www.python.org/)
-[![Version](https://img.shields.io/badge/version-2.1.3-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.3.2-blue?style=flat-square)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
 ---
@@ -15,36 +15,35 @@ QGIS Agent 是 QGIS 的 AI 原生插件——用自然语言直接操控 QGIS，
 
 ## ⚠️ 功能状态说明（请先读这段）
 
-本项目文档同时包含**当前可用功能**与**路线图规划**。为避免「装了才发现用不了」，下表状态以代码接线情况为准：
+本项目文档同时包含**当前可用功能**与**历史路线图笔记**。为避免「装了才发现用不了」，下表状态以代码接线情况为准：
 
 | 状态 | 含义 | 涉及功能 |
 |------|------|----------|
-| ✅ **可用** | 已接入主对话链路，当前版本真实可用 | 自然语言操控、19 个内置工具、RAG 检索、tool_docs（679 条）、Cookbook、SmartDebugger、Query Tuning、多模型 |
-| ✅ **已接入 v2.3.0** | 全部规划中特性完成接线并可用 | 代码审查、主动澄清、技能系统（`skills/`）、工作流录制回放、任务图（`task_graph.py`，默认关） |
+| ✅ **可用** | 已接入主对话链路，当前版本真实可用 | 自然语言操控、**20 个**内置工具、RAG 检索、tool_docs（679 条）、Cookbook、SmartDebugger、Query Tuning、多模型、代码审查（确认弹窗）、技能系统（`run_skill`）、工作流录制回放、主动澄清、任务图 |
+| ⚠️ **安全注意** | 可用但非完整沙箱 | `execute_pyqgis`：AST 静态扫描 + 内建白名单 + 用户确认，但仍在 QGIS 进程内执行，请勿把不可信提示当绝对隔离 |
 
-> 下方亮点表中带 🚧 的功能**不要在文档中当作已发布能力对待**。宁可少宣传，也不让用户装了发现用不了。
+> 状态判定依据：代码是否被主对话链路引用，而非模块是否存在。工具清单以 `qgis_tools.TOOL_MAP` / `TOOL_DEFINITIONS` 为唯一真源。
 
 ## ✨ 核心亮点
 
 | 亮点 | 说明 |
 |------|------|
 | 📚 **RAG API 文档检索** | 本地 SQLite FTS5 全文引擎，执行代码前自动查询 PyQGIS API 签名和参数 |
-| 🧬 **Cookbook 自我进化** | 成功任务自动归档为案例，下次执行前检索相似案例注入上下文 |
+| 🧬 **Cookbook 自我进化** | 按工作流实际成功/失败归档案例，下次执行前检索相似案例注入上下文 |
 | 📖 **官方 API 文档** | 首次运行时自动构建 API 文档索引（含官方 API 文档源，覆盖核心类完整方法签名） |
-| 🔒 **代码安全确认** | 执行 PyQGIS/Processing 前弹窗确认，杜绝误操作 |
-| 🧵 **线程安全** | LLM 调用在工作线程执行，QGIS API 操作通过 QTimer 调度回主线程 |
+| 🔒 **代码安全确认** | 执行 PyQGIS/Processing 前弹窗确认；AST 扫描补齐 `open`/`getattr` 等黑名单，内建改白名单 |
+| 🧵 **线程安全** | LLM 调用在工作线程执行，QGIS API 通过信号/槽 + `QWaitCondition` 调度回主线程（桥接幂等） |
 | 🧠 **多模型** | 支持 DeepSeek、OpenAI、GLM、Gemini、MiMo 等所有 OpenAI 兼容 API |
-| 🐛 **SmartDebugger** ✅ | 工具调用失败时自动诊断，并把诊断结论回灌 LLM 改写重试（v2.2.0 起已接入主链路） |
-| 📊 **Task Graph** 🚧 | 任务流程图可视化，NetworkX + PyVis 支持（`task_graph.py` 未接线，当前不可用） |
-| 🎯 **Query Tuning** ✅ | 用户查询优化，自动分解 GIS 任务（已接入） |
-| 📋 **Tool Docs** ✅ | **679 条** QGIS Processing 算法/工具参考（TOML，每算法一份），已接入 RAG，执行 Processing 时自动检索算法签名 |
-| 🔍 **Code Review** 🚧 | 代码审查机制（`code_reviewer.py` 未接线，当前不可用） |
-| 🔌 **Skills 系统** 🚧 | 可扩展的技能插件架构（`skills/` 零生产引用，当前不可用） |
-| 🔄 / 🚀 **Workflow Recorder / Executor** 🚧 | 记录并复用对话中的工具调用序列（两个模块均未接线，当前不可用） |
-| ❓ **Clarification Manager** 🚧 | 识别模糊请求并主动澄清（`clarification_manager.py` 未接线，当前不可用） |
+| 🐛 **SmartDebugger** ✅ | 工具调用失败时自动诊断，并把诊断结论回灌 LLM 改写重试 |
+| 📊 **Task Graph** ✅ | 复杂目标拆解为可跟踪计划（`task_graph.py`，默认关闭） |
+| 🎯 **Query Tuning** ✅ | 用户查询优化，自动分解 GIS 任务 |
+| 📋 **Tool Docs** ✅ | **679 条** QGIS Processing 算法/工具参考（TOML），已接入 RAG |
+| 🔍 **Code Review** ✅ | 确认弹窗可附带 LLM 代码审查意见（`code_reviewer.py`） |
+| 🔌 **Skills 系统** ✅ | 内置/用户技能通过 `run_skill` 工具调用（`skills/`） |
+| 🔄 **Workflow** ✅ | 工作流录制与回放（`workflow_store.py` / `workflow_recorder.py` / `workflow_executor.py`） |
+| ❓ **Clarification** ✅ | 意图不明确时主动向用户澄清（`clarification_manager.py`） |
 
-> 🚧 = **规划中 · 尚未接入**，当前版本装上也用不了；✅ = 已接入主对话链路。
-> 状态判定依据：代码是否被主对话链路引用，而非模块是否存在。
+> ✅ = 已接入主对话链路。工具数量以 `TOOL_MAP` 为准，当前为 **20** 个。
 
 ## 🏗️ 架构概览
 
@@ -65,8 +64,8 @@ graph TB
 
     subgraph TOOLS["🔩 QGIS 工具层 — 主线程调度"]
         direction LR
-        F["📞 call_tool()<br/><small>线程桥</small>"]
-        G["🧰 19 个 QGIS 工具"]
+        F["📞 call_tool()<br/><small>信号/槽桥</small>"]
+        G["🧰 20 个 QGIS 工具"]
         H["🗺️ QGIS API<br/><small>QgsProject / iface / Processing</small>"]
     end
 
@@ -89,7 +88,7 @@ graph TB
     E -->|检索文档/案例| K
     K -->|查询| J
     E -->|跨线程调用工具| F
-    F -->|QTimer 调度到主线程| G
+    F -->|"信号/槽 + QWaitCondition 调度到主线程"| G
     G -->|操作| H
     E -->|归档案例| L
     L -->|写入| J
@@ -97,36 +96,15 @@ graph TB
     E -->|finished 信号| A
 ```
 
-## 🆕 v2.1.3 重要更新
+## 🆕 v2.3.x 重要更新
 
-> 本版本重点解决 **QGIS 4 / macOS** 的加载与运行问题，并让**本地部署模型**开箱即用：
-
-- ✅ **QGIS 4 兼容**：PyQt5 / PyQt6 双兼容，可在 QGIS 3.x 与 4.x（含 macOS QGIS 4）加载
-- ✅ **本地模型免密**：自托管 OpenAI 兼容服务（Ollama / vLLM / llama.cpp）API Key 可留空
-- ✅ **Cloudflare 403 规避**：自动附加浏览器 User-Agent 绕过 Bot 防护
-- 🐛 修复「点击发送无反应」（自动建对话 + 主线程异常/LLM 超时改为可见红字）
-- 🐛 修复 PyQt6 枚举缺失导致的 DockWidget 崩溃、pydantic-core 版本冲突
-- 💬 对话名默认取首条消息前 20 字，不再强制弹窗命名
+- ✅ **QGIS 3.22–4.x / Qt5+Qt6 兼容**
+- ✅ **Skills / Workflow / Clarification / Code Review 已接线**（v2.3.0）
+- ✅ **浏览器兼容 TLS（可选）**：接口在 TLS 握手阶段被网关中断时，可改用 curl_cffi 的浏览器 TLS 栈重试（v2.3.2）
+- ✅ **MCP 服务出口（可选）**：把内置工具通过 MCP 协议提供给 Claude Desktop / Cursor 等外部 Agent。默认关闭，仅监听 127.0.0.1 并强制令牌校验，特权工具默认不放行（v2.4.0）
+- 🔒 **安全加固（文档同步后继续优化）**：`execute_pyqgis` AST 黑名单补齐 `open`/`getattr`，内建白名单；桥接幂等防工具重复执行；Cookbook 按实际成败归档
 
 详见 [CHANGELOG.md](CHANGELOG.md)。
-
-## 🆕 v2.2.0（开发中）已完成的能力
-
-> 这一批是**安全与内核接线**，对应提交 `bf5321b`，均已落地可用。
-
-**安全**
-
-- **不可信数据净化**：图层名、属性值等外部数据回喂 LLM 前先净化并截断，避免提示词注入与上下文爆炸
-- **PyQGIS 代码 AST 静态扫描**：执行前做模块白名单 + 危险调用黑名单检查
-- **危险操作确认扩展**：`remove_layer` / `load_project` / `save_project` 纳入确认清单，`render_map` 覆盖文件时确认
-- **「跳过确认」不再持久化**：仅当前进程有效，重启后自动恢复确认
-
-**内核 / 体验**
-
-- **SmartDebugger 自动诊断重试**：工具调用失败自动诊断，并把诊断结论回灌 LLM 改写重试，不再一错就停
-- **错误分级提示**：新增 `error_classifier.py`，把原始异常翻译成中文可操作的提示
-- **修复「点停止后该对话永久报废」**
-- 思考过程改为累积显示；输入框 **Enter 发送 / Shift+Enter 换行**
 
 ## 📥 安装
 
@@ -180,7 +158,7 @@ cp -r qgis_agent/ ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/
 | 自定义 | 任何 OpenAI 兼容接口 | 任意模型名 |
 | 本地部署 | `http://localhost:11434/v1` 等 | 任意模型名（Ollama / vLLM / llama.cpp） |
 
-> 🔑 **本地 / 自托管模型无需密码**：自定义端点的 **API Key 可留空**。若你的服务经 Cloudflare 代理返回 `403 PermissionDenied`，插件已自动附加浏览器 `User-Agent` 绕过 Bot 防护，无需手动改配置。
+> 🔑 **本地 / 自托管模型无需密码**：自定义端点的 **API Key 可留空**。部分网关后的端点会返回 `403 PermissionDenied` 并提示请求被拦截——插件会发送一个常规浏览器 `User-Agent` 以提高兼容性，通常无需手动改配置。
 
 ## 🚀 快速上手
 
@@ -219,8 +197,9 @@ cp -r qgis_agent/ ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/
 | `get_layer_profile` | 生成图层数据概览（字段、范围等） | 📊 查询 |
 | `set_layer_renderer` | 设置图层渲染样式（分级设色等） | 🎨 渲染 |
 | `reproject_layer` | 图层投影转换 | ⚙️ 空间分析 |
+| `run_skill` | 加载并运行内置/用户技能 | 🔌 技能 |
 
-> 共 **19** 个内置工具，与代码中 `qgis_tools.TOOL_DEFINITIONS` 保持一致。
+> 共 **20** 个内置工具，与代码中 `qgis_tools.TOOL_DEFINITIONS` / `TOOL_MAP` 保持一致。
 
 ## 📚 RAG 文档覆盖
 
@@ -266,6 +245,11 @@ qgis_agent/
 ├── response_worker.py           # 多线程 Worker
 ├── dataloader.py                # SQLite 数据层
 ├── llm_providers.py             # LLM 提供商工厂
+├── code_reviewer.py             # 代码审查（确认弹窗）
+├── smart_debugger.py            # 错误诊断与重试
+├── clarification_manager.py     # 模糊请求澄清
+├── workflow_store.py            # 工作流录制/回放
+├── task_graph.py                # 任务图拆解
 ├── utils.py / config.py         # 工具函数 / 全局配置
 ├── package_manager.py           # 依赖管理
 ├── rag/                         # 📚 RAG 模块
@@ -274,13 +258,7 @@ qgis_agent/
 │   ├── doc_generator.py         #   API 文档生成器
 │   ├── official_doc_scraper.py  #   📖 官方 API 文档
 │   └── cookbook.py               #   Cookbook 自我进化
-├── agent_loop/                  # 🔄 Agent Loop 架构（实验性，未接入主链路）
-│   ├── state.py                 #   状态管理
-│   ├── tools.py                 #   工具注册系统
-│   ├── memory.py                #   记忆系统
-│   ├── loop.py                  #   核心循环
-│   └── processor.py             #   AgentLoopProcessor（基于新架构的处理器）
-├── skills/                      # 🔌 技能系统（实验性，未接入主链路）
+├── skills/                      # 🔌 技能系统（已接入 run_skill）
 │   ├── skill_manager.py         #   技能管理器
 │   ├── builtins.py              #   内置技能（网络搜索等）
 │   └── user_skills/             #   用户自定义技能
@@ -290,14 +268,13 @@ qgis_agent/
 └── requirements.txt             # Python 依赖
 ```
 
-## 🔌 技能系统 🚧 规划中 · 当前不可用
+> 历史实验模块 `agent_loop/` 已从主链路移除（仅残留 pycache，勿再依赖）。
 
-> ⚠️ **当前版本无法使用。** `skills/` 包下的实现在生产链路中**零引用**，既没有注册入口也没有调用点。
-> 以下内容是**路线图设计**，不是可用功能说明。
+## 🔌 技能系统
 
-QGIS Agent 规划中的可扩展技能插件系统：
+技能通过 `run_skill` 工具暴露给 LLM，可加载内置技能或 `skills/user_skills/*.py`。
 
-### 内置技能（均不可用）
+### 内置技能
 
 | 技能 | 功能 |
 |------|------|
@@ -320,6 +297,8 @@ SKILL = Skill(
     handler=handler,
 )
 ```
+
+> ⚠️ 用户技能会在 QGIS 进程内以当前用户权限执行。只放入你信任的代码；生产环境建议限制可调用技能白名单。
 
 ## ❓ FAQ
 
@@ -345,7 +324,7 @@ SKILL = Skill(
 <details>
 <summary><b>Q: 支持哪些 QGIS 版本？</b></summary>
 
-- QGIS 3.0+ 与 4.x（PyQt5 / PyQt6 双兼容），推荐 3.28 LTR 或 4.x 新版
+- QGIS 3.22+ 与 4.x（PyQt5 / PyQt6 双兼容），推荐 3.28 LTR 或 4.x 新版
 </details>
 
 <details>

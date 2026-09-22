@@ -1,6 +1,6 @@
 # QGIS Agent 项目上下文
 
-> QGIS 桌面插件，将 LLM Agent 嵌入 QGIS，支持通过自然语言调用 15 个 QGIS 工具完成地理空间操作。集成 RAG API 文档检索和 Cookbook 自我进化机制。
+> QGIS 桌面插件（v2.3.2），将 LLM Agent 嵌入 QGIS，支持通过自然语言调用 **20 个** QGIS 工具完成地理空间操作。集成 RAG API 文档检索、Cookbook 自我进化、技能系统、工作流录制回放与主动澄清。
 
 ---
 
@@ -12,7 +12,7 @@ graph TB
     subgraph UI["🖥️ QGIS 主线程"]
         direction LR
         A["🧩 QGISAgent<br/><small>qgis_agent.py</small>"]
-        B["🪟 DockWidget<br/><small>qgis_agent_dockwidget.py</small>"]
+        B["🪟 DockWidget<br/><small>qgis_agent_dockwidget_v2.py</small>"]
         C["💬 Conversation<br/><small>conversation.py</small>"]
     end
 
@@ -25,7 +25,7 @@ graph TB
     subgraph TOOLS["🔩 主线程调度"]
         direction LR
         F["📞 call_tool()<br/><small>qgis_tools.py</small>"]
-        G["🧰 15 QGIS 工具函数"]
+        G["🧰 20 QGIS 工具函数"]
         H["🗺️ QGIS API<br/><small>QgsProject / iface / Processing</small>"]
     end
 
@@ -39,7 +39,7 @@ graph TB
     D -->|在线程中运行| E
     E -->|LLM API 调用| I
     E -->|跨线程调用工具| F
-    F -->|QTimer.singleShot 调度到主线程| G
+    F -->|"信号/槽 + QWaitCondition<br/>调度到主线程"| G
     G -->|操作| H
     E -->|thinking 信号| B
     E -->|finished 信号| A
@@ -96,7 +96,7 @@ sequenceDiagram
             loop 每个 tool_call
                 P->>T: call_tool(name, args)
                 Note over T: 🔍 检测线程：非主线程
-                T-->>Q: QTimer.singleShot(0) 调度
+                T-->>Q: 信号/槽 + QWaitCondition 调度
                 Note over Q: ✅ 主线程执行
                 Q-->>T: 返回结果
                 T-->>P: 工具执行结果
@@ -140,7 +140,7 @@ flowchart LR
         WT_LOOP["🔄 Agent 工具调用循环"]
     end
 
-    WT_LOOP -->|"⏱️ QTimer.singleShot(0)"| MT_TOOLS
+    WT_LOOP -->|"⏱️ 信号/槽 + QWaitCondition"| MT_TOOLS
     WT_LOOP -->|"📡 thinking / tool_status 信号"| MT_UI
     WT_LLM --> WT_LOOP
 
@@ -153,9 +153,9 @@ flowchart LR
 
 **关键设计原则**：
 - LLM API 调用在工作线程中执行，**不阻塞 QGIS 主线程 UI**
-- 所有 QGIS API 操作通过 `QTimer.singleShot(0)` 调度回主线程执行，**保证线程安全**
-- 工作线程用 `QEventLoop.processEvents()` 同步等待主线程执行结果
-- 超时时间：60 秒
+- 所有 QGIS API 操作通过 `_MainThreadBridge` 信号/槽 + `QWaitCondition` 调度回主线程执行，**保证线程安全**
+- 桥接初始化是幂等的（`_wired` 标志），关闭再打开 Dock 不会重复 connect
+- 工具执行默认超时 180 秒；危险操作确认等待 300 秒
 
 ---
 
@@ -215,7 +215,9 @@ flowchart TD
 
 ---
 
-## 15 个 QGIS 工具
+## 20 个 QGIS 工具
+
+以 `qgis_tools.TOOL_MAP` / `TOOL_DEFINITIONS` 为唯一真源：
 
 | # | 工具名 | 功能 | 关键 QGIS API |
 |---|--------|------|---------------|
@@ -229,11 +231,18 @@ flowchart TD
 | 8 | `remove_layer` | 移除图层 | `QgsProject.removeMapLayer()` |
 | 9 | `zoom_to_layer` | 缩放到图层范围 | `iface.setActiveLayer()`, `iface.zoomToActiveLayer()` |
 | 10 | `execute_processing` | 执行 Processing 算法 | `processing.run()` |
-| 11 | `execute_pyqgis` | 执行任意 PyQGIS 代码 | `exec()` + stdout/stderr 重定向 |
+| 11 | `execute_pyqgis` | 执行任意 PyQGIS 代码（AST 扫描 + 内建白名单） | `exec()` + stdout/stderr 重定向 |
 | 12 | `set_layer_labeling` | 设置矢量图层标注（字体/颜色/缓冲/位置） | `QgsPalLayerSettings` |
 | 13 | `save_project` | 保存项目文件 | `QgsProject.write()` |
 | 14 | `load_project` | 加载项目文件 | `QgsProject.read()`, `iface.mapCanvas().refresh()` |
 | 15 | `render_map` | 渲染地图为 PNG | `QgsMapRendererParallelJob` |
+| 16 | `get_algorithm_parameters` | 查询 Processing 算法参数定义 | `processing.algorithmHelp` / tool_docs |
+| 17 | `get_layer_profile` | 生成图层数据概览 | `layer.fields()`, extent 等 |
+| 18 | `set_layer_renderer` | 分级/分类设色渲染 | `QgsGraduatedSymbolRenderer` 等 |
+| 19 | `reproject_layer` | 图层投影转换 | `processing.run("native:reprojectlayer")` |
+| 20 | `run_skill` | 加载并运行内置/用户技能 | `skills.skill_manager` |
+
+**危险工具（默认需确认）**：`execute_pyqgis`、`execute_processing`、`remove_layer`、`load_project`、`save_project`。
 
 ---
 
@@ -330,7 +339,7 @@ flowchart LR
 ```
 
 **模块**：`rag/cookbook.py`
-- 每次工具成功执行后自动归档案例（任务描述 + 工具调用 + 结果摘要）
+- `agent_chat` 结束时按工作流 steps 实际状态计算 success 后归档（失败案例记低分，不再无条件 success=True）
 - 新任务开始时检索相似历史案例，帮助 LLM 更快找到正确方案
 - 质量评分机制：高分案例优先注入
 
@@ -414,7 +423,8 @@ graph LR
 | API Key | 环境变量 `DEEPSEEK_API_KEY` | — |
 | 最大工具轮次 | `processor.py` | 10 |
 | 历史消息上限 | `processor.py` | 20 条 |
-| 工具执行超时 | `qgis_tools.py` | 60 秒 |
+| 工具执行超时 | `qgis_tools.py` | 180 秒 |
+| 危险操作确认超时 | `qgis_tools.py` | 300 秒 |
 | 记忆注入长度上限 | `processor.py` | 4000 字符 |
 
 ---
@@ -423,10 +433,12 @@ graph LR
 
 | 问题 | 原因 | 修复位置 |
 |------|------|----------|
-| Map Canvas 停止渲染 | 工具在工作线程调用 QGIS API | `qgis_tools.py:call_tool()` 已修复为 QTimer 主线程调度 |
+| Map Canvas 停止渲染 | 工具在工作线程调用 QGIS API | `qgis_tools.py:call_tool()` 已修复为信号/槽主线程调度 |
 | LLM 遗忘上下文 | `agent_chat` 未加载历史 | `processor.py` 已修复：加载 SQLite 历史 + MEMORY.md |
 | `set_font_color` NameError | 局部导入未存为实例属性 | `qgis_agent.py` 已修复为 `self._set_font_color` |
-| 文本未左对齐 | HTML div 缺少 `text-align:left` | `qgis_agent_dockwidget.py` 已修复 |
+| 文本未左对齐 | HTML div 缺少 `text-align:left` | `qgis_agent_dockwidget_v2.py` 已修复 |
 | `cbSkipConfirm` NoneType 错误 | dockwidget 创建在信号连接之后 | `qgis_agent.py:_init_plugin()` 已修复：dockwidget 创建前置 |
 | GitHub 文件内容乱码 | API push 时双重 base64 编码 | 使用 `/git/blobs` API + sha 构建 tree |
 | `requirements.txt` 缺少 `langchain_core` | 依赖声明不完整 | 代码中 `required_modules` 含 `langchain_core`，但 `requirements.txt` 未声明 |
+| 关闭再开 Dock 后工具执行两次 | 桥信号重复 connect | `_init_main_thread_bridge` 已幂等化 |
+| SmartDebugger 导入失败时插件挂掉 | `logger` 在定义前被使用 | `processor.py` 已把 logger 初始化提到文件顶部 |

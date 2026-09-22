@@ -11,7 +11,8 @@ from qgis.PyQt.QtGui import QIcon, QPalette, QFont
 from qgis.PyQt.QtWidgets import (
     QAction, QDialog, QPushButton, QLineEdit, QPlainTextEdit,
     QDockWidget, QApplication, QMessageBox, QLabel, QVBoxLayout, QHBoxLayout,
-    QComboBox, QTableWidgetItem, QFrame, QToolBar, QInputDialog
+    QComboBox, QTableWidgetItem, QFrame, QToolBar, QInputDialog,
+    QCheckBox, QGroupBox, QSpinBox
 )
 from qgis.utils import iface
 
@@ -28,10 +29,18 @@ package_manager = PackageManager(required_modules)
 
 
 def _soft_import(name):
+    """尝试导入，失败即视为「该依赖不可用」。
+
+    不能只捕获 ImportError：依赖装了一半时抛出的往往不是 ImportError，
+    例如 pydantic 与 pydantic-core 版本不匹配会抛 SystemError，
+    macOS 上框架/动态库加载失败会抛 OSError。
+    这类异常一旦从模块顶层逃逸，整个插件会加载失败且界面没有任何提示，
+    因此这里统一兜住，转由 run() 去弹「缺少依赖」对话框。
+    """
     try:
         __import__(name)
         return True
-    except ImportError:
+    except Exception:  # noqa: BLE001
         return False
 
 
@@ -254,7 +263,9 @@ class QGISAgent:
         self.iface = iface
         self.plugin_dir = os.path.dirname(__file__)
 
-        locale = QSettings().value("locale/userLocale")[0:2]
+        # locale/userLocale 在极端情况下可能为 None（例如 QGIS 尚未注册 locale、
+        # 或插件被非标准方式实例化），此时直接切片会 TypeError 导致整个插件加载失败。
+        locale = str(QSettings().value("locale/userLocale") or "en")[0:2]
         locale_path = os.path.join(self.plugin_dir, "i18n", f"QGISAgent_{locale}.qm")
         if os.path.exists(locale_path):
             self.translator = QTranslator()
@@ -314,7 +325,7 @@ class QGISAgent:
                     break
         except Exception as e:
             # 如果找不到Python控制台，使用默认位置
-            print(f"Warning: Could not find Python console toolbar: {e}")
+            logger.debug("Could not find Python console toolbar: %s", e)
 
     def tr(self, message):
         return QCoreApplication.translate("QGISAgent", message)
@@ -389,6 +400,12 @@ class QGISAgent:
                     _t.wait(3000)
             except Exception as _e:
                 logger.debug("等待代码审查线程结束失败，忽略: %s", _e, exc_info=True)
+        # 2c) 停掉 MCP 桥接服务，释放 127.0.0.1 监听端口并清掉会话文件
+        try:
+            from .mcp_bridge import MCPBridge
+            MCPBridge.get().stop()
+        except Exception as _e:
+            logger.debug("停止 MCP 服务失败，忽略: %s", _e, exc_info=True)
         # 3) 关闭 dock 并断开信号（不 delete，交给 QGIS 自行回收，避免向已销毁对象发信号崩溃）
         try:
             if self.dockwidget is not None:
@@ -1366,6 +1383,337 @@ class QGISAgent:
         self.btnTestConnection.setToolTip("用当前选中的模型测试 API 连通性（后台线程执行，不阻塞界面）")
         self.btnTestConnection.clicked.connect(self._on_test_connection)
         self.dockwidget.settingsLayout.addWidget(self.btnTestConnection)
+
+        self._build_browser_tls_ui()
+        self._build_mcp_settings_ui()
+
+        # 切回模型配置页时刷新一次 MCP 状态，避免显示过期信息
+        try:
+            self.dockwidget.twTabs.currentChanged.connect(
+                lambda _idx: self._refresh_mcp_status()
+            )
+        except Exception as _e:
+            logger.debug("连接标签页切换信号失败，忽略: %s", _e, exc_info=True)
+
+        # 若上次勾选了自动启动，则随插件一起把 MCP 服务拉起来
+        self._maybe_autostart_mcp()
+
+    # ──────────────────────────────────────────────
+    # 浏览器指纹 TLS 开关（v2.3.2 引入，此前只在无人调用的 SettingsDialog 里）
+    # ──────────────────────────────────────────────
+    def _build_browser_tls_ui(self):
+        """把「浏览器指纹 TLS」开关放进真正可见的模型配置页。
+
+        历史坑：该开关原本只存在于 settings_dialog.py，而那个对话框已无任何调用方，
+        用户根本点不到 —— 等于功能没上线。
+        """
+        self.cbBrowserTls = QCheckBox(
+            "使用浏览器兼容 TLS（接口连接被网关重置时启用，需 pip install curl_cffi）"
+        )
+        self.cbBrowserTls.setToolTip(
+            "部分 API 网关会依据客户端 TLS 指纹判断请求来源，非浏览器客户端可能在握手阶段被中断"
+            "（典型表现：Connection reset by peer）。开启后改用 curl_cffi 的浏览器 TLS 栈，"
+            "以提升这类接口的连接成功率。仅在确认接口本身可达、而连接被中断时才需要，"
+            "并需在 QGIS 自带 Python 环境中 pip install curl_cffi。"
+        )
+        self.cbBrowserTls.setChecked(
+            bool(QSettings("QGIS", "QGISAgent").value("use_browser_tls", False))
+        )
+        self.cbBrowserTls.stateChanged.connect(self._on_browser_tls_changed)
+        layout = self.dockwidget.settingsLayout
+        layout.insertWidget(layout.count() - 1, self.cbBrowserTls)
+
+    def _on_browser_tls_changed(self, _state=None):
+        QSettings("QGIS", "QGISAgent").setValue(
+            "use_browser_tls", self.cbBrowserTls.isChecked()
+        )
+
+    # ──────────────────────────────────────────────
+    # MCP 服务设置（外部 Agent 通过 MCP 驱动 QGIS）
+    # ──────────────────────────────────────────────
+    @staticmethod
+    def _mcp_settings():
+        return QSettings("QGIS", "QGISAgent")
+
+    def _build_mcp_settings_ui(self):
+        """在模型配置页底部插入「MCP 服务」设置区。"""
+        settings = self._mcp_settings()
+        group = QGroupBox("MCP 服务（供 Claude Desktop / Cursor 等外部 Agent 调用）")
+        outer = QVBoxLayout(group)
+        outer.setSpacing(6)
+
+        try:
+            from .mcp_protocol import DEFAULT_PORT, session_file_path
+            default_port = DEFAULT_PORT
+            session_hint = session_file_path()
+        except Exception:  # noqa: BLE001
+            default_port = 9876
+            session_hint = "~/.qgis_agent/mcp_session.json"
+
+        hint = QLabel(
+            "启动后仅在 127.0.0.1 上监听，且强制校验访问令牌，局域网内其他机器无法连接。"
+            "端口与令牌已写入 %s，外部 MCP Server 会自动读取，通常无需手工配置。"
+            % session_hint
+        )
+        hint.setWordWrap(True)
+        hint.setStyleSheet("color: #666; font-size: 11px;")
+        outer.addWidget(hint)
+
+        self.cbMcpAutostart = QCheckBox("随插件启动时自动运行 MCP 服务")
+        self.cbMcpAutostart.setChecked(bool(settings.value("mcp/autostart", False)))
+        outer.addWidget(self.cbMcpAutostart)
+
+        row_port = QHBoxLayout()
+        row_port.addWidget(QLabel("监听端口"))
+        self.spMcpPort = QSpinBox()
+        self.spMcpPort.setRange(1024, 65535)
+        try:
+            self.spMcpPort.setValue(int(settings.value("mcp/port", default_port)))
+        except (TypeError, ValueError):
+            self.spMcpPort.setValue(default_port)
+        self.spMcpPort.setToolTip("默认 9876。若被占用可换一个端口，改完需重新启动服务。")
+        row_port.addWidget(self.spMcpPort)
+        self.btnMcpToggle = QPushButton("启动服务")
+        self.btnMcpToggle.clicked.connect(self._on_mcp_toggle)
+        row_port.addWidget(self.btnMcpToggle)
+        outer.addLayout(row_port)
+
+        row_token = QHBoxLayout()
+        row_token.addWidget(QLabel("访问令牌"))
+        self.leMcpToken = QLineEdit()
+        self.leMcpToken.setToolTip(
+            "外部客户端必须携带该令牌才能调用工具。修改后需重新启动服务。"
+        )
+        token = str(settings.value("mcp/token", "") or "")
+        if not token:
+            token = self._new_mcp_token()
+            settings.setValue("mcp/token", token)
+        self.leMcpToken.setText(token)
+        row_token.addWidget(self.leMcpToken)
+        btn_regen = QPushButton("重新生成")
+        btn_regen.setToolTip("生成一份新的 32 字节随机令牌（旧令牌立即失效）")
+        btn_regen.clicked.connect(self._on_mcp_regenerate_token)
+        row_token.addWidget(btn_regen)
+        btn_copy_token = QPushButton("复制令牌")
+        btn_copy_token.clicked.connect(self._on_mcp_copy_token)
+        row_token.addWidget(btn_copy_token)
+        outer.addLayout(row_token)
+
+        self.cbMcpDangerous = QCheckBox(
+            "允许外部 Agent 调用特权工具（执行 PyQGIS 代码 / 处理算法 / 删图层 / 运行技能）"
+        )
+        self.cbMcpDangerous.setChecked(bool(settings.value("mcp/allow_dangerous", False)))
+        self.cbMcpDangerous.setToolTip(
+            "默认关闭：这些工具既不会出现在外部 Agent 的工具清单里，直接调用也会被拒绝。\n"
+            "开启后外部 Agent 可以请求它们，但每次执行仍会在 QGIS 界面上弹出确认框，由你本人点击确认。\n"
+            "「运行技能」之所以归入此类，是因为技能会执行用户技能目录下的 Python 代码。\n"
+            "注意：若你同时打开了插件底部的「跳过代码执行确认」，外部 Agent 的这些操作也将不再弹窗。"
+        )
+        outer.addWidget(self.cbMcpDangerous)
+
+        self.lblMcpStatus = QLabel("状态：未运行")
+        self.lblMcpStatus.setWordWrap(True)
+        self.lblMcpStatus.setStyleSheet("color: #666; font-size: 11px;")
+        outer.addWidget(self.lblMcpStatus)
+
+        row_actions = QHBoxLayout()
+        self.btnMcpCopyConfig = QPushButton("复制客户端配置")
+        self.btnMcpCopyConfig.setToolTip(
+            "复制一段可直接粘贴进 Claude Desktop / Cursor 配置文件的 mcpServers JSON"
+        )
+        self.btnMcpCopyConfig.clicked.connect(self._on_mcp_copy_config)
+        row_actions.addWidget(self.btnMcpCopyConfig)
+        btn_check = QPushButton("测试连通性")
+        btn_check.setToolTip("运行 MCP Server 的自检，确认外部客户端能连上插件内的桥接服务")
+        btn_check.clicked.connect(self._on_mcp_selfcheck)
+        row_actions.addWidget(btn_check)
+        outer.addLayout(row_actions)
+
+        self.boxMcp = group
+        layout = self.dockwidget.settingsLayout
+        layout.insertWidget(layout.count() - 1, group)
+
+        # 桥接服务状态变化时刷新显示
+        try:
+            from .mcp_bridge import MCPBridge
+            MCPBridge.get().statusChanged.connect(lambda _msg: self._refresh_mcp_status())
+        except Exception as _e:
+            logger.debug("连接 MCP 状态信号失败，忽略: %s", _e, exc_info=True)
+
+        self._refresh_mcp_status()
+
+    @staticmethod
+    def _new_mcp_token():
+        try:
+            from .mcp_bridge import _default_token
+            return _default_token()
+        except Exception:  # noqa: BLE001
+            import os as _os
+            return _os.urandom(32).hex()
+
+    def _refresh_mcp_status(self):
+        try:
+            from .mcp_bridge import MCPBridge
+            bridge = MCPBridge.get()
+            running = bridge.is_running()
+            if running:
+                self.lblMcpStatus.setText(
+                    "状态：运行中 · 监听 127.0.0.1:%d · 工具 %d 个（含危险工具：%s）"
+                    % (bridge.port or 0,
+                       len(self._mcp_visible_tool_names()),
+                       "是" if self.cbMcpDangerous.isChecked() else "否")
+                )
+                self.btnMcpToggle.setText("停止服务")
+            else:
+                self.lblMcpStatus.setText("状态：未运行")
+                self.btnMcpToggle.setText("启动服务")
+        except Exception as _e:
+            logger.debug("刷新 MCP 状态失败: %s", _e, exc_info=True)
+
+    def _mcp_visible_tool_names(self):
+        try:
+            from .mcp_bridge import MCPBridge
+            from .qgis_tools import TOOL_DEFINITIONS
+            dangerous = MCPBridge._dangerous_tool_names()
+            if self.cbMcpDangerous.isChecked():
+                return [t.get("name") for t in TOOL_DEFINITIONS]
+            return [t.get("name") for t in TOOL_DEFINITIONS
+                    if t.get("name") not in dangerous]
+        except Exception:  # noqa: BLE001
+            return []
+
+    def _persist_mcp_settings(self):
+        settings = self._mcp_settings()
+        settings.setValue("mcp/autostart", self.cbMcpAutostart.isChecked())
+        settings.setValue("mcp/port", int(self.spMcpPort.value()))
+        settings.setValue("mcp/token", self.leMcpToken.text().strip())
+        settings.setValue("mcp/allow_dangerous", self.cbMcpDangerous.isChecked())
+
+    def _on_mcp_toggle(self):
+        from .mcp_bridge import MCPBridge
+        bridge = MCPBridge.get()
+        if bridge.is_running():
+            _ok, message = bridge.stop()
+            self._persist_mcp_settings()
+            self._refresh_mcp_status()
+            _set_status = getattr(self.dockwidget, "_set_status", None)
+            if callable(_set_status):
+                _set_status("MCP 服务已停止")
+            return
+
+        token = self.leMcpToken.text().strip()
+        if not token:
+            token = self._new_mcp_token()
+            self.leMcpToken.setText(token)
+        self._persist_mcp_settings()
+        ok, message = bridge.start(
+            port=int(self.spMcpPort.value()),
+            token=token,
+            allow_dangerous=self.cbMcpDangerous.isChecked(),
+        )
+        self._refresh_mcp_status()
+        if ok:
+            _set_status = getattr(self.dockwidget, "_set_status", None)
+            if callable(_set_status):
+                _set_status("MCP 服务已启动 · 127.0.0.1:%d" % (bridge.port or 0))
+        else:
+            QMessageBox.warning(self.dockwidget, "MCP 服务启动失败", message)
+
+    def _maybe_autostart_mcp(self):
+        """按设置决定是否随插件启动 MCP 服务（失败不打扰用户，仅记录）。"""
+        try:
+            if not self.cbMcpAutostart.isChecked():
+                self._refresh_mcp_status()
+                return
+            from .mcp_bridge import MCPBridge
+            bridge = MCPBridge.get()
+            if bridge.is_running():
+                self._refresh_mcp_status()
+                return
+            token = self.leMcpToken.text().strip() or self._new_mcp_token()
+            self.leMcpToken.setText(token)
+            self._persist_mcp_settings()
+            ok, message = bridge.start(
+                port=int(self.spMcpPort.value()),
+                token=token,
+                allow_dangerous=self.cbMcpDangerous.isChecked(),
+            )
+            self._refresh_mcp_status()
+            if not ok:
+                logger.warning("MCP 服务自动启动失败: %s", message)
+        except Exception as _e:
+            logger.debug("MCP 自动启动异常，忽略: %s", _e, exc_info=True)
+
+    def _on_mcp_regenerate_token(self):
+        token = self._new_mcp_token()
+        self.leMcpToken.setText(token)
+        settings = self._mcp_settings()
+        settings.setValue("mcp/token", token)
+        try:
+            from .mcp_bridge import MCPBridge
+            bridge = MCPBridge.get()
+            if bridge.is_running():
+                bridge.apply_settings(token=token)
+        except Exception as _e:
+            logger.debug("热更新 MCP 令牌失败: %s", _e, exc_info=True)
+        QMessageBox.information(
+            self.dockwidget, "令牌已更新",
+            "已生成新的访问令牌，并写回插件设置。\n"
+            "请把新令牌同步到 MCP 客户端配置（点「复制客户端配置」即可拿到）。"
+        )
+
+    def _on_mcp_copy_token(self):
+        token = self.leMcpToken.text().strip()
+        if not token:
+            return
+        QApplication.clipboard().setText(token)
+        _set_status = getattr(self.dockwidget, "_set_status", None)
+        if callable(_set_status):
+            _set_status("访问令牌已复制到剪贴板")
+
+    def _on_mcp_copy_config(self):
+        try:
+            from .mcp_bridge import MCPBridge
+            import json as _json
+            bridge = MCPBridge.get()
+            config = bridge.client_config()
+            text = _json.dumps(config, ensure_ascii=False, indent=2)
+            QApplication.clipboard().setText(text)
+            QMessageBox.information(
+                self.dockwidget, "客户端配置已复制",
+                "已复制 Claude Desktop / Cursor 的 mcpServers 配置片段：\n\n"
+                + text + "\n\n粘贴到客户端的配置文件后重启客户端即可。"
+            )
+        except Exception as _e:
+            QMessageBox.warning(self.dockwidget, "复制失败", "生成配置片段失败：%s" % _e)
+
+    def _on_mcp_selfcheck(self):
+        """在 QGIS 自带 Python 里跑一次 MCP Server 自检，确认整条链路通。"""
+        import subprocess
+        import sys as _sys
+        server_script = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "mcp_server", "qgis_agent_mcp_server.py",
+        )
+        if not os.path.exists(server_script):
+            QMessageBox.warning(self.dockwidget, "找不到 MCP Server",
+                                "未找到 %s" % server_script)
+            return
+        try:
+            proc = subprocess.run(
+                [_sys.executable, server_script, "--check"],
+                capture_output=True, text=True, timeout=30,
+            )
+            output = (proc.stdout or "") + (proc.stderr or "")
+        except Exception as _e:
+            QMessageBox.warning(self.dockwidget, "自检失败", "无法运行自检：%s" % _e)
+            return
+        box = QMessageBox(self.dockwidget)
+        box.setWindowTitle("MCP 连通性自检")
+        box.setText("自检%s" % ("通过" if proc.returncode == 0 else "未通过"))
+        box.setDetailedText(output.strip())
+        box.exec()
+
 
     def _on_test_connection(self):
         """D14：后台测试当前选中模型的 API 连通性，避免界面假死。"""

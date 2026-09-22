@@ -5,6 +5,9 @@ Inspired by SpatialAnalysisAgent's code review system.
 """
 
 from typing import Dict
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class CodeReviewer:
@@ -71,7 +74,7 @@ Provide your review in the following JSON format:
                 response = self.llm.invoke([HumanMessage(content=prompt)])
                 return self._parse_review_response(response.content)
             except Exception as e:
-                print(f"Code review failed: {e}")
+                logger.debug("Code review failed: %s", e, exc_info=True)
                 return self._fallback_review(code)
         else:
             return self._fallback_review(code)

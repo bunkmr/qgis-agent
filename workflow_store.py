@@ -139,8 +139,15 @@ class WorkflowStore:
             args = step.get("args", {}) or {}
             try:
                 res = tool_executor(tool_name, args)
-                results.append({"tool_name": tool_name, "args": args, "result": res, "ok": True})
-                ok_count += 1
+                # call_tool 对业务失败返回 {"error": ...} 而不抛异常
+                is_error = (
+                    isinstance(res, dict)
+                    and (res.get("error") or res.get("executed") is False)
+                )
+                ok = not is_error
+                results.append({"tool_name": tool_name, "args": args, "result": res, "ok": ok})
+                if ok:
+                    ok_count += 1
             except Exception as _e:
                 logger.debug("回放步骤失败: %s", _e, exc_info=True)
                 results.append({"tool_name": tool_name, "args": args, "result": f"(回放失败: {_e})", "ok": False})

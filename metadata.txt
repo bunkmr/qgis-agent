@@ -2,8 +2,8 @@
 name=QGIS Agent
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
-description=LLM-powered intelligent assistant for QGIS. Supports natural language to operate QGIS tools.
-version=2.3.2
+description=LLM-powered intelligent assistant for QGIS. Natural language control of QGIS tools, plus an optional local MCP server so external AI agents (Claude Desktop, Cursor, etc.) can drive QGIS.
+version=2.4.0
 author=bunkmr
 email=bunkr@qq.com
 about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It allows you to control QGIS through natural language conversations, including: viewing project info, adding/removing layers, executing Processing algorithms, running PyQGIS code, setting layer labels, rendering maps, and more.
@@ -21,11 +21,22 @@ about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It al
     - Workflow recording & replay: record a QGIS operation sequence and replay it later
     - Proactive clarification: agent asks when intent is ambiguous before acting
     - Task graph: decompose complex goals into a trackable plan
+    - Optional MCP server: expose the same tools to external AI agents over the Model Context Protocol
+
+    MCP server security model (disabled by default; you start it explicitly from the settings page):
+    - listens on 127.0.0.1 only; binding to any other address is not supported
+    - requires an access token; requests without a valid token are rejected
+    - privileged tools (execute_pyqgis, execute_processing, remove_layer, load_project,
+      save_project, run_skill) are hidden from external agents unless you enable them,
+      and each execution still requires an on-screen confirmation
+    - port and token are recorded in ~/.qgis_agent/mcp_session.json (mode 0600) so the
+      bundled stdio MCP server can discover them; the file is deleted when the service stops
 
     External dependencies (install via pip before use):
     langchain_core, langchain_openai, langchain_deepseek, httpx, psutil
-    Optional (only for the "Browser-fingerprint TLS" option in settings; not required by default):
-    curl_cffi  # 绕过 Cloudflare 等按 JA3 拦截非浏览器客户端的网关
+    Optional (only for the "browser-compatible TLS" option in settings; not required by default):
+    curl_cffi  # sends API requests with a browser TLS stack, for gateways that interrupt non-browser clients
+    The bundled MCP server (mcp_server/) requires no third-party packages.
 
 tracker=https://github.com/bunkmr/qgis-agent/issues
 repository=https://github.com/bunkmr/qgis-agent
@@ -38,9 +49,18 @@ deprecated=False
 hasProcessingProvider=no
 server=no
 changelog=
+    v2.4.0 更新内容：
+    【新增】MCP 服务出口：插件内置的 20 个工具可通过 Model Context Protocol 提供给外部 AI Agent（Claude Desktop / Cursor / Codex 等），实现"外部 Agent 驱动 QGIS"。由两部分组成——插件内的 mcp_bridge（本地 socket 服务）与随包附带的 stdio MCP Server（纯标准库实现，无需安装任何第三方包）。
+    【新增】「模型配置 → MCP 服务」设置区：启用开关、监听端口、访问令牌（可重新生成与复制）、随插件自动启动、是否放行特权工具、实时连接状态、一键复制客户端配置、连通性自检。
+    【安全】MCP 服务默认关闭且仅在 127.0.0.1 上监听，不支持绑定其它地址；强制校验访问令牌（常数时间比较），无令牌或令牌错误一律拒绝；特权工具（执行 PyQGIS 代码 / 处理算法 / 删除图层 / 打开与保存工程 / 运行技能）默认不出现在外部 Agent 的工具清单中，调用也会被拒绝，即便显式放行，每次执行仍会在 QGIS 界面上弹窗确认；端口与令牌写入 ~/.qgis_agent/mcp_session.json（权限 0600），服务停止后立即删除。
+    【修复】「浏览器兼容 TLS」开关此前只存在于一个已无调用方的对话框中，用户实际点不到，现已并入「模型配置」页，功能真正可用。
+    【修复】依赖探测不再只捕获 ImportError：依赖装了一半时抛出的常是 SystemError（如 pydantic 与 pydantic-core 版本错配）或 OSError（动态库加载失败），异常从模块顶层逃逸会导致整个插件加载失败且界面没有任何提示；现统一兜住并转为「缺少依赖」对话框。
+    【修复】修复 QGIS 尚未注册 locale 时 QSettings 返回 None 导致插件初始化直接报错的问题。
+    【改进】接口连接被网关在 TLS 握手阶段中断时，错误提示改为中性表述并给出可操作建议（更换接口，或开启浏览器兼容 TLS）。
+    【兼容】Qt5/Qt6 双兼容，最低兼容 QGIS 3.22（覆盖 QGIS 3.22~4.x）。
     v2.3.2 更新内容：
-    【新增】浏览器指纹 TLS（可选逃生舱）：当模型接口被 Cloudflare 等反爬网关在 TLS 握手阶段按客户端指纹（JA3）拦截时，可在「模型配置」中开启「浏览器指纹 TLS」选项，用 curl_cffi 伪装 Chrome 指纹绕过（实测可连通 ai.zhaosh.fun）。默认关闭，不引入额外依赖，不影响默认发布路径。
-    【改进】错误分级新增「TLS 握手被拦截」专属分类：连接失败时直接提示是网关指纹拦截，并给出「换官方接口 / 开启浏览器指纹 TLS」的可操作建议，不再只显示泛泛的"网络连接失败"。
+    【新增】浏览器兼容 TLS（可选）：部分 API 网关会依据客户端 TLS 指纹判断请求来源，非浏览器客户端可能在握手阶段被中断。开启该选项后改用 curl_cffi 的浏览器 TLS 栈，可提升这类接口的连接成功率（实测可连通 ai.zhaosh.fun）。默认关闭，不引入额外依赖，不影响默认发布路径。
+    【改进】错误分级新增「TLS 握手被网关中断」专属分类：连接失败时直接指出这一原因，并给出「更换官方接口 / 开启浏览器兼容 TLS」的可操作建议，不再只显示泛泛的"网络连接失败"。
     【兼容】Qt5/Qt6 双兼容（同 v2.3.1）。
     v2.3.1 更新内容：
     【兼容】Qt5/Qt6 双兼容修复（真机 QGIS 4.2.1 / Qt6 实例化验证通过）：
@@ -59,5 +79,5 @@ changelog=
     【修复】危险操作确认扩展到 5 类（删图层/打开工程/保存工程/覆盖渲染）；跳过确认不再永久生效（仅本次会话）；点"停止"后对话可恢复。
     【修复】SmartDebugger 自动诊断并改写重试，复杂任务成功率提升；出错改为中文分级提示，不再甩英文堆栈。
     【改进】思考过程改为累积展示、Enter 发送 / Shift+Enter 换行；属性表等不可信数据统一净化，阻断提示词注入。
-    【发布】最低兼容 QGIS 3.22；打包剔除开发记忆文件；如实标注"技能/工作流/任务图"等为规划中功能。
+    【发布】最低兼容 QGIS 3.22；打包剔除开发记忆文件。
     完整版本历史见 CHANGELOG.md。

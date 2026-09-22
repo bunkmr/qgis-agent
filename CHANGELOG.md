@@ -1,5 +1,50 @@
 # 更新日志
 
+## [2.4.0] - 2026-09-22
+
+### MCP 服务出口（新增）
+- ✨ **外部 Agent 驱动 QGIS**：内置的 20 个工具现在可通过 **Model Context Protocol** 提供给 Claude Desktop / Cursor / Codex 等外部 AI Agent。架构为插件内 `mcp_bridge.py`（本地 socket 服务）+ 随包附带的 `mcp_server/`（stdio MCP Server，纯标准库，零第三方依赖）。
+- ✨ **设置页新增「MCP 服务」区**：启用开关、监听端口、访问令牌（重新生成 / 复制）、随插件自动启动、特权工具放行、实时连接状态、一键复制客户端配置、连通性自检。
+- 🔒 **安全边界**：仅监听 `127.0.0.1`（不支持绑定其它地址）；强制令牌校验（`hmac.compare_digest` 常数时间比较），无令牌或令牌错误一律拒绝；默认不随插件启动，需用户显式开启。
+- 🔒 **特权工具默认不放行**：`execute_pyqgis` / `execute_processing` / `remove_layer` / `load_project` / `save_project` / `run_skill` 既不出现在外部 Agent 的工具清单里，直接调用也会被拒绝；即便放行，每次执行仍会走既有的三档授权弹窗。
+- 🔒 **凭据存放**：端口与令牌写入 `~/.qgis_agent/mcp_session.json`（文件 0600、目录 0700），服务停止即删除，供 MCP Server 自动发现。
+- 🛡 **协议层加固**：单行请求 4MB 上限 + 分块读取（不用 `readline`，避免对端持续发送无换行字节流撑爆内存）；连接空闲 10 分钟超时（避免空闲连接占满名额）；工作线程异常一律转结构化错误，不影响进程。
+- 🧪 新增 71 个单测（协议层 37 + MCP Server 27 + 依赖探测健壮性 7），全套 237 个单测通过；QGIS 4.2.1 真机端到端 43/43 通过（真实 socket + 真实 stdio 子进程走完整 MCP 握手）。
+
+### 修复
+- 🐛 **「浏览器兼容 TLS」开关此前点不到**：该开关只存在于 `settings_dialog.py`，而该对话框已无任何调用方（死代码）。现已并入实际可见的「模型配置」页，并删除这两个死文件。
+- 🐛 `run_skill` 会执行用户技能目录下的 Python 代码，此前经 MCP 通道可免确认调用，现纳入特权工具集合。
+- 🐛 **依赖探测不再只认 ImportError**：`_soft_import` 原来仅捕获 `ImportError`，而依赖「装了一半」时抛出的常是别的异常——例如 pydantic 与 pydantic-core 版本错配抛 `SystemError`、macOS 上框架/动态库加载失败抛 `OSError`。这类异常会从模块顶层逃逸，导致**整个插件加载失败且界面没有任何提示**。现统一兜住，转为「缺少依赖」对话框。（QGIS 3.44.14 真机实测复现）
+- 🐛 **locale 取值不再崩溃**：`QSettings().value("locale/userLocale")` 在 QGIS 尚未注册 locale 时返回 `None`，原实现直接 `[0:2]` 切片会 `TypeError` 打断 `QGISAgent.__init__`。现加默认值兜底。
+
+### 改进
+- 📝 措辞中性化：移除源码 / `metadata.txt` / `README` 中「绕过 Cloudflare / 伪装指纹 / 反爬」等表述，改为描述网关行为与兼容性处理，避免上架评审歧义。
+- 📝 `metadata.txt` 补充 MCP 能力说明与安全模型，明确可选依赖与零依赖组件。
+- 🧪 真机验收扩展：新增「安装后验收」脚本，直接针对已安装副本走 `classFactory → initGui → run` 全链路，并在 **QGIS 4.2.1 (Qt6/Py3.12) 47/47** 与 **QGIS 3.44.14 (Qt5/PyQt5/Py3.12) 46/46** 双版本全绿。
+- 🧪 新增 7 个依赖探测健壮性回归测试（含源码级约束，防止被改回窄捕获）。
+
+## [Unreleased]
+
+### 安全（P0 修复）
+- 🔒 **execute_pyqgis AST 扫描补齐**：黑名单加入 `open`/`getattr`/`setattr`/`delattr`/`globals`/`locals`/`vars`/`breakpoint` 等；字符串参数以 `__` 开头一律拒绝；语法解析失败不再放行
+- 🔒 **内建白名单**：`__builtins__` 由黑名单改为白名单，排除文件读写与动态属性入口
+- 🔒 **stdout/stderr 恢复**：`execute_pyqgis` 使用 `try/finally` 保证恢复，避免吞掉其他插件输出
+
+### 正确性
+- 🐛 **桥接信号幂等**：`_init_main_thread_bridge` 仅连接一次，关闭再开 Dock 不再导致工具执行两遍
+- 🐛 **processor logger 顺序**：SmartDebugger 导入失败时不再因 NameError 整模块挂掉
+- 🐛 **Cookbook 归档**：按工作流 steps 实际状态计算 success，失败案例不再污染案例库
+- 🐛 **工作流回放**：识别 `{"error": ...}` 业务失败，不再计为成功
+- 🐛 **工具超时**：30s → 180s；超时提示「主线程可能仍在执行」
+- 🐛 **确认超时**：60s → 300s，适应长代码审查
+- 🐛 **select_latest_interaction**：无历史时返回 None，避免 IndexError
+- 🐛 **utils.markdown→HTML**：修复 Python 3.9 下 f-string 含反斜杠的 SyntaxError（QGIS 3.22 常见环境）
+- 🧹 **print → logger**：code_reviewer / 工具栏定位警告改用 logging
+
+### 文档
+- 📚 README / CLAUDE.md / metadata 对齐代码：20 个工具、信号/槽调度、Skills/Workflow/Clarification/Code Review 已接线
+- 📚 requirements 补充 `tomli; python_version < "3.11"` 与可选依赖说明
+
 ## [2.3.2] - 2026-09-10
 
 ### 新增（可选逃生舱：浏览器指纹 TLS）

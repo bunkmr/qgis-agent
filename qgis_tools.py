@@ -11,6 +11,7 @@ import sys
 import ast
 import re
 import json
+import logging
 import difflib
 import builtins
 import tempfile
@@ -28,6 +29,8 @@ from qgis.utils import iface
 
 # Import SmartDebugger
 from .smart_debugger import SmartDebugger
+
+logger = logging.getLogger(__name__)
 
 
 def _get_layer_type(layer):
@@ -356,20 +359,64 @@ def execute_processing(algorithm: str, parameters: dict):
 # ──────────────────────────────────────────────
 
 # 可直接触达文件系统/进程/网络的模块
-_UNSAFE_MODULES = {"os", "subprocess", "shutil", "socket", "ctypes", "importlib", "pty", "commands", "urllib"}
+_UNSAFE_MODULES = {
+    "os", "subprocess", "shutil", "socket", "ctypes", "importlib", "pty",
+    "commands", "urllib", "pathlib", "io", "tempfile", "glob", "fnmatch",
+    "webbrowser", "http", "ftplib", "smtplib", "telnetlib", "xmlrpc",
+    "pickle", "shelve", "marshal", "code", "codeop", "pty", "resource",
+    "signal", "multiprocessing", "threading", "concurrent", "asyncio",
+    "ctypes", "gc", "inspect", "types", "typing_extensions",
+}
 # 允许导入的常用安全模块
 _SAFE_MODULES = {
     "math", "json", "datetime", "re", "collections", "itertools", "functools",
     "operator", "statistics", "string", "time", "random", "copy", "decimal",
+    "typing", "dataclasses", "enum", "abc", "numbers", "cmath", "array",
+    "bisect", "heapq", "weakref", "pprint", "textwrap", "unicodedata",
 }
 # 允许导入的模块前缀（QGIS 生态）
 _SAFE_MODULE_PREFIXES = ("qgis", "osgeo", "processing", "PyQt5", "PyQt6", "sip")
 # 危险调用：属性形式（如 os.system / shutil.rmtree / os.remove）
-_UNSAFE_ATTR_CALLS = {"eval", "exec", "compile", "__import__", "input", "system", "popen", "rmtree", "remove"}
+_UNSAFE_ATTR_CALLS = {
+    "eval", "exec", "compile", "__import__", "input", "system", "popen",
+    "rmtree", "remove", "unlink", "rmdir", "removedirs", "chmod", "chown",
+    "chroot", "fork", "forkpty", "execv", "execve", "execl", "execle",
+    "execlp", "execlpe", "spawn", "spawnl", "spawnle", "spawnlp",
+    "spawnlpe", "spawnv", "spawnve", "spawnvp", "spawnvpe", "startfile",
+    "kill", "killpg", "abort",
+}
 # 危险调用：裸名形式（如 eval(...) / exec(...)）
-_UNSAFE_NAME_CALLS = {"eval", "exec", "compile", "__import__", "input", "system", "popen", "rmtree"}
-# 从 exec namespace 中移除的内建能力
-_REMOVED_BUILTINS = ("eval", "exec", "compile", "__import__")
+_UNSAFE_NAME_CALLS = {
+    "eval", "exec", "compile", "__import__", "input", "system", "popen",
+    "rmtree", "open", "getattr", "setattr", "delattr", "globals", "locals",
+    "vars", "breakpoint", "memoryview", "file", "reload",
+}
+# 允许出现在字符串参数中的属性名前缀（getattr/setattr 等的第二参）
+# 双下划线属性一律拒绝，防沙箱逃逸
+_FORBIDDEN_STRING_ATTR_PREFIX = "__"
+# 从 exec namespace 中移除的内建能力（黑名单）
+_REMOVED_BUILTINS = (
+    "eval", "exec", "compile", "__import__", "open", "getattr", "setattr",
+    "delattr", "globals", "locals", "vars", "breakpoint", "input",
+    "memoryview", "type", "classmethod", "staticmethod", "property",
+    "object", "super", "__build_class__", "help", "license", "copyright",
+    "credits", "exit", "quit",
+)
+# 保留在受限命名空间中的安全内建（白名单优先）
+_SAFE_BUILTINS = (
+    "abs", "all", "any", "ascii", "bin", "bool", "bytearray", "bytes",
+    "callable", "chr", "dict", "dir", "divmod", "enumerate", "filter",
+    "float", "format", "frozenset", "hash", "hex", "id", "int", "isinstance",
+    "issubclass", "iter", "len", "list", "map", "max", "min", "next",
+    "oct", "ord", "pow", "print", "range", "repr", "reversed", "round",
+    "set", "slice", "sorted", "str", "sum", "tuple", "zip", "Exception",
+    "ValueError", "TypeError", "KeyError", "IndexError", "RuntimeError",
+    "StopIteration", "True", "False", "None", "NotImplemented", "Ellipsis",
+    "BaseException", "ArithmeticError", "AssertionError", "AttributeError",
+    "IOError", "ImportError", "LookupError", "NameError", "OSError",
+    "OverflowError", "ReferenceError", "RuntimeWarning", "Warning",
+    "ZeroDivisionError", "UnicodeError", "UnicodeDecodeError",
+)
 
 
 def _is_module_allowed(root: str) -> bool:
@@ -392,20 +439,28 @@ def _called_name(node) -> str:
     return ""
 
 
+def _string_arg_starts_with_dunder(node) -> bool:
+    """检查 Call 的任意字符串字面量参数是否以 __ 开头（getattr 等逃逸路径）"""
+    for arg in list(node.args) + [kw.value for kw in node.keywords]:
+        if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+            if arg.value.startswith(_FORBIDDEN_STRING_ATTR_PREFIX):
+                return True
+    return False
+
+
 def _scan_code_safety(code: str):
     """对即将执行的代码做 AST 静态扫描。
 
     返回 None 表示未发现风险（放行）；返回字符串表示中文拒绝理由。
-    解析失败时同样返回 None（交由 exec 阶段报错），不在此处抛异常。
+    语法解析失败时返回拒绝理由（不放行），避免绕过扫描。
     """
     try:
         tree = ast.parse(code)
     except SyntaxError as e:
-        logger.debug("代码语法解析失败，跳过安全扫描: %s", e, exc_info=True)
-        return None
+        return f"代码语法错误，无法完成安全检查: {e.msg}"
     except Exception as e:
-        logger.debug("代码安全扫描异常，放行交由 exec 处理: %s", e, exc_info=True)
-        return None
+        logger.debug("代码安全扫描异常: %s", e, exc_info=True)
+        return "代码安全检查失败，已拒绝执行"
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -423,6 +478,9 @@ def _scan_code_safety(code: str):
                 return f"禁止调用 '{name}'，该调用可执行任意代码或破坏文件系统"
             if isinstance(node.func, ast.Name) and name in _UNSAFE_NAME_CALLS:
                 return f"禁止调用 '{name}'，该调用可执行任意代码或破坏文件系统"
+            # getattr/setattr/delattr 的字符串参数若以 __ 开头，等价于访问双下划线属性
+            if _string_arg_starts_with_dunder(node):
+                return "禁止通过字符串参数访问双下划线属性，该用法可绕过运行限制"
         elif isinstance(node, ast.Attribute):
             # __class__ / __globals__ / __subclasses__ 等可绕过运行限制
             if node.attr.startswith("__"):
@@ -438,7 +496,7 @@ def execute_pyqgis(code: str):
         return {
             "error": f"代码安全检查未通过：{reject_reason}",
             "executed": False,
-            "hint": "受限运行环境已移除 eval/exec/compile/__import__ 等内建，文件读写能力同样受限，请改用 QGIS API 完成该操作。",
+            "hint": "受限运行环境已移除 eval/exec/open/getattr 等内建，文件读写与系统调用受限，请改用 QGIS API 完成该操作。",
         }
 
     stdout_capture = io.StringIO()
@@ -462,6 +520,15 @@ def execute_pyqgis(code: str):
             QgsRendererRange
         )
         from qgis.PyQt.QtGui import QColor
+        safe_builtins = {
+            name: getattr(builtins, name)
+            for name in _SAFE_BUILTINS
+            if hasattr(builtins, name)
+        }
+        # 显式保留常用字面量/异常，避免白名单遗漏导致的 NameError
+        safe_builtins.setdefault("True", True)
+        safe_builtins.setdefault("False", False)
+        safe_builtins.setdefault("None", None)
         namespace = {
             "iface": iface,
             "QgsProject": QgsProject,
@@ -496,17 +563,11 @@ def execute_pyqgis(code: str):
             "QgsPalLayerSettings": QgsPalLayerSettings,
             "QgsVectorLayerSimpleLabeling": QgsVectorLayerSimpleLabeling,
             "QgsTextFormat": QgsTextFormat,
-            # 受限内建：移除可执行任意代码/动态导入的入口
-            "__builtins__": {
-                k: v for k, v in builtins.__dict__.items()
-                if k not in _REMOVED_BUILTINS
-            },
+            # 受限内建：白名单，排除 open/getattr/eval/exec 等危险入口
+            "__builtins__": safe_builtins,
         }
-        # nosec B102 - 非沙箱：代码在用户逐次确认后以 QGIS 进程权限运行，已做 AST 危险调用扫描
+        # nosec B102 - 非沙箱：代码在用户逐次确认后以 QGIS 进程权限运行，已做 AST 危险调用扫描 + 内建白名单
         exec(code, namespace)
-
-        sys.stdout = original_stdout
-        sys.stderr = original_stderr
 
         return {
             "executed": True,
@@ -514,9 +575,6 @@ def execute_pyqgis(code: str):
             "stderr": stderr_capture.getvalue(),
         }
     except Exception as e:
-        sys.stdout = original_stdout
-        sys.stderr = original_stderr
-
         # Use SmartDebugger for intelligent error analysis
         debugger = SmartDebugger()
         error_analysis = debugger.analyze_error(str(e), code, "pyqgis")
@@ -538,6 +596,9 @@ def execute_pyqgis(code: str):
                 "fallback_strategies": [s["description"] for s in error_analysis.get("fallback_strategies", [])]
             }
         }
+    finally:
+        sys.stdout = original_stdout
+        sys.stderr = original_stderr
 
 
 def save_project(path: str = None):
@@ -758,8 +819,6 @@ def render_map(output_path: str, width: int = 800, height: int = 600):
 # ──────────────────────────────────────────────
 
 from qgis.PyQt.QtCore import pyqtSignal, pyqtSlot, QMutex, QWaitCondition, QThread  # noqa: E402
-import logging
-logger = logging.getLogger(__name__)
 
 # 全局代码确认回调（由 qgis_agent.py 设置）
 _code_confirm_callback = None
@@ -859,11 +918,15 @@ class _MainThreadBridge(QObject):
 
 
 def _init_main_thread_bridge():
-    """在主线程中初始化桥接器。由插件入口 qgis_agent.py 调用。"""
+    """在主线程中初始化桥接器。由插件入口 qgis_agent.py 调用。
+
+    幂等：关闭再打开 Dock 时不会重复 connect，避免同一工具被执行多次。
+    """
     bridge = _MainThreadBridge.get()
-    # 连接信号到槽（自动跨线程安全）
-    bridge.execute_request.connect(bridge._on_execute)
-    bridge.confirm_request.connect(bridge._on_confirm)
+    if not getattr(bridge, "_wired", False):
+        bridge.execute_request.connect(bridge._on_execute)
+        bridge.confirm_request.connect(bridge._on_confirm)
+        bridge._wired = True
     return bridge
 
 
@@ -2380,7 +2443,8 @@ def _request_confirmation(tool_name: str, code_preview: str) -> bool:
         bridge.confirm_request.emit(tool_name, code_preview, confirm_holder)
 
         mutex.lock()
-        timeout_sec = 60
+        # 用户需阅读长代码 + 可能的 LLM 审查，默认等待 5 分钟
+        timeout_sec = 300
         if not confirm_holder["done"]:
             wait_cond.wait(mutex, timeout_sec * 1000)
         mutex.unlock()
@@ -2444,14 +2508,19 @@ def call_tool(tool_name: str, arguments: dict) -> dict:
     bridge.execute_request.emit(func, tool_name, arguments, result_holder)
 
     # 使用 QWaitCondition 等待主线程完成（阻塞工作线程，不阻塞主线程事件循环）
+    # 长耗时算法（大栅格/渲染/加载大工程）可能超过 30s，默认放宽到 180s
     mutex.lock()
-    timeout_sec = 30
+    timeout_sec = 180
     if not result_holder["done"]:
         wait_cond.wait(mutex, timeout_sec * 1000)
     mutex.unlock()
 
     if not result_holder["done"]:
-        return {"error": f"工具 {tool_name} 执行超时（30秒）"}
+        return {
+            "error": f"工具 {tool_name} 执行超过 {timeout_sec} 秒仍未返回。",
+            "hint": "主线程可能仍在继续执行该操作。请稍后查看图层/日志确认结果，不要立即重复调用。",
+            "still_running": True,
+        }
 
     if result_holder["error"]:
         return result_holder["error"]

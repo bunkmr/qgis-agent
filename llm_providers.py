@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class _CurlTransport(httpx.HTTPTransport):
-    """httpx 兼容 Transport：把真实请求转交给 curl_cffi，从而伪装 Chrome 的 JA3 指纹。
+    """httpx 兼容 Transport：把请求转交给 curl_cffi，改用其自带的浏览器 TLS 栈。
 
     为什么不直接把 curl_cffi.Session 当 http_client 传给 openai/langchain：
     新版 openai SDK 对 http_client 做 isinstance(httpx.Client) 严格类型检查，
@@ -68,21 +68,22 @@ class _AsyncCurlTransport(httpx.AsyncHTTPTransport):
 
 
 def get_llm_instance(provider, model, api_key, endpoint, temperature=0, timeout=180, browser_tls=False):
-    # 浏览器指纹 TLS：用 curl_cffi 伪装 Chrome 的 JA3 指纹，绕过 Cloudflare 等
-    # 按客户端指纹拦截非浏览器请求的反爬网关（普通 httpx/curl 会在 TLS 握手阶段被 RST）。
-    # 默认关闭：curl_cffi 是带原生扩展的可选依赖，且会被 plugins.qgis.org 安全评审关注，
-    # 因此只作为「设置里显式开启」的逃生舱，不进默认发布路径。
+    # 浏览器兼容 TLS（可选）：部分网关会依据客户端 TLS 指纹判断请求来源，
+    # 非浏览器客户端可能在握手阶段被中断（httpcore 报 Connection reset by peer）。
+    # 开启后改用 curl_cffi 的浏览器 TLS 栈以提高这类接口的连接成功率。
+    # 默认关闭：curl_cffi 是带原生扩展的可选依赖，因此只作为「设置里显式开启」的选项，
+    # 不进默认发布路径。
     if browser_tls:
         try:
             import curl_cffi  # noqa: F401  仅做可用性检查，真正客户端在 Transport 内 lazy 使用
         except ImportError as _imp_err:
             raise RuntimeError(
-                "启用「浏览器指纹 TLS」需要安装 curl_cffi：\n"
+                "启用「浏览器兼容 TLS」需要安装 curl_cffi：\n"
                 "pip install curl_cffi\n"
                 "（请安装在 QGIS 自带的 Python 中，而不是系统 Python）"
             ) from _imp_err
-        # 用 httpx 兼容的 Transport 把真实请求转交给 curl_cffi：
-        # 既保留 Chrome 的 JA3 指纹（绕过网关），又能过 openai/langchain 的 isinstance(httpx.Client) 检查。
+        # 用 httpx 兼容的 Transport 把请求转交给 curl_cffi：
+        # 既走浏览器 TLS 栈，又能过 openai/langchain 的 isinstance(httpx.Client) 检查。
         http_client = httpx.Client(transport=_CurlTransport(impersonate="chrome"), timeout=timeout)
         http_async_client = httpx.AsyncClient(transport=_AsyncCurlTransport(impersonate="chrome"), timeout=timeout)
         browser_headers = {}
@@ -95,9 +96,9 @@ def get_llm_instance(provider, model, api_key, endpoint, temperature=0, timeout=
             # httpx 新版本使用 proxies 参数
             http_client = httpx.Client(proxies={})
         http_async_client = None
-        # 部分网关（如 Cloudflare 代理的本地模型）会按 User-Agent 做 Bot 防护，
-        # 给 Python SDK 的请求返回 403 "Your request was blocked"。
-        # openai SDK 的 default_headers 属性中 **_custom_headers 会覆盖自带 UA，因此这里能生效。
+        # 兼容性请求头：部分自托管 / 网关后的 OpenAI 兼容端点会按 User-Agent 拒绝
+        # 非浏览器客户端（返回 403 "Your request was blocked"），因此发送一个常规浏览器 UA。
+        # openai SDK 的 default_headers 中 **_custom_headers 会覆盖自带 UA，因此这里能生效。
         browser_headers = {
             "User-Agent": (
                 "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "

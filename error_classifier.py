@@ -116,17 +116,17 @@ _RULES = [
     (
         CATEGORY_TLS,
         [
-            # TLS 握手阶段被网关重置 / 拦截：Cloudflare 等反爬网关按客户端指纹（JA3）
-            # 直接 RST 非浏览器的 TLS 栈（httpx / curl 都在握手阶段失败），UA 伪装无效。
+            # TLS 握手阶段被网关重置：部分 API 网关会依据客户端 TLS 指纹判断请求来源，
+            # 非浏览器的 TLS 栈（httpx / curl）可能在握手阶段就被中断。
             r"start_tls",
             r"SSL_ERROR_SYSCALL",
             r"TLS\s+handshake",
             r"handshake\s+(error|failed|reset)",
             r"ssl[\s_-]*reset",
         ],
-        "接口在 TLS 握手阶段被拦截",
-        "模型接口在 TLS 握手阶段被对端重置了连接。这通常不是网络断开，而是 Cloudflare 等反爬网关按客户端指纹（JA3）拦掉了非浏览器请求——普通 httpx / curl 的 TLS 栈会在握手时被直接 RST。",
-        "建议：① 优先换成官方接口（如 https://api.deepseek.com/v1），最稳妥；② 若必须使用当前网关，可在「模型配置」设置页开启「浏览器指纹 TLS」选项（需额外 pip install curl_cffi）绕过该拦截。",
+        "接口在 TLS 握手阶段被中断",
+        "模型接口在 TLS 握手阶段被对端重置了连接。这通常不是网络断开，而是网关依据客户端 TLS 指纹判断请求来源，中断了非浏览器客户端——普通 httpx / curl 会在握手阶段就失败。",
+        "建议：① 优先换成官方接口（如 https://api.deepseek.com/v1），最稳妥；② 若必须使用当前网关，可在「模型配置」设置页开启「浏览器兼容 TLS」选项（需额外 pip install curl_cffi），改用浏览器 TLS 栈重试。",
         ACTION_OPEN_SETTINGS,
         False,
     ),

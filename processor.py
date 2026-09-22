@@ -1,6 +1,8 @@
 import os
 import re
+import logging
 import traceback as tb
+import weakref
 
 from qgis.PyQt.QtCore import QThreadPool, pyqtSignal, QObject, QSettings
 
@@ -18,16 +20,14 @@ from .rag import DocStore, APIDocRetriever, Cookbook
 # ── Query Tuning 模块 ──
 from .query_tuning import QueryTuner, DataOverview
 
+logger = logging.getLogger(__name__)
+
 # ── Smart Debugger 模块（导入失败降级为 None，主循环据此判断可用性）──
 try:
     from .smart_debugger import SmartDebugger
 except Exception as _e:
     SmartDebugger = None
     logger.debug("SmartDebugger 导入失败，自动诊断功能不可用: %s", _e, exc_info=True)
-
-import weakref
-import logging
-logger = logging.getLogger(__name__)
 
 # 进程级注册表：跟踪所有活着的 Processor 实例，便于插件卸载 / QGIS 关闭时统一中断后台线程。
 _ALL_PROCESSORS = weakref.WeakSet()
@@ -854,11 +854,15 @@ class Processor(QObject):
 
         # ── Cookbook 自动归档 ──
         try:
+            steps = workflow_data.get("steps") or []
+            steps_ok = bool(steps) and all(s.get("status") == "completed" for s in steps)
+            # 无工具调用的纯对话不归档；有失败步骤或中止则记为失败案例
+            archive_success = (not aborted) and steps_ok and bool(all_tool_calls_log)
             self.cookbook.archive_from_agent_result(
                 user_input=user_input,
                 tool_calls_log=all_tool_calls_log,
                 final_response=final_response,
-                success=True,
+                success=archive_success,
             )
         except Exception as _e:
             logger.debug("ignored exception", exc_info=True)
