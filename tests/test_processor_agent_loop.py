@@ -76,7 +76,10 @@ class ProcessorHarness:
                    ReflectStreamWorker=object,
                    ToolAgentWorker=object)
         self._stub("qgis_agent.llm_providers",
-                   get_llm_instance=lambda *args, **kwargs: self.llm)
+                   get_llm_instance=lambda *args, **kwargs: self.llm,
+                   # processor 用 (effective, reason) 解包：替身必须同签名，
+                   # 否则 `from .llm_providers import ...` 会直接 ImportError。
+                   resolve_browser_tls=lambda requested=False: (bool(requested), ""))
 
         sys.modules.pop(PROCESSOR_MODULE, None)
         return importlib.import_module(PROCESSOR_MODULE)

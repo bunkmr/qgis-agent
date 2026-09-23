@@ -67,21 +67,51 @@ class _AsyncCurlTransport(httpx.AsyncHTTPTransport):
         )
 
 
+def browser_tls_available():
+    """「浏览器兼容 TLS」的可选依赖 curl_cffi 是否真的可用。
+
+    只捕 ImportError 是不够的：包装了一半（原生扩展 ABI 不匹配、动态库缺失、
+    被安全策略拒绝加载）时 import 抛的是 OSError/SystemError 等别的异常。
+    这里一律视为「不可用」，避免异常从调用链里逃逸。
+    """
+    try:
+        import curl_cffi  # noqa: F401  仅做可用性检查，真正客户端在 Transport 内 lazy 使用
+    except Exception:  # noqa: BLE001 - 任何导入期异常都归为「不可用」
+        return False
+    return True
+
+
+def resolve_browser_tls(requested):
+    """把「设置里是否勾选浏览器兼容 TLS」解析成「本次实际能否启用」。
+
+    返回 (effective, unavailable_reason)：
+      - 未勾选          → (False, "")
+      - 勾选且依赖可用  → (True, "")
+      - 勾选但依赖不可用 → (False, "未安装 curl_cffi")
+
+    注意最后一种：**降级，不报错**。curl_cffi 只是可选加速项，缺了它不应该
+    让整个插件不可用（历史 bug：勾选后每次调用都抛 RuntimeError，
+    表现就是「测试连接失败」并且对话完全不能用）。
+    """
+    if not requested:
+        return False, ""
+    if browser_tls_available():
+        return True, ""
+    logger.warning(
+        "已请求「浏览器兼容 TLS」，但 curl_cffi 不可用，本次改用标准 TLS 栈。"
+        "如需启用，请在 QGIS 自带的 Python 中执行：pip install curl_cffi"
+    )
+    return False, "未安装 curl_cffi"
+
+
 def get_llm_instance(provider, model, api_key, endpoint, temperature=0, timeout=180, browser_tls=False):
     # 浏览器兼容 TLS（可选）：部分网关会依据客户端 TLS 指纹判断请求来源，
     # 非浏览器客户端可能在握手阶段被中断（httpcore 报 Connection reset by peer）。
     # 开启后改用 curl_cffi 的浏览器 TLS 栈以提高这类接口的连接成功率。
     # 默认关闭：curl_cffi 是带原生扩展的可选依赖，因此只作为「设置里显式开启」的选项，
-    # 不进默认发布路径。
+    # 不进默认发布路径。依赖缺失时**降级为标准 TLS 栈**，绝不因此让调用失败。
+    browser_tls = resolve_browser_tls(browser_tls)[0]
     if browser_tls:
-        try:
-            import curl_cffi  # noqa: F401  仅做可用性检查，真正客户端在 Transport 内 lazy 使用
-        except ImportError as _imp_err:
-            raise RuntimeError(
-                "启用「浏览器兼容 TLS」需要安装 curl_cffi：\n"
-                "pip install curl_cffi\n"
-                "（请安装在 QGIS 自带的 Python 中，而不是系统 Python）"
-            ) from _imp_err
         # 用 httpx 兼容的 Transport 把请求转交给 curl_cffi：
         # 既走浏览器 TLS 栈，又能过 openai/langchain 的 isinstance(httpx.Client) 检查。
         http_client = httpx.Client(transport=_CurlTransport(impersonate="chrome"), timeout=timeout)

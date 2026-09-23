@@ -201,18 +201,26 @@ class _TestConnectionWorker(QThread):
 
     def run(self):
         try:
-            from .llm_providers import get_llm_instance
+            from .llm_providers import get_llm_instance, resolve_browser_tls
             from langchain_core.messages import HumanMessage
-            browser_tls = bool(QSettings("QGIS", "QGISAgent").value("use_browser_tls", False))
+            requested = bool(QSettings("QGIS", "QGISAgent").value("use_browser_tls", False))
+            # 依赖缺失时降级为标准 TLS 栈：连接测试要给出「能不能用」的结论，
+            # 而不是被一个可选依赖卡死在弹窗上。
+            effective, tls_reason = resolve_browser_tls(requested)
             llm = get_llm_instance(
                 self.provider, self.model, self.api_key, self.endpoint,
-                temperature=0, timeout=self.timeout, browser_tls=browser_tls,
+                temperature=0, timeout=self.timeout, browser_tls=effective,
             )
             resp = llm.invoke([HumanMessage(content="请只回复字符 OK")])
             text = getattr(resp, "content", str(resp))
             if isinstance(text, list):
                 text = " ".join(str(p.get("text", p)) for p in text)
-            self.finished.emit(True, f"连接成功：{str(text)[:80]}")
+            note = ""
+            if tls_reason:
+                note = ("\n\n注：「浏览器兼容 TLS」已勾选但未生效（%s），本次使用标准 TLS 栈。"
+                        "仅当接口连接被网关重置时才需要它，可在 QGIS 自带 Python 中执行 "
+                        "pip install curl_cffi 后重开本页。" % tls_reason)
+            self.finished.emit(True, f"连接成功：{str(text)[:80]}{note}")
         except Exception as _e:
             self.finished.emit(False, str(_e)[:300])
 
@@ -1436,31 +1444,81 @@ class QGISAgent:
     # 浏览器指纹 TLS 开关（v2.3.2 引入，此前只在无人调用的 SettingsDialog 里）
     # ──────────────────────────────────────────────
     def _build_browser_tls_ui(self):
-        """把「浏览器指纹 TLS」开关放进真正可见的模型配置页。
+        """把「浏览器兼容 TLS」开关放进真正可见的模型配置页。
 
         历史坑：该开关原本只存在于 settings_dialog.py，而那个对话框已无任何调用方，
         用户根本点不到 —— 等于功能没上线。
         """
+        try:
+            from .llm_providers import browser_tls_available
+            self._browser_tls_ready = bool(browser_tls_available())
+        except Exception:  # noqa: BLE001
+            self._browser_tls_ready = False
+
         self.cbBrowserTls = QCheckBox(
-            "使用浏览器兼容 TLS（接口连接被网关重置时启用，需 pip install curl_cffi）"
+            "使用浏览器兼容 TLS（仅当接口连接被网关重置时需要，需 pip install curl_cffi）"
         )
         self.cbBrowserTls.setToolTip(
             "部分 API 网关会依据客户端 TLS 指纹判断请求来源，非浏览器客户端可能在握手阶段被中断"
             "（典型表现：Connection reset by peer）。开启后改用 curl_cffi 的浏览器 TLS 栈，"
-            "以提升这类接口的连接成功率。仅在确认接口本身可达、而连接被中断时才需要，"
-            "并需在 QGIS 自带 Python 环境中 pip install curl_cffi。"
+            "以提升这类接口的连接成功率。\n"
+            "curl_cffi 是可选依赖：未安装时本选项会自动关闭，插件改用标准 TLS 栈，其它功能不受影响。"
         )
-        self.cbBrowserTls.setChecked(
-            bool(QSettings("QGIS", "QGISAgent").value("use_browser_tls", False))
-        )
+        requested = bool(QSettings("QGIS", "QGISAgent").value("use_browser_tls", False))
+        # 依赖不在位时，把陈旧的「已勾选」纠正掉：设置里写着开、实际永远生效不了，
+        # 比直接关掉更容易误导（旧版还会因此让每次 LLM 调用都抛异常）。
+        if requested and not self._browser_tls_ready:
+            requested = False
+            QSettings("QGIS", "QGISAgent").setValue("use_browser_tls", False)
+        self.cbBrowserTls.setChecked(requested)
         self.cbBrowserTls.stateChanged.connect(self._on_browser_tls_changed)
+
         layout = self.dockwidget.settingsLayout
-        layout.insertWidget(layout.count() - 1, self.cbBrowserTls)
+        idx = layout.count() - 1
+        layout.insertWidget(idx, self.cbBrowserTls)
+        self.lblBrowserTls = QLabel()
+        self.lblBrowserTls.setWordWrap(True)
+        self.lblBrowserTls.setStyleSheet("color: #666; font-size: 11px;")
+        layout.insertWidget(idx + 1, self.lblBrowserTls)
+        self._refresh_browser_tls_hint()
+
+    def _refresh_browser_tls_hint(self):
+        """就地把 curl_cffi 的可用状态说清楚，避免用户以为勾了就已生效。"""
+        label = getattr(self, "lblBrowserTls", None)
+        if label is None:
+            return
+        if not getattr(self, "_browser_tls_ready", False):
+            label.setText(
+                "⚠ 未安装 curl_cffi（可选依赖），此选项暂不可用。"
+                "只要接口没有出现「连接被重置」，就无需安装，不影响其它功能。"
+            )
+        elif self.cbBrowserTls.isChecked():
+            label.setText("✔ 已启用：请求将走 curl_cffi 的浏览器 TLS 栈。")
+        else:
+            label.setText("curl_cffi 已就绪，需要时可开启。")
 
     def _on_browser_tls_changed(self, _state=None):
-        QSettings("QGIS", "QGISAgent").setValue(
-            "use_browser_tls", self.cbBrowserTls.isChecked()
-        )
+        checked = self.cbBrowserTls.isChecked()
+        if checked and not getattr(self, "_browser_tls_ready", False):
+            # 勾了却不生效比直接关掉更容易误导；旧实现还会让每次 LLM 调用都抛异常，
+            # 表现是「测试连接失败」+ 对话完全不能用。
+            self.cbBrowserTls.blockSignals(True)
+            self.cbBrowserTls.setChecked(False)
+            self.cbBrowserTls.blockSignals(False)
+            QSettings("QGIS", "QGISAgent").setValue("use_browser_tls", False)
+            self._refresh_browser_tls_hint()
+            QMessageBox.information(
+                self.dockwidget,
+                "「浏览器兼容 TLS」暂不可用",
+                "未检测到 curl_cffi，该选项已自动关闭。\n\n"
+                "它是可选依赖，只在接口连接被网关重置（Connection reset by peer）时才需要。"
+                "如需启用，请在 QGIS 自带的 Python 中执行：\n\n"
+                "    pip install curl_cffi\n\n"
+                "不安装不影响插件的其它功能 —— 插件会自动使用标准 TLS 栈。",
+            )
+            return
+        QSettings("QGIS", "QGISAgent").setValue("use_browser_tls", checked)
+        self._refresh_browser_tls_hint()
 
     # ──────────────────────────────────────────────
     # MCP 服务设置（外部 Agent 通过 MCP 驱动 QGIS）
@@ -1516,13 +1574,17 @@ class QGISAgent:
         row_token.addWidget(QLabel("访问令牌"))
         self.leMcpToken = QLineEdit()
         self.leMcpToken.setToolTip(
-            "外部客户端必须携带该令牌才能调用工具。修改后需重新启动服务。"
+            "外部客户端必须携带该令牌才能调用工具。修改后需重新启动服务。\n"
+            "令牌较长，输入框内显示不全（会滚动）：请用「复制令牌」按钮取值，不要手抄屏幕上的片段。"
         )
         token = str(settings.value("mcp/token", "") or "")
         if not token:
             token = self._new_mcp_token()
             settings.setValue("mcp/token", token)
         self.leMcpToken.setText(token)
+        # setText 会把光标放到末尾，QLineEdit 随之滚动到尾部 —— 屏幕上只剩后半截令牌，
+        # 用户手抄极易抄错（实测踩过：显示的是 64 位令牌的最后 34 位）。这里回到头部。
+        self.leMcpToken.setCursorPosition(0)
         row_token.addWidget(self.leMcpToken)
         btn_regen = QPushButton("重新生成")
         btn_regen.setToolTip("生成一份新的 32 字节随机令牌（旧令牌立即失效）")

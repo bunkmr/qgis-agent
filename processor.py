@@ -8,7 +8,7 @@ from qgis.PyQt.QtCore import QThreadPool, pyqtSignal, QObject, QSettings
 
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
-from .llm_providers import get_llm_instance
+from .llm_providers import get_llm_instance, resolve_browser_tls
 from .utils import get_current_timestamp, pack
 from .response_worker import ReflectStreamWorker, ToolAgentWorker
 from .qgis_tools import TOOL_DEFINITIONS, call_tool
@@ -159,7 +159,10 @@ class Processor(QObject):
         model_name, endpoint, api_key = dataloader.fetch_llm_info(llm_id)
         self.model_name = model_name
         self.provider = llm_id.split("::", 1)[0]
-        browser_tls = bool(QSettings("QGIS", "QGISAgent").value("use_browser_tls", False))
+        requested_tls = bool(QSettings("QGIS", "QGISAgent").value("use_browser_tls", False))
+        # 依赖缺失时降级（get_llm_instance 内部也会再兜一层）：设置可能来自旧版本或手工改写，
+        # 一个可选依赖不该让对话入口直接抛异常。
+        browser_tls = resolve_browser_tls(requested_tls)[0]
         self.llm = get_llm_instance(
             self.provider, model_name, api_key, endpoint,
             temperature=temperature, browser_tls=browser_tls,
