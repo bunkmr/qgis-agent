@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """utils.py 纯函数测试（从原 tests/__init__.py 拆出并补全）"""
 
+import os
 import unittest
 
 try:  # 既支持以包方式导入（qgis_agent.tests.test_x）
@@ -209,13 +210,22 @@ class TestMisc(unittest.TestCase):
         self.assertIsNone(obj.run(None, 1))
         self.assertEqual(obj.run({"ID": "c1"}, 5), "called:5")
 
-    def test_get_system_info_shape(self):
-        """psutil 缺失时跳过；存在时只校验字段齐全，不校验具体 MAC"""
+    def test_psutil_is_not_a_dependency(self):
+        """回归守卫：psutil 已彻底移除（macOS QGIS 上加不载，且 get_system_info 从未被调用）
+
+        该函数自 Initial commit 起全历史零调用，却把 psutil 拖进了运行依赖，
+        在 macOS 的 QGIS 上 import 会因 hardened runtime 直接失败。若日后有人
+        重新引入，本用例会立刻失败，避免同一条死依赖复活。
+        """
         utils = support.import_mod("utils")
-        if not support.has_module("psutil"):
-            self.skipTest("未安装 psutil，跳过 get_system_info")
-        info = utils.get_system_info()
-        self.assertEqual(set(info), {"macID", "ethInterfaces", "qgisVersion"})
+        self.assertFalse(
+            hasattr(utils, "get_system_info"),
+            "get_system_info 应已删除（它是 psutil 唯一的用武之地，但从未被调用）",
+        )
+        for rel in ("utils.py", "requirements.txt", "metadata.txt"):
+            path = os.path.join(support.PROJECT_ROOT, rel)
+            with open(path, encoding="utf-8") as fh:
+                self.assertNotIn("psutil", fh.read(), f"{rel} 不应再出现 psutil")
 
 
 if __name__ == "__main__":

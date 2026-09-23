@@ -83,25 +83,6 @@ def extract_code(response: str) -> str:
     return ""
 
 
-def get_system_info():
-    import psutil
-    mac_addresses = []
-    for interface, addrs in psutil.net_if_addrs().items():
-        for addr in addrs:
-            if addr.family == psutil.AF_LINK:
-                mac_addresses.append(addr.address)
-    eth_interfaces = [
-        iface
-        for iface, addrs in psutil.net_if_addrs().items()
-        if any(addr.family == psutil.AF_LINK for addr in addrs)
-    ]
-    return {
-        "macID": mac_addresses[0] if mac_addresses else "N/A",
-        "ethInterfaces": ", ".join(eth_interfaces),
-        "qgisVersion": get_qgis_version(),
-    }
-
-
 def set_font_color(bg_color):
     if not _HAS_QGIS:
         return "#181C14"
