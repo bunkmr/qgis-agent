@@ -1,5 +1,22 @@
 # 更新日志
 
+## [2.4.1] - 2026-09-23
+
+### 对话窗口重做（UI）
+- 🎨 **消息气泡化**：提问靠右、回复靠左，各带一条角色色条。Qt 富文本不支持 `border-radius`，卡片感改用「底色块 + 关键侧色条」表达；气泡宽度用 `<table width="N%" align="...">` 实现（`margin-left` 百分比在 Qt 里支持不稳）。
+- 🎨 **配色统一走调色板派生**：新增 `utils.derive_chat_colors()` / `is_dark_color()` / `mix_hex()` 等纯函数（可脱离 QGIS 单测），深色主题下自动派生可读前景色；**代码块底色强制区别于气泡底色**——两者相同会让代码块看起来「不存在」。
+- 🎨 **思考块真折叠**：QTextDocument 不支持 `<details>/<summary>`（正文会照常渲染，「展开」是假的），折叠改由 DockWidget 自己实现；折叠态一行显示「思考完成 · N 字」，可展开/收起、可单独复制。
+- 🎨 空状态给出可点击的示例问题；输入区整理为「输入框 + 发送/停止按钮」（互斥同格）；底部栏减重；「报告」页按钮改为 3 行 2 列网格。
+
+### 修复
+- 🐛 **对话历史区整块空白（严重）**：装配聊天区时用了 `QLayout.replaceWidget()`，它返回的 `QWidgetItem` 由 Python 持有，未接住即被 GC，而底层布局仍指向它 → **新控件从未真正进入布局**。改为 `removeWidget` + `insertWidget`，并加入装配顺序不变式自检（搜索条 < 聊天区 < 输入区 < 底部栏 < 状态条），错序会在日志中明确报出。
+- 🐛 **输入框高度自适应从未生效**：`QPlainTextDocumentLayout` 是惰性的，`textWidth` 恒为 -1 时 `document().size().height()` 返回的是**块数**（1.0 / 2.0 …）而非像素高 → 输入框永远停在 44px，多打几行必出假滚动条。改用 `QTextLayout` 逐块累加真实行高（`QFontMetrics.boundingRect(..., TextWordWrap)` 在 Qt6 下高度翻倍、`lineSpacing()` 又小于 Qt6 真实行高，两者都不可用）。实测 Qt5 / Qt6 表现一致：44 / 50 / 66 …，超过 140px 上限才出现滚动条。
+- 🐛 **Markdown 组件样式表整份失效**：样式表用了 CSS 自定义属性 `var(--x, #fallback)`，而 QTextDocument 不解析它、**连 fallback 一起丢弃**（实测 `color:var(--f,#f00)` 渲染为默认黑色）→ 代码块底色、表格表头、链接颜色全部落空，只是恰好被对话区自身样式兜住才未暴露。现改为实际色值，并让 `create_markdown` 自带完整样式，不再依赖调用方（`thinking_display.get_theme_css` 标记废弃）。
+
+### 改进
+- 📐 **窄幅停靠友好**：整个 dock 最小宽度 **604px → 360px**；「报告」页 **588 → 259**、「模型配置」页 **377 → 130**、「对话」页 **395 → 324**。元信息行改为可折行（此前 `setWordWrap(False)`，一行摘要就把最小宽度顶到 395px），日期与计数内部改用不换行空格，折行只会发生在 `·` 分隔符处。
+- 🧪 新增 `tests/test_chat_ui.py`（25 例）守住上述全部坑：`CssCapability` / `LayoutAssembly` / `ComposerHeight` / `ThinkingBlock` / `Metadata` 五组。单测 268 → **293** 全绿；真机验收 QGIS3(Qt5) 与 QGIS4(Qt6) 各 **42/42** 通过。
+
 ## [2.4.0] - 2026-09-22
 
 ### MCP 服务出口（新增）

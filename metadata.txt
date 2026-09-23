@@ -3,7 +3,7 @@ name=QGIS Agent
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
 description=LLM-powered intelligent assistant for QGIS. Natural language control of QGIS tools, plus an optional local MCP server so external AI agents (Claude Desktop, Cursor, etc.) can drive QGIS.
-version=2.4.0
+version=2.4.1
 author=bunkmr
 email=bunkr@qq.com
 about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It allows you to control QGIS through natural language conversations, including: viewing project info, adding/removing layers, executing Processing algorithms, running PyQGIS code, setting layer labels, rendering maps, and more.
@@ -49,6 +49,12 @@ deprecated=False
 hasProcessingProvider=no
 server=no
 changelog=
+    v2.4.1 更新内容：
+    【改进】「对话」窗口视觉重做：消息改为气泡卡片（提问靠右、回复靠左，各带一条角色色条），回复中的代码块、表格与引用块在深色与浅色两种主题下都清晰可辨；思考过程折叠成一行「思考完成 · N 字」，可点击展开/收起、也可单独复制；空白状态下给出可点击的示例问题；输入区整理为「输入框 + 发送/停止按钮」，发送过程中只切换按钮，不再禁用整个输入区。
+    【修复】对话历史区整块空白的严重问题。装配聊天区时用了 QLayout.replaceWidget()，它返回的布局项由 Python 侧持有，未接住就会被回收，而底层布局仍指向它——结果是新控件从未真正进入布局，表现就是"消息区什么都没有"。现改为「先摘出、再插入」的装配方式，并加入装配顺序自检（搜索条 < 聊天区 < 输入区 < 底部栏 < 状态条），顺序一旦错乱会在日志中明确报出。
+    【修复】输入框高度自适应从未生效。此前依据 QTextDocument 的高度判断，而该高度在文档尚未参与绘制时返回的是"段落数"而非像素高度，导致输入框永远停在 44px，多打几行就冒出假滚动条。现改用文本排版引擎逐行累加真实行高，Qt5 与 Qt6 下表现一致：1 行 44px、2 行起逐行增高，超过上限（140px）才出现滚动条。
+    【修复】Markdown 渲染的组件样式表整份失效。样式表使用了 CSS 自定义属性 var(--x)，而 QGIS 的富文本引擎不解析它——整条声明连备用值一起被丢弃，代码块底色、表格表头、链接颜色等全部落空，只是恰好被对话区自身的样式兜住才未暴露。现全部改为实际色值，并让转换函数自带完整样式，不再依赖调用方。
+    【改进】对话窗口对窄幅停靠更友好：整块最小宽度由 604px 降到 360px，「报告」页由 588px 降到 259px，「模型配置」页由 377px 降到 130px。对话头部的元信息行改为可折行（此前禁止折行，一行摘要就把最小宽度顶到 395px），日期与计数内部使用不换行空格，折行只发生在分隔符处；「报告」页的 5 个按钮改为 3 行 2 列网格。
     v2.4.0 更新内容：
     【新增】MCP 服务出口：插件内置的 20 个工具可通过 Model Context Protocol 提供给外部 AI Agent（Claude Desktop / Cursor / Codex 等），实现"外部 Agent 驱动 QGIS"。由两部分组成——插件内的 mcp_bridge（本地 socket 服务）与随包附带的 stdio MCP Server（纯标准库实现，无需安装任何第三方包）。
     【新增】「模型配置 → MCP 服务」设置区：启用开关、监听端口、访问令牌（可重新生成与复制）、随插件自动启动、是否放行特权工具、实时连接状态、一键复制客户端配置、连通性自检。
