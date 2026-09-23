@@ -222,10 +222,18 @@ class TestMisc(unittest.TestCase):
             hasattr(utils, "get_system_info"),
             "get_system_info 应已删除（它是 psutil 唯一的用武之地，但从未被调用）",
         )
-        for rel in ("utils.py", "requirements.txt", "metadata.txt"):
+        for rel in ("utils.py", "requirements.txt"):
             path = os.path.join(support.PROJECT_ROOT, rel)
             with open(path, encoding="utf-8") as fh:
                 self.assertNotIn("psutil", fh.read(), f"{rel} 不应再出现 psutil")
+
+        # metadata.txt 的 changelog 里会正常提到「移除了 psutil」这一事实，
+        # 所以这里只校验**依赖声明行**（列运行依赖的那一行），而不是整份文件。
+        with open(os.path.join(support.PROJECT_ROOT, "metadata.txt"), encoding="utf-8") as fh:
+            declared = [line for line in fh if "langchain_core" in line]
+        self.assertTrue(declared, "metadata.txt 里应能找到运行依赖声明行")
+        for line in declared:
+            self.assertNotIn("psutil", line, "依赖声明行不应再把 psutil 列为运行依赖")
 
 
 if __name__ == "__main__":
