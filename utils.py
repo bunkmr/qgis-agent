@@ -90,29 +90,183 @@ def set_font_color(bg_color):
     return "#F1F0E9" if luminance < 0.5 else "#181C14"
 
 
-# 主题回退 CSS：当无法从 thinking_display 取得调色板派生变量时使用中性浅色变量。
-_FALLBACK_CSS = (
-    ".qa-theme{"
-    "--qa-bg:#ffffff;--qa-fg:#222222;--qa-border:#cccccc;"
-    "--qa-muted:#666666;--qa-code-bg:#f4f4f4;--qa-code-fg:#333333;"
-    "--qa-accent:#0a6ebd;"
-    "}"
-)
+# ── 聊天区配色：纯函数实现，方便脱离 QGIS 单测 ─────────────────────────
+#
+# 为什么不用 CSS 变量（--qa-bg 那套）：
+#   QTextDocument（QTextBrowser 的富文本引擎）不解析 CSS 自定义属性，
+#   `color: var(--x, #000)` 会被整条丢弃，底色更是直接不生效。
+#   实测（macOS QGIS 3.44.14 / 4.2.1）只有「字面色值 + background-color /
+#   border / padding / margin」可靠；border-radius 亦不支持，故气泡一律直角。
+# 因此这里在 Python 侧把 QPalette 混出一组字面色值，直接写进行内样式。
 
-# 组件级 CSS：仅定义规则，变量优先用 thinking_display 注入的 --qa-*（带浅色兜底），
-# 因此即使主题导入失败，消息仍可读。
-_COMPONENT_CSS = """
-.qa-theme{color:var(--qa-fg,#222);background:var(--qa-bg,#fff);}
-.qa-theme a{color:var(--qa-accent,#0a6ebd);}
-.qa-theme h2,.qa-theme h3,.qa-theme h4,.qa-theme h5,.qa-theme h6{color:var(--qa-fg,#222);}
-.qa-theme p{margin:4px 0;}
-.qa-theme table.qa-table{border-collapse:collapse;width:100%;margin:6px 0;}
-.qa-theme table.qa-table th{background:var(--qa-code-bg,#f4f4f4);color:var(--qa-code-fg,#333);border:1px solid var(--qa-border,#ccc);padding:4px 8px;text-align:left;}
-.qa-theme table.qa-table td{border:1px solid var(--qa-border,#ccc);padding:4px 8px;}
-.qa-theme pre{background:var(--qa-code-bg,#f4f4f4);color:var(--qa-code-fg,#333);padding:10px;border-radius:6px;overflow-x:auto;font-family:Consolas,Monaco,monospace;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word;}
-.qa-theme code.qa-code{font-family:Consolas,Monaco,monospace;}
-.qa-theme code.qa-inline-code{background:var(--qa-code-bg,#f4f4f4);color:var(--qa-code-fg,#333);padding:2px 5px;border-radius:3px;font-size:12px;font-family:Consolas,Monaco,monospace;}
-"""
+_HEX_RE = re.compile(r"^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
+
+# 取不到 QPalette 时的兜底（浅色主题中性值）
+_FALLBACK_CHAT_COLORS = {
+    "chat_bg": "#F7F8FA",
+    "ai_bg": "#F1F3F6",
+    "user_bg": "#E4EEF9",
+    "user_edge": "#4A90D9",
+    "ai_edge": "#9DB4CC",
+    "fg": "#181C14",
+    "muted": "#6B7280",
+    "border": "#DFE3E8",
+    "code_bg": "#E6E8EC",
+    "tool_bg": "#F2F6FA",
+    "tool_edge": "#5B9BD5",
+}
+
+
+def normalize_hex(color, default="#000000"):
+    """把任意 QColor / 字符串归一成 `#rrggbb`；非法输入返回 default。"""
+    if color is None:
+        return default
+    try:
+        # QColor / 类似对象：优先 name()
+        name = color.name() if hasattr(color, "name") else str(color)
+    except Exception:
+        return default
+    if not _HEX_RE.match(name or ""):
+        return default
+    name = name.lstrip("#")
+    if len(name) == 3:
+        name = "".join(ch * 2 for ch in name)
+    return "#" + name.lower()
+
+
+def _to_rgb(color, default="#000000"):
+    h = normalize_hex(color, default).lstrip("#")
+    return int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+
+
+def mix_hex(color_a, color_b, ratio):
+    """线性混色：ratio=0 返回 color_a，ratio=1 返回 color_b（超界自动夹紧）。"""
+    try:
+        ratio = float(ratio)
+    except (TypeError, ValueError):
+        ratio = 0.0
+    ratio = max(0.0, min(1.0, ratio))
+    ra, ga, ba = _to_rgb(color_a)
+    rb, gb, bb = _to_rgb(color_b)
+    return "#%02x%02x%02x" % (
+        round(ra + (rb - ra) * ratio),
+        round(ga + (gb - ga) * ratio),
+        round(ba + (bb - ba) * ratio),
+    )
+
+
+def relative_luminance(color):
+    """0（全黑）~ 1（全白）。用于判断浅色/深色主题。"""
+    r, g, b = _to_rgb(color)
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
+
+
+def is_dark_color(color):
+    return relative_luminance(color) < 0.5
+
+
+def derive_chat_colors(base, text, alternate=None, highlight=None):
+    """由背景/前景/备用底色/强调色派生出聊天区整套字面色值。
+
+    纯函数：输入输出都是 `#rrggbb` 字符串，不依赖 Qt，便于单元测试。
+    """
+    base = normalize_hex(base, "#ffffff")
+    text = normalize_hex(text, "#181c14")
+    alternate = normalize_hex(alternate, base) if alternate else mix_hex(base, text, 0.06)
+    highlight = normalize_hex(highlight, "#4a90d9") if highlight else "#4a90d9"
+
+    dark = is_dark_color(base)
+    # 深色主题下把强调色提亮一点，否则在深底上发闷
+    edge_user = mix_hex(highlight, "#ffffff", 0.25) if dark else highlight
+    # AI 气泡：在底色与前景之间取一点点色调差；深色主题下往「更亮」方向偏
+    if dark:
+        ai_bg = mix_hex(base, "#ffffff", 0.07)
+        chat_bg = mix_hex(base, "#000000", 0.12)
+        border = mix_hex(base, "#ffffff", 0.16)
+        tool_bg = mix_hex(base, edge_user, 0.14)
+        muted = mix_hex(text, base, 0.42)
+        code_bg = mix_hex(base, "#000000", 0.30)
+    else:
+        ai_bg = mix_hex(base, alternate, 0.85)
+        chat_bg = mix_hex(base, text, 0.03)
+        border = mix_hex(base, text, 0.16)
+        tool_bg = mix_hex(base, edge_user, 0.10)
+        muted = mix_hex(text, base, 0.45)
+        code_bg = mix_hex(base, text, 0.10)
+
+    return {
+        "chat_bg": chat_bg,
+        "ai_bg": ai_bg,
+        # 用户气泡用强调色的浅色调（深色主题下同样往底色调）
+        "user_bg": mix_hex(base, edge_user, 0.30 if dark else 0.16),
+        "user_edge": edge_user,
+        "ai_edge": mix_hex(base, text, 0.18) if dark else edge_user,
+        "fg": text,
+        "muted": muted,
+        "border": border,
+        # 代码块必须与所在气泡底色拉开，否则 pre/code 直接「隐形」
+        "code_bg": code_bg,
+        "tool_bg": tool_bg,
+        "tool_edge": edge_user,
+    }
+
+
+def chat_colors():
+    """读取当前 QApplication 调色板并派生聊天区配色；任何异常都回退到中性值。"""
+    if not _HAS_QGIS:
+        return dict(_FALLBACK_CHAT_COLORS)
+    try:
+        from qgis.PyQt.QtGui import QPalette
+        app = QApplication.instance()
+        if app is None:
+            return dict(_FALLBACK_CHAT_COLORS)
+        pal = app.palette()
+        base = normalize_hex(pal.color(QPalette.ColorRole.Base).name(), "#ffffff")
+        text = normalize_hex(pal.color(QPalette.ColorRole.Text).name(), "#181c14")
+        alt = normalize_hex(pal.color(QPalette.ColorRole.AlternateBase).name(), base)
+        hl = normalize_hex(pal.color(QPalette.ColorRole.Highlight).name(), "#4a90d9")
+        return derive_chat_colors(base, text, alt, hl)
+    except Exception:
+        return dict(_FALLBACK_CHAT_COLORS)
+
+
+# 等宽字体栈：Qt 富文本按顺序回退到第一个可用的字体族
+_MONO_FONT_STACK = '"SF Mono", Menlo, Consolas, Monaco, monospace'
+
+
+def _component_css(colors=None):
+    """create_markdown 输出的组件级 CSS —— **全部使用字面色值**。
+
+    ⚠️ 不要改回 CSS 自定义属性：QTextDocument 不解析 `var(--x, #fallback)`，
+    整条声明会被直接丢弃（**连 fallback 都不生效**，实测 `color:var(--f,#f00)`
+    最终渲染成默认黑色）。历史上这里是 `var(--qa-*)` 写法，等于整份样式表失效，
+    只是恰好被 DockWidget 的 `_chat_css()` 兜住才没露馅。
+    另外 QTextDocument 同样不支持 `border-radius` / `overflow`，这里一律不写。
+    """
+    c = colors or chat_colors()
+    return (
+        ".qa-theme{color:%(fg)s;}"
+        ".qa-theme a{color:%(accent)s;}"
+        ".qa-theme h2,.qa-theme h3,.qa-theme h4,"
+        ".qa-theme h5,.qa-theme h6{color:%(fg)s;}"
+        ".qa-theme p{margin:4px 0;}"
+        ".qa-theme table.qa-table{border-collapse:collapse;width:100%%;margin:6px 0;}"
+        ".qa-theme table.qa-table th{background-color:%(code_bg)s;color:%(code_fg)s;"
+        "border:1px solid %(border)s;padding:4px 8px;text-align:left;}"
+        ".qa-theme table.qa-table td{border:1px solid %(border)s;padding:4px 8px;}"
+        ".qa-theme pre{background-color:%(code_bg)s;color:%(code_fg)s;padding:10px;"
+        "font-family:%(mono)s;font-size:12px;line-height:1.5;"
+        "white-space:pre-wrap;word-break:break-word;}"
+        ".qa-theme code.qa-code{font-family:%(mono)s;}"
+        ".qa-theme code.qa-inline-code{background-color:%(code_bg)s;color:%(code_fg)s;"
+        "padding:2px 5px;font-size:12px;font-family:%(mono)s;}"
+        ".qa-theme blockquote{border-left:3px solid %(border)s;margin:6px 0;"
+        "padding:2px 10px;color:%(muted)s;}"
+    ) % {
+        "fg": c["fg"], "accent": c["user_edge"], "border": c["border"],
+        "code_bg": c["code_bg"], "code_fg": c.get("code_fg") or c["fg"],
+        "muted": c["muted"], "mono": _MONO_FONT_STACK,
+    }
 
 # 标题层级映射（保留原实现视觉：# -> h2, ## -> h3 ...）
 _HEADING_TAG = {1: "h2", 2: "h3", 3: "h4", 4: "h5", 5: "h6", 6: "h6"}
@@ -173,12 +327,11 @@ def create_markdown(markdown_text: str) -> str:
         s = re.sub(r"(?<![\"'>])(https?://[^\s<]+)", _link, s)
         return s
 
-    # --- 主题 CSS：优先复用 thinking_display 的调色板派生变量 ---
+    # --- 组件级 CSS：字面色值（QTextDocument 不认 var()，见 _component_css 说明）---
     try:
-        from thinking_display import get_theme_css
-        theme_css = get_theme_css()
+        theme_css = _component_css()
     except Exception:
-        theme_css = _FALLBACK_CSS
+        theme_css = ""
 
     lines = markdown_text.split("\n")
     out = []
@@ -186,6 +339,7 @@ def create_markdown(markdown_text: str) -> str:
     in_code = False
     code_buf = []
     table_buf = []
+    quote_buf = []
     list_open = None  # None | "ul" | "ol"
 
     def flush_para():
@@ -218,6 +372,18 @@ def create_markdown(markdown_text: str) -> str:
         html_tbl += "</tbody></table>"
         out.append(html_tbl)
 
+    def flush_quote():
+        """把连续的 `> ` 行合并成一个引用块。
+
+        原先没有引用支持，模型输出里的 `> 提示：…` 会原样显示成一个孤零零的
+        ">" 前缀（Qt 的富文本不会自动识别它），看起来像排版事故。
+        """
+        if not quote_buf:
+            return
+        inner = "<br>".join(_inline(q) for q in quote_buf)
+        quote_buf.clear()
+        out.append('<blockquote class="qa-quote">' + inner + "</blockquote>")
+
     for raw in lines:
         line = raw.rstrip()
 
@@ -226,6 +392,7 @@ def create_markdown(markdown_text: str) -> str:
             flush_para()
             close_list()
             flush_table()
+            flush_quote()
             in_code = True
             code_buf = []
             continue
@@ -244,6 +411,7 @@ def create_markdown(markdown_text: str) -> str:
                 if not table_buf and para:
                     flush_para()
                     close_list()
+                flush_quote()
                 table_buf.append(line)
                 continue
         elif table_buf:
@@ -254,6 +422,7 @@ def create_markdown(markdown_text: str) -> str:
         if m:
             flush_para()
             close_list()
+            flush_quote()
             tag = _HEADING_TAG[min(len(m.group(1)), 6)]
             out.append(f"<{tag}>{_inline(m.group(2))}</{tag}>")
             continue
@@ -262,10 +431,21 @@ def create_markdown(markdown_text: str) -> str:
         if re.match(r"^(---|\*\*\*|___)$", line.strip()):
             flush_para()
             close_list()
+            flush_quote()
             out.append('<hr style="border:none;border-top:1px solid var(--qa-border,#ccc);margin:8px 0;">')
             continue
 
-        # 5) 无序列表
+        # 5) 引用块（合并连续行）
+        m = re.match(r"^>\s?(.*)$", line)
+        if m:
+            flush_para()
+            close_list()
+            quote_buf.append(m.group(1))
+            continue
+        if quote_buf:
+            flush_quote()
+
+        # 6) 无序列表
         m = re.match(r"^[-*+]\s+(.*)$", line)
         if m:
             flush_para()
@@ -276,7 +456,7 @@ def create_markdown(markdown_text: str) -> str:
             out.append(f"<li>{_inline(m.group(1))}</li>")
             continue
 
-        # 6) 有序列表
+        # 7) 有序列表
         m = re.match(r"^\d+\.\s+(.*)$", line)
         if m:
             flush_para()
@@ -287,7 +467,7 @@ def create_markdown(markdown_text: str) -> str:
             out.append(f"<li>{_inline(m.group(1))}</li>")
             continue
 
-        # 7) 普通段落行
+        # 8) 普通段落行
         if list_open:
             close_list()
         if line.strip() == "":
@@ -298,11 +478,25 @@ def create_markdown(markdown_text: str) -> str:
     flush_para()
     close_list()
     flush_table()
+    flush_quote()
 
     body = "".join(out)
-    full_css = theme_css + "\n" + _COMPONENT_CSS
-    return f'<div class="qa-theme"><style>{full_css}</style>{body}</div>'
+    return f'<div class="qa-theme"><style>{theme_css}</style>{body}</div>'
 
 
 def format_description(description: str) -> str:
     return description + "\n"
+
+
+def format_timestamp(raw, fmt_in="%m %d %Y %H:%M:%S", fmt_out="%Y-%m-%d %H:%M"):
+    """把存储用的时间戳（`%m %d %Y %H:%M:%S`，形如 `09 23 2026 20:11:02`）转成
+    人看的格式（`2026-09-23 20:11`）。
+
+    解析失败时原样返回 —— 这条串只用于显示，绝不能因为格式变动就抛异常。
+    """
+    if not raw:
+        return ""
+    try:
+        return datetime.strptime(str(raw).strip(), fmt_in).strftime(fmt_out)
+    except (ValueError, TypeError):
+        return str(raw)

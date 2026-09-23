@@ -2,7 +2,7 @@ import logging
 
 from qgis.PyQt.QtCore import pyqtSignal, QObject
 
-from .utils import get_current_timestamp, pack, extract_code
+from .utils import get_current_timestamp, pack, extract_code, format_timestamp
 from .processor import Processor
 from .clarification_manager import ClarificationManager
 
@@ -158,8 +158,19 @@ class Conversation(QObject):
         return interaction_history
 
     def get_metadata(self):
-        return (f"创建时间: {self.created} | 模型: {self.model_name} | "
-                f"消息: {self.messageCount} | 工作流: {self.workflowCount}")
+        """对话头部的元信息摘要。
+
+        时间戳存储格式是 `%m %d %Y %H:%M:%S`（如 `09 23 2026 20:11:02`），
+        直接贴在界面上既长又难读，这里统一转成 `2026-09-23 20:11`。
+
+        日期时间与「数字+单位」内部用不换行空格（U+00A0）连接：窄 dock 下
+        元信息行需要折行时，断点会落在 `·` 分隔符处，而不是把「2 个工作流」
+        拆成两行。
+        """
+        nb = "\u00a0"
+        created = format_timestamp(self.created).replace(" ", nb)
+        return (f"创建于 {created} · 模型{nb}{self.model_name} · "
+                f"{self.messageCount}{nb}条消息 · {self.workflowCount}{nb}个工作流")
 
     def clear(self):
         self.dataloader.delete_conversation(self.ID)

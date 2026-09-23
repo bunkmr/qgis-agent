@@ -12,6 +12,14 @@ import html as html_module
 
 def get_theme_css() -> str:
     """
+    ⚠️ 已废弃：输出的是 `--qa-*` **CSS 自定义属性**，而 QTextDocument 不解析
+    `var()`（整条声明连同 fallback 一起被丢弃，实测 `color:var(--f,#f00)`
+    最终渲染为默认黑色）—— 对聊天渲染完全无效。
+
+    配色的唯一真源是 ``utils.chat_colors()``；样式表请走
+    ``utils.create_markdown()``（内部已改为字面色值）。本函数仅为兼容外部
+    调用而保留，不要在插件内部继续使用。
+
     从 QApplication 的 palette 派生一组主题 CSS 自定义属性（CSS 变量）。
 
     取色规则（全部 Qt5/Qt6 双兼容，角色名用作用域写法 QPalette.ColorRole.X）：
@@ -83,49 +91,96 @@ def get_theme_css() -> str:
     )
 
 
-def create_thinking_block(content: str, timestamp: str = "", is_final: bool = False) -> str:
-    """
-    创建可折叠的思考块
+def _mono_font_stack():
+    """等宽字体栈：Consolas 在 macOS 不存在（会触发 Qt 字体别名回退告警），排到后面。"""
+    return '"SF Mono", Menlo, Consolas, Monaco, monospace'
 
-    使用 HTML <details> 标签实现折叠效果。
+
+def create_thinking_block(content: str, timestamp: str = "", is_final: bool = False,
+                          collapsed: bool = True) -> str:
+    """
+    创建思考块
 
     Args:
         content: 思考内容
         timestamp: 时间戳
-        is_final: 是否是最终状态（已折叠）
+        is_final: 是否是最终状态（已结束）
+        collapsed: 最终状态下是否折叠正文（仅 is_final=True 时有意义）
 
     Returns:
         HTML 字符串
+
+    ⚠️ 这里**不用** <details>/<summary>：
+        QTextDocument（QTextBrowser 的引擎）不支持该标签，会把正文照常渲染出来，
+        于是「点击展开」是假的、折叠态也永远折叠不起来。真正的折叠由 DockWidget
+        负责 —— 它按 collapsed 决定是否把正文塞进来，并处理 #toggle-thinking 锚点。
+
+    ⚠️ 颜色一律用字面色值：
+        QTextDocument 不解析 CSS 自定义属性，`var(--qa-accent)` 这类声明会被整条
+        丢弃，边框/文字颜色落到无效值（实测标题渲染成粉紫色）。故配色改由
+        utils.chat_colors() 在 Python 侧算好再写进行内样式。
     """
-    safe_content = html_module.escape(content) if content else "&nbsp;"
+    try:
+        from utils import chat_colors
+    except ImportError:  # 以包方式导入时
+        from .utils import chat_colors
+
+    try:
+        c = chat_colors()
+    except Exception:
+        from utils import _FALLBACK_CHAT_COLORS as c  # type: ignore
+
+    safe_content = html_module.escape(content) if content else ""
+    n_chars = len(content or "")
     time_text = f" · {timestamp}" if timestamp else ""
-    theme_css = get_theme_css()
+    mono = _mono_font_stack()
 
     if is_final:
-        # 最终状态：折叠
-        details_open = ""
-        header_color = "var(--qa-muted)"
-        status_text = "💭 思考完成"
-        hint_text = "点击展开"
-        # 折叠态额外提供「复制」入口，由 DockWidget 的 anchorClicked 处理
-        copy_entry = ' <a href="#copy-thinking" style="color: var(--qa-accent); font-size: 11px;">[复制]</a>'
+        # 结束态：按 collapsed 决定正文是否随块一起输出（真正的折叠见 DockWidget）
+        header_color = c["muted"]
+        status_text = "💭 思考完成" + (f" · {n_chars} 字" if n_chars else "")
+        hint_text = "展开" if collapsed else "收起"
+        body = "" if collapsed else (
+            '<tr><td style="background-color: %(code_bg)s; padding: 8px 10px;">'
+            '<pre style="color: %(fg)s; font-size: 12px; line-height: 1.5; margin: 0;'
+            ' white-space: pre-wrap; word-wrap: break-word;'
+            ' font-family: %(mono)s;">%(txt)s</pre></td></tr>'
+        ) % {"code_bg": c["code_bg"], "fg": c["fg"], "mono": mono,
+             "txt": safe_content or "&nbsp;"}
     else:
-        # 思考中：展开
-        details_open = " open"
-        header_color = "var(--qa-accent)"
-        status_text = f"🧠 思考中...{time_text}"
-        hint_text = "点击折叠"
-        copy_entry = ""
+        header_color = c["user_edge"]
+        status_text = "💭 思考中…" + time_text
+        hint_text = ""
+        body = (
+            '<tr><td style="background-color: %(code_bg)s; padding: 8px 10px;">'
+            '<pre style="color: %(fg)s; font-size: 12px; line-height: 1.5; margin: 0;'
+            ' white-space: pre-wrap; word-wrap: break-word;'
+            ' font-family: %(mono)s;">%(txt)s</pre></td></tr>'
+        ) % {"code_bg": c["code_bg"], "fg": c["fg"], "mono": mono,
+             "txt": safe_content or "&nbsp;"}
 
-    # 简化 HTML 结构，使用更兼容的样式；颜色全部走主题 CSS 变量（见 get_theme_css）
-    # 用 .qa-theme 包裹，使注入的 :root/.qa-theme 变量对块内元素生效
-    html = f'''<style>{theme_css}</style><div class="qa-theme" style="margin: 8px 0; padding: 0;">
-<details{details_open}>
-<summary style="cursor: pointer; padding: 8px 12px; background-color: var(--qa-bg); border-left: 4px solid {header_color}; border-radius: 4px;"><span style="color: {header_color}; font-weight: bold;">{status_text}</span> <span style="color: var(--qa-muted); font-size: 11px;">[{hint_text}]</span>{copy_entry}</summary>
-<div style="padding: 10px 12px; background-color: var(--qa-code-bg); border-left: 4px solid var(--qa-border); margin-top: 2px; min-height: 20px;"><pre style="color: var(--qa-code-fg); font-size: 12px; line-height: 1.5; margin: 0; white-space: pre-wrap; word-wrap: break-word; font-family: Consolas, Monaco, monospace;">{safe_content}</pre></div>
-</details>
-</div>'''
-    return html
+    # 折叠态额外提供「复制」入口，由 DockWidget 的 anchorClicked 处理
+    copy_entry = (' <a href="#copy-thinking" style="color: %s; font-size: 11px;'
+                  ' text-decoration: none;">[复制]</a>' % c["user_edge"])
+    # 展开/收起只在结束态提供：思考中每帧都会重建该块，切换状态会被下一帧覆盖
+    toggle_entry = ""
+    if is_final:
+        toggle_entry = (' <a href="#toggle-thinking" style="color: %s; font-size: 11px;'
+                        ' text-decoration: none;">[%s]</a>' % (c["user_edge"], hint_text))
+
+    return (
+        '<table width="88%%" cellpadding="0" cellspacing="0"'
+        ' style="margin-top: 4px; margin-bottom: 6px;">'
+        '<tr><td style="background-color: %(header_bg)s; border-left: 3px solid'
+        ' %(edge)s; padding: 4px 9px;">'
+        '<span style="color: %(header_color)s; font-size: 12px;">%(status)s</span>'
+        '%(toggle)s%(copy)s'
+        '</td></tr>%(body)s</table>'
+    ) % {
+        "header_bg": c["tool_bg"], "edge": header_color,
+        "header_color": header_color, "status": status_text,
+        "toggle": toggle_entry, "copy": copy_entry, "body": body,
+    }
 
 
 def create_thinking_start(timestamp: str = "") -> str:

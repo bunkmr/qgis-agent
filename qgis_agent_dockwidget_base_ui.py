@@ -29,76 +29,99 @@ class Ui_QGISAgentDockWidget(object):
 
         # 标题行（只有标题，移除了配置按钮）
         self.titleLayout = QtWidgets.QHBoxLayout()
+        self.titleLayout.setContentsMargins(0, 0, 0, 0)
+        self.titleLayout.setSpacing(6)
         self.lbTitle = QtWidgets.QLabel("新建对话")
+        self.lbTitle.setObjectName("lbTitle")
         self.lbTitle.setStyleSheet("font-size: 14px; font-weight: bold;")
         self.lbTitle.setWordWrap(True)
         self.titleLayout.addWidget(self.lbTitle, 1)
 
-        self.lbDescription = QtWidgets.QLabel("选择或新建对话开始使用QGIS Agent")
+        self.lbDescription = QtWidgets.QLabel("选择或新建对话开始使用 QGIS Agent")
+        self.lbDescription.setObjectName("lbDescription")
         self.lbDescription.setWordWrap(True)
-        self.lbDescription.setStyleSheet("color: #666;")
+        self.lbDescription.setStyleSheet("color: #666; font-size: 12px;")
 
         self.lbMetadata = QtWidgets.QLabel("")
+        self.lbMetadata.setObjectName("lbMetadata")
         self.lbMetadata.setStyleSheet("color: #888; font-size: 11px;")
+        # 允许折行：元信息是「时间 + 模型 + 计数」的长串，不折行会把 dock
+        # 的最小宽度顶到 390px 以上（把其他标签页压缩努力全部抵消）
         self.lbMetadata.setWordWrap(True)
 
         # 对话历史
         self.txHistory = QtWidgets.QTextBrowser()
+        self.txHistory.setObjectName("txHistory")
         self.txHistory.setOpenExternalLinks(True)
         self.txHistory.setReadOnly(True)
 
-        # 消息输入区
+        # 消息输入区（容器由 v2 加边框/聚焦态，这里只搭结构）
         self.messageFrame = QtWidgets.QFrame()
         self.messageFrame.setObjectName("messageFrame")
         self.messageLayout = QtWidgets.QHBoxLayout(self.messageFrame)
-        self.messageLayout.setContentsMargins(0, 0, 0, 0)
+        self.messageLayout.setContentsMargins(8, 6, 6, 6)
+        self.messageLayout.setSpacing(6)
 
         self.ptMessage = QtWidgets.QPlainTextEdit()
-        self.ptMessage.setPlaceholderText("输入您的问题...")
-        self.ptMessage.setFixedHeight(60)
+        self.ptMessage.setPlaceholderText("输入指令…  Enter 发送 / Shift+Enter 换行")
+        self.ptMessage.setMinimumHeight(44)
         self.ptMessage.setObjectName("ptMessage")
 
         self.pbSend = QtWidgets.QPushButton("发送")
-        self.pbSend.setFixedSize(60, 60)
+        self.pbSend.setObjectName("pbSend")
+        self.pbSend.setFixedSize(64, 32)
         self.pbSend.setStyleSheet("""
-            QPushButton { background-color: #4A90D9; color: white; border-radius: 4px; font-size: 14px; }
+            QPushButton { background-color: #4A90D9; color: white; border: none; border-radius: 5px; font-size: 13px; }
             QPushButton:hover { background-color: #357ABD; }
-            QPushButton:disabled { background-color: #ccc; }
+            QPushButton:disabled { background-color: #c8ccd2; color: #f0f0f0; }
         """)
 
-        self.messageLayout.addWidget(self.ptMessage)
-        self.messageLayout.addWidget(self.pbSend)
+        self.messageLayout.addWidget(self.ptMessage, 1)
+        self.messageLayout.addWidget(self.pbSend, 0, QtCore.Qt.AlignmentFlag.AlignBottom)
 
-        # 底部栏：模型选择 + Temperature + 停止按钮
+        # 底部栏：模型选择 + Temperature（停止按钮与发送按钮同区，见下）
         self.bottomBarLayout = QtWidgets.QHBoxLayout()
         self.bottomBarLayout.setContentsMargins(0, 2, 0, 0)
         self.bottomBarLayout.setSpacing(6)
 
-        self.lblModel = QtWidgets.QLabel("模型:")
+        self.lblModel = QtWidgets.QLabel("模型")
         self.lblModel.setStyleSheet("font-size: 12px; color: #888;")
         self.cbModelSelector = QtWidgets.QComboBox()
-        self.cbModelSelector.setMinimumWidth(120)
+        self.cbModelSelector.setMinimumWidth(90)
+        # 不被长模型名撑宽：按「最小内容长度」自适应，超长部分由下拉弹出层展示
+        try:
+            self.cbModelSelector.setSizeAdjustPolicy(
+                QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon
+            )
+            self.cbModelSelector.setMinimumContentsLength(10)
+        except Exception:
+            pass
+        self.cbModelSelector.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed
+        )
         self.cbModelSelector.setStyleSheet("QComboBox { font-size: 12px; padding: 2px 4px; }")
 
-        self.lblTemperature = QtWidgets.QLabel("温度:")
+        self.lblTemperature = QtWidgets.QLabel("温度")
         self.lblTemperature.setStyleSheet("font-size: 12px; color: #888;")
         self.sliderTemperature = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
         self.sliderTemperature.setRange(0, 100)
         self.sliderTemperature.setValue(0)
-        self.sliderTemperature.setFixedWidth(80)
+        self.sliderTemperature.setFixedWidth(60)
         self.sliderTemperature.setToolTip("LLM 温度 (0=精确, 1=创造)")
         self.lblTempValue = QtWidgets.QLabel("0.0")
-        self.lblTempValue.setStyleSheet("font-size: 11px; color: #888; min-width: 24px;")
+        self.lblTempValue.setStyleSheet("font-size: 11px; color: #888; min-width: 22px;")
         self.sliderTemperature.valueChanged.connect(
             lambda v: self.lblTempValue.setText(f"{v / 100:.1f}")
         )
 
-        self.pbStop = QtWidgets.QPushButton("⏹ 停止")
-        self.pbStop.setFixedSize(70, 26)
+        self.pbStop = QtWidgets.QPushButton("停止")
+        self.pbStop.setObjectName("pbStop")
+        self.pbStop.setFixedSize(64, 32)
         self.pbStop.setVisible(False)
         self.pbStop.setStyleSheet("""
-            QPushButton { background-color: #FA7070; color: white; border-radius: 4px; font-size: 12px; }
+            QPushButton { background-color: #FA7070; color: white; border: none; border-radius: 5px; font-size: 13px; }
             QPushButton:hover { background-color: #E05050; }
+            QPushButton:disabled { background-color: #d9a0a0; }
         """)
 
         # 跳过代码确认的开关
@@ -112,7 +135,14 @@ class Ui_QGISAgentDockWidget(object):
         self.bottomBarLayout.addWidget(self.sliderTemperature)
         self.bottomBarLayout.addWidget(self.lblTempValue)
         self.bottomBarLayout.addWidget(self.cbSkipConfirm)
-        self.bottomBarLayout.addWidget(self.pbStop)
+
+        # >>> 手工调整（非 Designer 生成；若重新生成 .ui 需一并保留）<<<
+        # 「停止」与「发送」同占一格、互斥显示：
+        #   原先停止按钮放在底部栏，与发送按钮分处两端，窄面板下两边都挤；
+        #   移到输入框右侧同一位置后，底部栏只剩「模型 / 温度 / 跳过确认」，
+        #   对话页最小宽度随之下降，且停止按钮出现在刚点过发送的地方，符合直觉。
+        self.messageLayout.addWidget(self.pbStop, 0, QtCore.Qt.AlignmentFlag.AlignBottom)
+        # <<< 手工调整结束 <<<
 
         self.messagesLayout.addLayout(self.titleLayout)
         self.messagesLayout.addWidget(self.lbDescription)
@@ -189,7 +219,8 @@ class Ui_QGISAgentDockWidget(object):
         """)
 
         # 模型配置页的"跳过确认"开关（与底部栏的 cbSkipConfirm 保持同步）
-        self.cbSkipConfirmSettings = QtWidgets.QCheckBox("跳过代码执行确认（直接执行 PyQGIS/Processing，不再弹窗）")
+        self.cbSkipConfirmSettings = QtWidgets.QCheckBox("跳过代码执行确认")
+        self.cbSkipConfirmSettings.setToolTip("勾选后直接执行 PyQGIS/Processing 代码，不再弹窗确认")
         self.cbSkipConfirmSettings.setStyleSheet("QCheckBox { font-size: 12px; color: #888; margin-top: 8px; }")
 
         self.settingsLayout.addWidget(self.lblSettingsTitle)
@@ -284,38 +315,41 @@ class Ui_QGISAgentDockWidget(object):
         self.codeEditor.setPlaceholderText("等待代码生成...")
         self.codeEditor.setStyleSheet("font-family: Consolas, monospace; font-size: 11px;")
 
-        # 代码操作按钮
-        self.codeButtonLayout = QtWidgets.QHBoxLayout()
+        # 代码操作按钮（两行网格：窄面板下 5 个按钮排一行会把整个 dock 撑到 590px 宽）
+        self.codeButtonLayout = QtWidgets.QGridLayout()
+        self.codeButtonLayout.setContentsMargins(0, 0, 0, 0)
+        self.codeButtonLayout.setSpacing(6)
         self.pbRunCode = QtWidgets.QPushButton("▶ 运行代码")
         self.pbRunCode.setStyleSheet("""
-            QPushButton { background-color: #5CB85C; color: white; border-radius: 4px; padding: 6px 12px; font-weight: bold; }
+            QPushButton { background-color: #5CB85C; color: white; border-radius: 4px; padding: 6px 10px; font-weight: bold; }
             QPushButton:hover { background-color: #4CAE4C; }
         """)
         self.pbLoadCode = QtWidgets.QPushButton("📂 从文件读取")
         self.pbLoadCode.setStyleSheet("""
-            QPushButton { background-color: #5BC0DE; color: white; border-radius: 4px; padding: 6px 12px; }
+            QPushButton { background-color: #5BC0DE; color: white; border-radius: 4px; padding: 6px 10px; }
             QPushButton:hover { background-color: #46B8DA; }
         """)
         self.pbCopyCode = QtWidgets.QPushButton("📋 复制代码")
         self.pbCopyCode.setStyleSheet("""
-            QPushButton { background-color: #6c757d; color: white; border-radius: 4px; padding: 6px 12px; }
+            QPushButton { background-color: #6c757d; color: white; border-radius: 4px; padding: 6px 10px; }
             QPushButton:hover { background-color: #5a6268; }
         """)
         self.pbSaveCode = QtWidgets.QPushButton("💾 保存代码")
         self.pbSaveCode.setStyleSheet("""
-            QPushButton { background-color: #17a2b8; color: white; border-radius: 4px; padding: 6px 12px; }
+            QPushButton { background-color: #17a2b8; color: white; border-radius: 4px; padding: 6px 10px; }
             QPushButton:hover { background-color: #138496; }
         """)
         self.pbClearCode = QtWidgets.QPushButton("🗑️ 清空")
         self.pbClearCode.setStyleSheet("""
-            QPushButton { background-color: #dc3545; color: white; border-radius: 4px; padding: 6px 12px; }
+            QPushButton { background-color: #dc3545; color: white; border-radius: 4px; padding: 6px 10px; }
             QPushButton:hover { background-color: #c82333; }
         """)
-        self.codeButtonLayout.addWidget(self.pbRunCode)
-        self.codeButtonLayout.addWidget(self.pbLoadCode)
-        self.codeButtonLayout.addWidget(self.pbCopyCode)
-        self.codeButtonLayout.addWidget(self.pbSaveCode)
-        self.codeButtonLayout.addWidget(self.pbClearCode)
+        self.codeButtonLayout.addWidget(self.pbRunCode, 0, 0)
+        self.codeButtonLayout.addWidget(self.pbLoadCode, 0, 1)
+        self.codeButtonLayout.addWidget(self.pbCopyCode, 1, 0)
+        self.codeButtonLayout.addWidget(self.pbSaveCode, 1, 1)
+        self.codeButtonLayout.addWidget(self.pbClearCode, 2, 0)
+        self.codeButtonLayout.setColumnStretch(1, 1)
 
         # 执行日志
         self.lblExecutionLog = QtWidgets.QLabel("执行日志:")
@@ -353,6 +387,11 @@ class Ui_QGISAgentDockWidget(object):
         self.twTabs.addTab(self.tbWorkflow, "工作流")
         self.twTabs.addTab(self.tbReports, "报告")
         self.twTabs.addTab(self.tbAbout, "帮助")
+
+        # 6 个标签在窄 dock 里会互相挤压：收紧内边距与字号（颜色由 v2 按调色板覆盖，
+        # 这里不写死颜色 —— 写死浅色值在深色主题下会变成刺眼的白条）。
+        self.twTabs.setStyleSheet("QTabBar::tab { padding: 5px 8px; font-size: 12px; }")
+        self.twTabs.setDocumentMode(True)
 
         self.mainLayout.addWidget(self.twTabs)
 

@@ -10,6 +10,7 @@
 
 import html as html_module
 import logging
+import math
 from datetime import datetime
 
 from qgis.PyQt import QtWidgets
@@ -18,13 +19,14 @@ from qgis.PyQt.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QLabel, QGroupBox, QPushButton,
     QSizePolicy, QSpacerItem, QWidget, QPlainTextEdit,
     QLineEdit, QToolButton, QStackedWidget, QGridLayout, QApplication,
-    QComboBox
+    QComboBox, QFrame
 )
-from qgis.PyQt.QtGui import QFont, QPalette, QTextDocument
+from qgis.PyQt.QtGui import QFont, QTextDocument, QTextLayout, QTextOption
 
-from .utils import handle_none_conversation, pack, unpack, format_description, create_markdown, set_font_color
+from .utils import (handle_none_conversation, pack, unpack, format_description,
+                    create_markdown, chat_colors)
 from .qgis_agent_dockwidget_base_ui import Ui_QGISAgentDockWidget
-from .thinking_display import ThinkingManager
+from .thinking_display import ThinkingManager, create_thinking_block
 
 logger = logging.getLogger(__name__)
 
@@ -33,8 +35,14 @@ THINKING_MARKER = '<!-- THINKING_BLOCK -->'
 THINKING_ANCHOR = '<a name="THINKING_BLOCK"></a>'
 
 # 输入框自适应高度范围（px）
-MESSAGE_INPUT_MIN_HEIGHT = 40
+MESSAGE_INPUT_MIN_HEIGHT = 44
 MESSAGE_INPUT_MAX_HEIGHT = 140
+
+# 气泡宽度（占聊天区百分比）：
+#   Qt 富文本对 `margin-left: 百分比` 支持不稳，实测 `<table width="N%" align="...">`
+#   是 Qt5/Qt6 上都可靠的做法，故气泡一律用单列表格实现。
+USER_BUBBLE_WIDTH = "78%"
+AI_BUBBLE_WIDTH = "88%"
 
 
 class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
@@ -60,7 +68,8 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         self.scrollAreaLayout = None
         self.setupUi(self)
 
-        self.messagesLayout.setStretch(3, 1)
+        # 拉伸权重统一由 _init_chat_enhancements 在装配完聊天区后设置
+        # （此处不再 setStretch(3, 1)：那个索引在装配后会变成搜索条，造成聊天区拿不到拉伸）
 
         self.pbStop.clicked.connect(self.stopRequested.emit)
 
@@ -78,15 +87,17 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         self._thinking_manager = ThinkingManager()
         self._thinking_buffer = ""
         self._thinking_active = False
-        self._thinking_base_html = ""
         self._last_thinking_text = ""
+        # 思考块折叠态（<details> 在 QTextDocument 里不生效，折叠由本类自己实现）
+        self._thinking_final_collapsed = True
+        self._last_thinking_time = ""
 
-        # 输入框高度随内容自适应（40–140px）
+        # 输入框高度随内容自适应（44–140px）
         # 注意：Qt6 已移除 QTextDocument.sizeChanged 信号，改用 QTextEdit.textChanged（Qt5/Qt6 通用）
         self.ptMessage.textChanged.connect(self._adjust_message_input_height)
         self._adjust_message_input_height()
 
-        # 思考块内的「复制」入口（锚点 #copy-thinking）
+        # 思考块内的「复制 / 展开收起」入口（#copy-thinking / #toggle-thinking）
         if hasattr(self.txHistory, "anchorClicked"):
             self.txHistory.anchorClicked.connect(self._on_history_anchor_clicked)
 
@@ -106,10 +117,18 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
 
         所有新增控件都在 __init__ 内创建，信号连接使用作用域枚举，
         不引用任何不存在的变量；不改动 processor 与其它文件。
+
+        ⚠️ 装配必须用 removeWidget + insertWidget，**不能用 replaceWidget**：
+        PyQt5 的 `QLayout.replaceWidget()` 把被替换下来的 QWidgetItem 交给 Python
+        持有，调用方不保留返回值时该对象随即被 GC，而 C++ 侧布局项仍指向它 ——
+        结果是「要插入的控件」从未真正进入布局（实测 chatStack 变成 640x480 的
+        隐藏孤儿窗口，整个对话历史与空状态都看不见，而布局里那一格是空的）。
+        装配末尾用 _chat_layout_ok 记录自检结果，供测试与排障使用。
         """
-        # ---- U13 搜索条（默认隐藏，Ctrl+F 唤起）----
+        # ---- 搜索条（默认隐藏，Ctrl+F 唤起）----
         self.searchBar = QLineEdit()
-        self.searchBar.setPlaceholderText("搜索对话内容… (Enter 下一处 / Shift+Enter 上一处 / Esc 关闭)")
+        self.searchBar.setPlaceholderText("搜索对话内容…")
+        self.searchBar.setToolTip("Enter 下一处 / Shift+Enter 上一处 / Esc 关闭")
         self.searchBar.textChanged.connect(self._on_search_text_changed)
         self.searchBar.returnPressed.connect(self._on_search_next)
         self.searchBar.installEventFilter(self)
@@ -134,60 +153,104 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         search_layout.addWidget(self.btnSearchPrev)
         search_layout.addWidget(self.btnSearchNext)
         search_layout.addWidget(self.btnSearchClose)
-        self.searchFrameWidget = QWidget()
+        self.searchFrameWidget = QFrame()
+        self.searchFrameWidget.setObjectName("qaSearchBar")
         self.searchFrameWidget.setLayout(search_layout)
         self.searchFrameWidget.setVisible(False)
 
-        # ---- U13 复制回复按钮（面板顶部标题行右侧）----
+        # ---- 复制回复按钮（扁平无边框；不用 emoji，该环境下 📋 会渲染成空心方块）----
         self.btnCopyReply = QToolButton()
-        self.btnCopyReply.setText("📋 复制回复")
-        self.btnCopyReply.setToolTip("复制最近一条 AI 回复到剪贴板")
+        self.btnCopyReply.setObjectName("qaCopyReply")
+        self.btnCopyReply.setText("复制回复")
+        self.btnCopyReply.setToolTip("复制最近一条回复到剪贴板")
+        self.btnCopyReply.setAutoRaise(True)
+        self.btnCopyReply.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btnCopyReply.clicked.connect(self._on_copy_reply)
         self.titleLayout.addWidget(self.btnCopyReply, 0, Qt.AlignmentFlag.AlignRight)
 
-        # ---- U18 底部状态条 ----
+        # ---- 底部状态条（细 footer，与内容区用一条分隔线隔开）----
         self.statusLabel = QLabel("就绪")
-        self.statusLabel.setStyleSheet("color: #666; font-size: 11px; padding: 2px 0;")
+        self.statusLabel.setObjectName("qaStatus")
         self.statusLabel.setWordWrap(False)
+        self.statusLabel.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
         self._status_base = "就绪"
 
-        # ---- D5 空状态示例卡片 ----
+        self.footerBar = QFrame()
+        self.footerBar.setObjectName("qaFooterBar")
+        footer_layout = QHBoxLayout(self.footerBar)
+        footer_layout.setContentsMargins(2, 0, 2, 0)
+        footer_layout.setSpacing(6)
+        footer_layout.addWidget(self.statusLabel, 1)
+
+        # ---- 空状态示例卡片 ----
+        # 单列而非双列：双列会把空状态区最小宽度撑到 460+，窄 dock 下直接溢出。
+        # 只保留 4 条最高频指令，避免空状态一屏塞满按钮抢走输入框的注意力。
         self.emptyStateWidget = QWidget()
-        egrid = QGridLayout(self.emptyStateWidget)
-        egrid.setContentsMargins(8, 8, 8, 8)
-        egrid.setSpacing(6)
+        self.emptyStateWidget.setObjectName("qaEmptyState")
+        elay = QVBoxLayout(self.emptyStateWidget)
+        elay.setContentsMargins(2, 10, 2, 10)
+        elay.setSpacing(6)
+
+        self.lblEmptyHint = QLabel("试试这样问：")
+        self.lblEmptyHint.setObjectName("qaEmptyHint")
+        elay.addWidget(self.lblEmptyHint)
+
         examples = [
-            "加载一个矢量文件",
             "列出当前所有图层",
+            "统计各行政区面积并生成分级设色地图",
             "把图层重投影到 WGS84",
-            "统计各行政区面积",
-            "生成分级设色地图",
-            "缓冲区分析 100 米",
-            "按属性筛选要素",
             "导出当前图层为 GeoPackage",
         ]
-        cols = 2
-        for i, text in enumerate(examples):
+        for text in examples:
             btn = QPushButton(text)
-            btn.setStyleSheet("QPushButton { text-align: left; padding: 8px 10px; }")
+            btn.setObjectName("qaExampleBtn")
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.setToolTip("点击填入输入框")
             btn.clicked.connect(lambda _checked=False, t=text: self._on_example_clicked(t))
-            egrid.addWidget(btn, i // cols, i % cols)
+            elay.addWidget(btn)
+        elay.addStretch(1)
 
         # ---- 聊天区堆叠：历史 / 空状态 二选一显示 ----
         self.chatStack = QStackedWidget()
+        self.chatStack.setObjectName("qaChatStack")
+
+        # ---- 装配：removeWidget + insertWidget（见方法说明，勿改回 replaceWidget）----
+        # ⚠️ 顺序有讲究：必须**先**取索引、**先**摘出 txHistory，再把它收进 chatStack。
+        #    因为 QStackedWidget.addWidget() 会给 txHistory 换父对象，而换父会让 Qt
+        #    自动把它从原布局里摘掉 —— 等收完再 indexOf 就得到 -1，插入位置会退化成
+        #    「追加到末尾」，结果是输入框与底部栏排在消息区**上面**。
+        tx_index = self.messagesLayout.indexOf(self.txHistory)
+        if tx_index < 0:
+            tx_index = max(0, self.messagesLayout.count() - 1)
+        self.messagesLayout.removeWidget(self.txHistory)
+
         self.chatStack.addWidget(self.txHistory)          # 页 0：历史消息区
         self.chatStack.addWidget(self.emptyStateWidget)   # 页 1：空状态示例
 
-        # 把 txHistory 在原布局位置替换为 chatStack，再把搜索条插到其上方
-        tx_index = self.messagesLayout.indexOf(self.txHistory)
-        self.messagesLayout.replaceWidget(self.txHistory, self.chatStack)
+        self.messagesLayout.insertWidget(tx_index, self.chatStack)
         self.messagesLayout.insertWidget(tx_index, self.searchFrameWidget)
-        # 状态条置于面板最底部
-        self.messagesLayout.addWidget(self.statusLabel)
-        # 仅聊天区拉伸填充，搜索条/状态条保持自然高度（不抢空间）
+        self.messagesLayout.addWidget(self.footerBar)
+
+        # 拉伸权重：只有聊天区吃掉剩余高度，其余按自然高度排布
         chat_index = self.messagesLayout.indexOf(self.chatStack)
-        self.messagesLayout.setStretch(tx_index, 0)    # 搜索条
-        self.messagesLayout.setStretch(chat_index, 1)  # 聊天区
+        for i in range(self.messagesLayout.count()):
+            self.messagesLayout.setStretch(i, 0)
+        if chat_index >= 0:
+            self.messagesLayout.setStretch(chat_index, 1)
+
+        # 自检顺序不变式：搜索条 → 聊天区 → 输入区 → 底部栏 → 状态条。
+        # 顺序错了界面就会「输入框在消息上面」，所以这里把顺序也纳入自检。
+        i_search = self.messagesLayout.indexOf(self.searchFrameWidget)
+        i_input = self.messagesLayout.indexOf(self.messageFrame)
+        i_bar = self.messagesLayout.indexOf(self.bottomBarLayout)
+        i_footer = self.messagesLayout.indexOf(self.footerBar)
+        self._chat_layout_ok = (
+            i_search >= 0 and chat_index >= 0 and i_input >= 0
+            and i_search < chat_index < i_input < i_bar < i_footer
+        )
+        if not self._chat_layout_ok:
+            logger.warning("聊天区装配自检失败：search=%s chat=%s input=%s bar=%s footer=%s",
+                           i_search, chat_index, i_input, i_bar, i_footer)
 
         # 监测 txHistory 内容变化以切换空状态/历史视图
         self._txhistory_orig_append = self.txHistory.append
@@ -206,8 +269,188 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         self.txHistory.append = _wrap_append
         self.txHistory.setHtml = _wrap_sethtml
 
+        # 聊天区当前 HTML（原始串，不改道 toHtml()）。
+        # 思考流是「原地替换」实现，若每帧都走 toHtml()→setHtml() 往返，Qt 会把
+        # 表格单元格的左/右边框、底色等属性在导出时降级，气泡样式会逐帧变淡。
+        # 因此这里自己持有原始 HTML，替换只在字符串上做。
+        self._chat_html = ""
+
+        # 聊天区整套配色与控件样式（明暗主题自适应）
+        self._apply_chat_style()
+
         # 初始按当前（空）内容决定显示哪一页
         self._update_empty_state()
+
+    # ── 聊天区样式 ──────────────────────────────────────────────────
+
+    def _apply_chat_style(self):
+        """按当前调色板给聊天区控件上样式；任何异常都不影响功能。
+
+        配色一律走 utils.chat_colors()（字面色值），因为 QTextDocument 不解析
+        CSS 自定义属性，`var(--x)` 会被整条丢弃。
+        """
+        try:
+            c = chat_colors()
+        except Exception:
+            logger.debug("取聊天区配色失败", exc_info=True)
+            return
+        self._chat_colors = c
+
+        def _qss(widget, css):
+            try:
+                widget.setStyleSheet(css)
+            except Exception:
+                logger.debug("设置样式失败", exc_info=True)
+
+        _qss(self.txHistory, (
+            "QTextBrowser { background: %(chat_bg)s; border: 1px solid %(border)s;"
+            " border-radius: 4px; padding: 2px; font-size: 13px; }"
+            "QScrollBar:vertical { width: 8px; background: transparent; margin: 0; }"
+            "QScrollBar::handle:vertical { background: %(border)s; border-radius: 4px;"
+            " min-height: 24px; }"
+            "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }"
+            "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical"
+            " { background: transparent; }"
+        ) % c)
+        # 输入区：容器带边框，聚焦时边框变强调色（由 eventFilter 切动态属性）
+        _qss(self.messageFrame, (
+            "#messageFrame { background: %(ai_bg)s; border: 1px solid %(border)s;"
+            " border-radius: 6px; }"
+            "#messageFrame[qaFocus=\"true\"] { border: 1px solid %(user_edge)s; }"
+            "#ptMessage { background: transparent; border: none; padding: 2px 4px;"
+            " color: %(fg)s; font-size: 13px; }"
+            "QScrollBar:vertical { width: 8px; background: transparent; margin: 0; }"
+            "QScrollBar::handle:vertical { background: %(border)s; border-radius: 4px;"
+            " min-height: 20px; }"
+            "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }"
+        ) % c)
+        _qss(self.statusLabel, "color: %(muted)s; font-size: 11px;" % c)
+        _qss(self.footerBar, (
+            "#qaFooterBar { border-top: 1px solid %(border)s; }"
+        ) % c)
+        _qss(self.btnCopyReply, (
+            "QToolButton { color: %(muted)s; font-size: 11px; padding: 1px 4px;"
+            " border: none; background: transparent; }"
+            "QToolButton:hover { color: %(user_edge)s; }"
+        ) % c)
+        _qss(self.lblEmptyHint, "color: %(muted)s; font-size: 11px;" % c)
+        _qss(self.emptyStateWidget, (
+            "QPushButton#qaExampleBtn { text-align: left; padding: 8px 10px;"
+            " font-size: 12px; border: 1px solid %(border)s; border-radius: 5px;"
+            " background: %(ai_bg)s; color: %(fg)s; }"
+            "QPushButton#qaExampleBtn:hover { border-color: %(user_edge)s;"
+            " color: %(user_edge)s; }"
+        ) % c)
+        _qss(self.searchBar, (
+            "QLineEdit { border: 1px solid %(border)s; border-radius: 4px;"
+            " padding: 2px 6px; font-size: 12px; }"
+        ) % c)
+
+        # ── 以下是「对话页之外」的通用配色 ──
+        # base_ui 里那些写死的 #666 / #888 / #d8dce2 是浅色主题值，深色主题下会暗到
+        # 几乎看不见；这里用调色板派生值覆盖，两套主题都不吃亏。
+        _qss(self.lbTitle, "font-size: 14px; font-weight: bold; color: %(fg)s;" % c)
+        _qss(self.lbDescription, "font-size: 12px; color: %(muted)s;" % c)
+        _qss(self.lbMetadata, "font-size: 11px; color: %(muted)s;" % c)
+        for widget in (self.lblModel, self.lblTemperature, self.lblTempValue):
+            _qss(widget, "font-size: 12px; color: %(muted)s;" % c)
+        _qss(self.cbSkipConfirm, "QCheckBox { font-size: 11px; color: %(muted)s; }" % c)
+        _qss(self.twTabs, (
+            "QTabBar::tab { padding: 5px 8px; font-size: 12px; color: %(fg)s;"
+            " background: %(ai_bg)s; }"
+            "QTabBar::tab:selected { background: %(chat_bg)s; border-bottom: 2px solid"
+            " %(user_edge)s; }"
+            "QTabWidget::pane { border: 1px solid %(border)s; }"
+        ) % c)
+
+    def _set_chat_html(self, body_html):
+        """把聊天区正文写进 QTextBrowser（自动带上公共 CSS），并同步原始缓冲。"""
+        self._chat_html = body_html or ""
+        self.txHistory.setHtml(self._chat_css() + self._chat_html)
+        self.txHistory.setReadOnly(True)
+        self.txHistory.verticalScrollBar().setValue(
+            self.txHistory.verticalScrollBar().maximum()
+        )
+
+    def _set_composer_focused(self, focused):
+        """输入区聚焦时把容器边框换成强调色（QSS 动态属性 + 重新 polish）。"""
+        try:
+            self.messageFrame.setProperty("qaFocus", "true" if focused else "false")
+            style = self.messageFrame.style()
+            style.unpolish(self.messageFrame)
+            style.polish(self.messageFrame)
+            self.messageFrame.update()
+        except Exception:
+            logger.debug("切换输入区聚焦样式失败", exc_info=True)
+
+    # ── 消息气泡 ────────────────────────────────────────────────────
+
+    def _chat_css(self):
+        """聊天区公共 CSS（字面色值，供气泡内部元素复用）。
+
+        注意：`pre` / `code` 的底色必须用 code_bg（与气泡底色 ai_bg 不同），
+        否则代码块和气泡同色，看起来像「没有代码块」。
+        """
+        c = getattr(self, "_chat_colors", None) or chat_colors()
+        return (
+            "<style>"
+            "body, p { margin: 0; }"
+            "a { color: %(user_edge)s; }"
+            "pre { background-color: %(code_bg)s; padding: 8px 10px;"
+            " border-left: 3px solid %(border)s; white-space: pre-wrap;"
+            " word-break: break-word;"
+            " font-family: \"SF Mono\", Menlo, Consolas, Monaco, monospace;"
+            " font-size: 12px; }"
+            "code { background-color: %(code_bg)s; padding: 1px 3px; }"
+            "blockquote { border-left: 3px solid %(border)s; margin: 4px 0;"
+            " padding: 2px 10px; color: %(muted)s; }"
+            "table { border-collapse: collapse; }"
+            "th, td { border: 1px solid %(border)s; padding: 4px 8px; }"
+            "th { background-color: %(code_bg)s; }"
+            "</style>"
+        ) % c
+
+    def _bubble_html(self, side, role_text, body_html, is_plain=True):
+        """生成一条消息气泡。
+
+        Qt 富文本不支持 border-radius，所以气泡用「底色块 + 关键侧色条」表达，
+        配合角色标签与浅色分隔，视觉上仍是一张清晰的卡片。
+        """
+        c = getattr(self, "_chat_colors", None) or chat_colors()
+        if side == "user":
+            width, align = USER_BUBBLE_WIDTH, "right"
+            bg, edge, bar = c["user_bg"], c["user_edge"], "border-right"
+        else:
+            width, align = AI_BUBBLE_WIDTH, "left"
+            bg, edge, bar = c["ai_bg"], c["ai_edge"], "border-left"
+
+        return (
+            '<table width="%(w)s" align="%(align)s" cellpadding="0" cellspacing="0"'
+            ' style="margin-top: 6px; margin-bottom: 6px;">'
+            '<tr><td style="background-color: %(bg)s; %(bar)s: 3px solid %(edge)s;'
+            ' padding: 7px 11px 9px 11px;">'
+            '<div style="color: %(muted)s; font-size: 11px; margin-bottom: 3px;">'
+            '%(role)s</div>'
+            '<div style="color: %(fg)s; line-height: 1.55;">%(body)s</div>'
+            '</td></tr></table>'
+        ) % {
+            "w": width, "align": align, "bg": bg, "bar": bar, "edge": edge,
+            "muted": c["muted"], "fg": c["fg"], "role": html_module.escape(role_text or ""),
+            "body": body_html,
+        }
+
+    def _tool_status_html(self, status_text):
+        """工具调用状态：做成一条窄的状态条，而不是与消息同等分量的气泡。"""
+        c = getattr(self, "_chat_colors", None) or chat_colors()
+        return (
+            '<table width="%(w)s" cellpadding="0" cellspacing="0"'
+            ' style="margin-top: 2px; margin-bottom: 2px;">'
+            '<tr><td style="background-color: %(bg)s; border-left: 3px solid %(edge)s;'
+            ' padding: 3px 9px;">'
+            '<span style="color: %(edge)s; font-size: 11px;">%(txt)s</span>'
+            '</td></tr></table>'
+        ) % {"w": AI_BUBBLE_WIDTH, "bg": c["tool_bg"], "edge": c["tool_edge"],
+             "txt": html_module.escape(status_text or "")}
 
     def set_sending_state(self, is_sending):
         """切换发送/停止状态"""
@@ -302,9 +545,19 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
     @handle_none_conversation
     def updateGeneralInfo(self, conversation):
         self._live_conversation = conversation
-        self.lbTitle.setText(conversation.title)
-        self.lbDescription.setText(format_description(conversation.description))
-        self.lbMetadata.setText(conversation.get_metadata())
+        title = conversation.title or ""
+        self.lbTitle.setText(title)
+        self.lbTitle.setToolTip(title)
+        description = conversation.description or ""
+        self.lbDescription.setText(format_description(description))
+        description_full = description.strip()
+        self.lbDescription.setToolTip(description_full)
+        # 描述为空时不要留一行空标签占高度
+        self.lbDescription.setVisible(bool(description_full))
+        metadata = conversation.get_metadata()
+        self.lbMetadata.setText(metadata)
+        # 可折行（宽 dock 下仍是一行；窄 dock 下折行，避免顶高 dock 最小宽度）
+        self.lbMetadata.setToolTip(metadata)
 
     @handle_none_conversation
     def updateConversation(self, conversation):
@@ -318,46 +571,32 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         current_html = ""
         self._last_assistant_text = ""  # U13：重置，循环后取最后一条 assistant
         interaction_history = conversation.fetch()
-        font_color = set_font_color(self.txHistory.palette().color(QPalette.ColorRole.Base))
+        self._apply_chat_style()
 
         for interaction in interaction_history:
             msg_dict = pack(interaction, "interaction")
             if msg_dict["typeMessage"] == "input":
-                safe_text = html_module.escape(msg_dict["requestText"])
-                new_msg = f'''
-                    <div style="margin: 8px 0; padding: 8px 12px; text-align: right;">
-                        <div style="margin: 0 0 4px 0; font-size: 11px; color: #6baad1;">
-                            👤 用户 · {msg_dict["requestTime"]}
-                        </div>
-                        <div style="margin: 0; color: {font_color}; line-height: 1.5;">
-                            {safe_text}
-                        </div>
-                    </div>
-                '''
-                current_html += new_msg
+                safe_text = html_module.escape(msg_dict["requestText"] or "")
+                # 用户输入保留换行（富文本会把 \n 折叠成空格）
+                safe_text = safe_text.replace("\n", "<br>")
+                current_html += self._bubble_html(
+                    "user", "你 · %s" % msg_dict["requestTime"], safe_text
+                )
 
             if msg_dict["typeMessage"] == "return":
-                new_msg = f'''
-                    <div style="margin: 8px 0; padding: 8px 12px;">
-                        <div style="margin: 0 0 4px 0; font-size: 11px; color: #FD8A8A;">
-                            🤖 QGIS Agent · {msg_dict["responseTime"]}
-                        </div>
-                        <div style="margin: 0; color: {font_color}; line-height: 1.5;">
-                            {create_markdown(msg_dict["responseText"])}
-                        </div>
-                    </div>
-                '''
-                current_html += new_msg
+                current_html += self._bubble_html(
+                    "ai",
+                    "QGIS Agent · %s" % msg_dict["responseTime"],
+                    create_markdown(msg_dict["responseText"] or ""),
+                )
                 # U13：记录最近一条 assistant 回复的原始文本（供复制按钮使用）
                 self._last_assistant_text = msg_dict["responseText"]
 
-        self.txHistory.setHtml(current_html)
-        self.txHistory.setReadOnly(True)
-        self.txHistory.verticalScrollBar().setValue(self.txHistory.verticalScrollBar().maximum())
+        self._set_chat_html(current_html)
 
         # U18：最终回复已到达，停止计时并报告耗时
         if self._timer.isValid():
-            self._set_status(f"✅ 完成（耗时 {self._format_elapsed()}）")
+            self._set_status("完成 · 耗时 %s" % self._format_elapsed())
 
     def showThinking(self, partial_text, response_time=""):
         """
@@ -395,8 +634,11 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
             # ThinkingManager 内部保存的是累积后的完整思考文本
             block_html = self._thinking_manager.finalize()
 
-            # 保留最后一次完整思考内容，供块内「复制」入口使用
+            # 保留最后一次完整思考内容与时间戳，供块内「复制 / 展开收起」使用
             self._last_thinking_text = self._thinking_buffer
+            self._last_thinking_time = getattr(
+                self._thinking_manager, "_current_timestamp", "") or ""
+            self._thinking_final_collapsed = True
 
             self._render_thinking_block(block_html)
             self.resetThinking()
@@ -409,17 +651,15 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         """
         self._thinking_buffer = ""
         self._thinking_active = False
-        self._thinking_base_html = ""
         self._thinking_manager.clear()
 
     def _start_thinking(self, response_time=""):
-        """开启新一轮思考：清空缓冲，并记录思考块之前的聊天内容"""
+        """开启新一轮思考：清空缓冲，并准备思考块"""
         self._thinking_buffer = ""
         self._thinking_active = True
         # 只保留当前这一轮思考，避免历史思考块被重复渲染
         self._thinking_manager.clear()
         self._thinking_manager.start(response_time)
-        self._thinking_base_html = self.txHistory.toHtml() if hasattr(self.txHistory, "toHtml") else ""
 
     def _locate_thinking_block(self, current_html):
         """
@@ -438,35 +678,65 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
 
     def _render_thinking_block(self, block_html):
         """把思考块渲染进历史区：原地替换旧块，而不是每次追加一个新块"""
+        if not block_html:
+            # 思考块生成失败时宁可不渲染，也不能把聊天区冲掉
+            logger.debug("思考块 HTML 为空，跳过渲染")
+            return
         wrapped = f"{THINKING_MARKER}{THINKING_ANCHOR}{block_html}{THINKING_ANCHOR}{THINKING_MARKER}"
-        current_html = self.txHistory.toHtml() if hasattr(self.txHistory, "toHtml") else ""
+        current_html = self._chat_html
 
         start, end = self._locate_thinking_block(current_html)
         if start is not None:
             # 原地替换：思考块之后追加的内容（如工具状态）保持不动
             current_html = current_html[:start] + wrapped + current_html[end:]
         else:
-            # 兜底：标记被富文本引擎丢弃时，插到「思考开始前的内容」末尾
-            base_html = self._thinking_base_html
-            if "</body>" in base_html:
-                current_html = base_html.replace("</body>", wrapped + "</body>", 1)
-            else:
-                current_html = base_html + wrapped
+            # 找不到旧块就追加到「当前内容」末尾。
+            # ⚠️ 不能退回到「思考开始前的快照」：那份快照一旦过期（例如快照还是在
+            # 空聊天区时抓的），用它做基线会把期间新增的消息全部抹掉 —— 实测会把
+            # 整段对话历史冲成空白。
+            current_html = current_html + wrapped
 
-        self.txHistory.setHtml(current_html)
-        self.txHistory.setReadOnly(True)
-        self.txHistory.verticalScrollBar().setValue(self.txHistory.verticalScrollBar().maximum())
+        self._set_chat_html(current_html)
 
     def _on_history_anchor_clicked(self, url):
-        """处理历史区链接点击：#copy-thinking 复制思考全文，其余链接保持默认行为"""
+        """处理历史区链接点击：
+
+        #copy-thinking  复制思考全文
+        #toggle-thinking 展开/收起思考块
+        其余链接保持默认行为。
+        """
         try:
-            if url is not None and url.fragment() == "copy-thinking":
-                from qgis.PyQt.QtWidgets import QApplication
+            if url is None:
+                return
+            fragment = url.fragment()
+            if fragment == "copy-thinking":
                 text = self._last_thinking_text or self._thinking_buffer
                 if text:
                     QApplication.clipboard().setText(text)
+                    self._set_status("已复制思考内容")
+            elif fragment == "toggle-thinking":
+                self._toggle_thinking_block()
         except Exception as e:
-            logger.debug("复制思考内容失败: %s", e, exc_info=True)
+            logger.debug("处理历史区链接失败: %s", e, exc_info=True)
+
+    def _toggle_thinking_block(self):
+        """展开 / 收起最后一个思考块（Qt 不支持 <details>，折叠由这里实现）。"""
+        if not self._last_thinking_text:
+            return
+        start, end = self._locate_thinking_block(self._chat_html)
+        if start is None:
+            return
+        self._thinking_final_collapsed = not self._thinking_final_collapsed
+        block = create_thinking_block(
+            self._last_thinking_text,
+            self._last_thinking_time,
+            is_final=True,
+            collapsed=self._thinking_final_collapsed,
+        )
+        wrapped = f"{THINKING_MARKER}{THINKING_ANCHOR}{block}{THINKING_ANCHOR}{THINKING_MARKER}"
+        self._set_chat_html(self._chat_html[:start] + wrapped + self._chat_html[end:])
+        self._set_status("思考内容已收起" if self._thinking_final_collapsed
+                         else "思考内容已展开")
 
     # ── U13/U18/D5 聊天区增强辅助方法 ──
 
@@ -584,30 +854,87 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         except Exception:
             pass
 
+    def _message_input_text_height(self):
+        """输入框内文本排版后的**像素高度**（已含折行）。
+
+        为什么不用现成的几种「行数 / 高度」：
+          · ``document().size().height()`` —— QPlainTextDocumentLayout 是惰性的，文档
+            未参与绘制时 ``textWidth`` 恒为 -1，返回的是**块数**（1.0 / 2.0 …）而非像素高；
+          · ``QFontMetrics.boundingRect(..., TextWordWrap)`` —— 实测 Qt6 下高度翻倍
+            （单行算 2 行、两行算 4 行），Qt5 下却正确，跨版本不可靠；
+          · ``QFontMetrics.lineSpacing()`` —— 只是标称行距，Qt6 的真实行高比它大，
+            按它算会少给一行，出现假滚动条。
+        这里用 ``QTextLayout`` 逐块精确排版、累加每行真实高度，Qt5 / Qt6 都对。
+        """
+        doc = self.ptMessage.document()
+        fm = self.ptMessage.fontMetrics()
+        fallback_line = float(fm.lineSpacing() or 16)
+        blocks = max(1, doc.blockCount())
+        if self.ptMessage.lineWrapMode() == QPlainTextEdit.LineWrapMode.NoWrap:
+            return fallback_line * blocks
+        if blocks > 200:
+            # 粘贴超长文本时直接顶到上限，避免为每个块建一次 layout
+            return 10 ** 6
+
+        margins = self.ptMessage.contentsMargins()
+        frame = self.ptMessage.frameWidth() * 2
+        avail = self.ptMessage.width() - margins.left() - margins.right() - frame
+        if avail <= 40:
+            # 宽度尚未确定（控件还没显示/布局），退化为按块数估算
+            return fallback_line * blocks
+
+        font = self.ptMessage.font()
+        option = QTextOption()
+        option.setWrapMode(QTextOption.WrapMode.WrapAtWordBoundaryOrAnywhere)
+        total = 0.0
+        block = doc.begin()
+        while block.isValid():
+            text = block.text()
+            if text:
+                layout = QTextLayout(text, font)
+                layout.setTextOption(option)
+                layout.beginLayout()
+                while True:
+                    line = layout.createLine()
+                    if not line.isValid():
+                        break
+                    line.setLineWidth(avail)
+                    total += line.height()
+                layout.endLayout()
+            else:
+                total += fallback_line
+            block = block.next()
+        return max(fallback_line, total)
+
     def _adjust_message_input_height(self, _size=None):
-        """让输入框高度随内容自适应，限制在 40–140px 之间"""
+        """让输入框高度随内容自适应，限制在 44–140px 之间"""
+        if getattr(self, "_adjusting_input", False):
+            return
+        self._adjusting_input = True
         try:
-            doc_height = int(self.ptMessage.document().size().height())
+            text_height = self._message_input_text_height()
             margins = self.ptMessage.contentsMargins()
-            frame_height = self.ptMessage.frameWidth() * 2
-            new_height = doc_height + margins.top() + margins.bottom() + frame_height + 4
-            new_height = max(MESSAGE_INPUT_MIN_HEIGHT, min(MESSAGE_INPUT_MAX_HEIGHT, new_height))
+            chrome = (margins.top() + margins.bottom()
+                      + self.ptMessage.frameWidth() * 2)
+            # +6 余量：排版高度是浮点值，取整后少给一点就会被判成「放不下」并弹滚动条
+            new_height = int(math.ceil(text_height)) + chrome + 6
+            new_height = max(MESSAGE_INPUT_MIN_HEIGHT,
+                             min(MESSAGE_INPUT_MAX_HEIGHT, new_height))
             if self.ptMessage.height() != new_height:
                 self.ptMessage.setFixedHeight(new_height)
         except Exception as e:
             logger.debug("自适应输入框高度失败: %s", e, exc_info=True)
+        finally:
+            self._adjusting_input = False
 
     def showToolStatus(self, status_text):
         """在聊天框中显示工具调用状态"""
         # U18：工具/代码执行阶段提示
-        self._set_status("⚙ 执行工具…")
-        status_html = f'''
-            <div style="margin: 4px 0; padding: 4px 10px; border-left: 3px solid #4A90D9; border-radius: 4px; font-family: Consolas, monospace; font-size: 12px;">
-                <span style="color: #4A90D9;">🔧 {html_module.escape(status_text)}</span>
-            </div>
-        '''
-        self.txHistory.append(status_html)
-        self.txHistory.verticalScrollBar().setValue(self.txHistory.verticalScrollBar().maximum())
+        self._set_status("执行工具…")
+        try:
+            self._set_chat_html(self._chat_html + self._tool_status_html(status_text))
+        except Exception as e:
+            logger.debug("渲染工具状态失败: %s", e, exc_info=True)
 
     def disableAllButtons(self):
         """U11：发送进行中只禁用「发送按钮」+「模型切换下拉」，停止按钮保持可用。
@@ -634,7 +961,14 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         return
 
     def eventFilter(self, obj, event):
-        if event.type() == QEvent.Type.KeyPress:
+        etype = event.type()
+        # 输入区聚焦时高亮容器边框（视觉上明确「在哪儿打字」）
+        if obj is self.ptMessage and etype in (QEvent.Type.FocusIn, QEvent.Type.FocusOut):
+            self._set_composer_focused(etype == QEvent.Type.FocusIn)
+        # 宽度变化会改变折行数，需要重新算输入框高度
+        if obj is self.ptMessage and etype == QEvent.Type.Resize:
+            self._adjust_message_input_height()
+        if etype == QEvent.Type.KeyPress:
             # U13：Ctrl+F 唤起消息区搜索条
             if event.key() == Qt.Key.Key_F and (event.modifiers() & Qt.KeyboardModifier.ControlModifier):
                 self._show_search_bar()
@@ -820,31 +1154,36 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         """在聊天框以红字追加错误提示（不静默吞异常）。"""
         try:
             safe = html_module.escape(str(text))
-            self.txHistory.append(
-                f'<div style="margin: 4px 0; padding: 4px 10px; '
-                f'border-left: 3px solid #C0392B; color: #C0392B; font-size: 12px;">'
-                f'⚠ {safe}</div>'
-            )
-            self.txHistory.verticalScrollBar().setValue(
-                self.txHistory.verticalScrollBar().maximum()
-            )
+            self._set_chat_html(self._chat_html + self._notice_html(safe, "error"))
         except Exception:
-            pass
+            logger.debug("追加错误提示失败", exc_info=True)
 
     def _append_chat_info(self, text):
         """在聊天框以蓝字追加信息提示。"""
         try:
             safe = html_module.escape(str(text))
-            self.txHistory.append(
-                f'<div style="margin: 4px 0; padding: 4px 10px; '
-                f'border-left: 3px solid #2980B9; color: #2980B9; font-size: 12px;">'
-                f'ℹ {safe}</div>'
-            )
-            self.txHistory.verticalScrollBar().setValue(
-                self.txHistory.verticalScrollBar().maximum()
-            )
+            self._set_chat_html(self._chat_html + self._notice_html(safe, "info"))
         except Exception:
-            pass
+            logger.debug("追加信息提示失败", exc_info=True)
+
+    def _notice_html(self, safe_text, kind):
+        """聊天区里的系统提示条（错误 / 信息）。
+
+        走 _set_chat_html 而不是 txHistory.append()：append 只往文档里塞一段，
+        下一次 _set_chat_html 整体重写时这段就没了；统一走同一个缓冲才不会丢。
+        """
+        c = getattr(self, "_chat_colors", None) or chat_colors()
+        if kind == "error":
+            color, mark = "#C0392B", "错误"
+        else:
+            color, mark = c["tool_edge"], "提示"
+        return (
+            '<table width="%(w)s" cellpadding="0" cellspacing="0"'
+            ' style="margin-top: 4px;"><tr>'
+            '<td style="border-left: 3px solid %(color)s; padding: 3px 9px;">'
+            '<span style="color: %(color)s; font-size: 12px;">%(mark)s：%(txt)s</span>'
+            '</td></tr></table>'
+        ) % {"w": AI_BUBBLE_WIDTH, "color": color, "mark": mark, "txt": safe_text}
 
     # ── 工作流可视化方法 ──
 
