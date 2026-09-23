@@ -1462,7 +1462,7 @@ class QGISAgent:
             "部分 API 网关会依据客户端 TLS 指纹判断请求来源，非浏览器客户端可能在握手阶段被中断"
             "（典型表现：Connection reset by peer）。开启后改用 curl_cffi 的浏览器 TLS 栈，"
             "以提升这类接口的连接成功率。\n"
-            "curl_cffi 是可选依赖：未安装时本选项会自动关闭，插件改用标准 TLS 栈，其它功能不受影响。"
+            "curl_cffi 是可选依赖：未安装时本选项会置灰不可选，插件改用标准 TLS 栈，其它功能不受影响。"
         )
         requested = bool(QSettings("QGIS", "QGISAgent").value("use_browser_tls", False))
         # 依赖不在位时，把陈旧的「已勾选」纠正掉：设置里写着开、实际永远生效不了，
@@ -1471,6 +1471,12 @@ class QGISAgent:
             requested = False
             QSettings("QGIS", "QGISAgent").setValue("use_browser_tls", False)
         self.cbBrowserTls.setChecked(requested)
+        # 依赖不在位时直接置灰：能勾却永远不生效的开关，只会换来一个
+        # 「装了吗？装了也不生效」的弹窗。置灰 + 下方灰字说明，用户一眼知道该做什么。
+        # 副作用：_on_browser_tls_changed 里的兜底弹窗在 UI 上变得不可达（那正是目的），
+        # 保留它只是为了防住 setChecked(True) 之类的程序化调用。
+        if not self._browser_tls_ready:
+            self.cbBrowserTls.setEnabled(False)
         self.cbBrowserTls.stateChanged.connect(self._on_browser_tls_changed)
 
         layout = self.dockwidget.settingsLayout
@@ -1489,8 +1495,9 @@ class QGISAgent:
             return
         if not getattr(self, "_browser_tls_ready", False):
             label.setText(
-                "⚠ 未安装 curl_cffi（可选依赖），此选项暂不可用。"
-                "只要接口没有出现「连接被重置」，就无需安装，不影响其它功能。"
+                "⚠ 未安装 curl_cffi（可选依赖），此选项已置灰。"
+                "只有在接口出现「连接被重置」时才需要它；如需启用，请在 QGIS 自带的 Python 中执行："
+                " pip install curl_cffi （装好后重启 QGIS）。不影响其它功能。"
             )
         elif self.cbBrowserTls.isChecked():
             label.setText("✔ 已启用：请求将走 curl_cffi 的浏览器 TLS 栈。")

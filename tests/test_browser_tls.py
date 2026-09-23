@@ -253,6 +253,47 @@ class TestSourceConstraints(unittest.TestCase):
             "否则设置里写着「已启用」而实际永远不生效",
         )
 
+    def test_checkbox_disabled_when_dependency_missing(self):
+        """依赖缺失时开关必须置灰，且置灰要由 _browser_tls_ready 守卫。
+
+        能点却永远不生效的开关，只会换来一个「装了也不生效」的弹窗；
+        置灰 + 灰字说明才能真正断掉这条误导路径。
+        """
+        path = os.path.join(PROJECT_ROOT, "qgis_agent.py")
+        node, _ = self._func_source(path, "_build_browser_tls_ui")
+
+        def _disables(statements):
+            for stmt in statements:
+                for call in [n for n in ast.walk(stmt) if isinstance(n, ast.Call)]:
+                    if getattr(call.func, "attr", "") != "setEnabled":
+                        continue
+                    if any(isinstance(a, ast.Constant) and a.value is False
+                           for a in call.args):
+                        return True
+            return False
+
+        guarded = any(
+            isinstance(n, ast.If)
+            and "_browser_tls_ready" in ast.dump(n.test)
+            and _disables(n.body)
+            for n in ast.walk(node)
+        )
+        self.assertTrue(
+            guarded,
+            "_build_browser_tls_ui 必须在 not self._browser_tls_ready 分支里 "
+            "setEnabled(False)，否则未装 curl_cffi 时开关仍可点击并弹出误导对话框",
+        )
+
+    def test_hint_tells_user_how_to_install(self):
+        """灰字提示要给出可照抄的命令，而不是只说「不可用」。"""
+        path = os.path.join(PROJECT_ROOT, "qgis_agent.py")
+        node, _ = self._func_source(path, "_refresh_browser_tls_hint")
+        text = "".join(
+            n.value for n in ast.walk(node)
+            if isinstance(n, ast.Constant) and isinstance(n.value, str)
+        )
+        self.assertIn("pip install curl_cffi", text)
+
     def test_token_field_shows_head_not_tail(self):
         """令牌 64 位、输入框显示不全：停在末尾时屏幕上只剩后半截，手抄必错。"""
         path = os.path.join(PROJECT_ROOT, "qgis_agent.py")
