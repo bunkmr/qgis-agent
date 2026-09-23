@@ -33,7 +33,7 @@ about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It al
       bundled stdio MCP server can discover them; the file is deleted when the service stops
 
     External dependencies (install via pip before use):
-    langchain_core, langchain_openai, langchain_deepseek, httpx, psutil
+    langchain_core, langchain_openai, langchain_deepseek, httpx
     Optional (only for the "browser-compatible TLS" option in settings; not required by default):
     curl_cffi  # sends API requests with a browser TLS stack, for gateways that interrupt non-browser clients
     The bundled MCP server (mcp_server/) requires no third-party packages.
@@ -57,6 +57,9 @@ changelog=
     【修复】依赖探测不再只捕获 ImportError（模块加载前的探测与启用插件时的依赖检查两处均已修复）：依赖装了一半时抛出的常是 SystemError（如 pydantic 与 pydantic-core 版本错配）或 OSError（动态库加载失败），异常逃逸会导致整个插件加载失败且界面没有任何提示。现统一兜住，并区分「确实没装」与「装了但加载不了」两种情况：前者可自动安装，后者只做诊断、绝不去重装（重装上层依赖只会把用户环境改得更乱），且会从报错中解析出版本号并直接给出修复命令。
     【修复】修复 QGIS 尚未注册 locale 时 QSettings 返回 None 导致插件初始化直接报错的问题。
     【改进】接口连接被网关在 TLS 握手阶段中断时，错误提示改为中性表述并给出可操作建议（更换接口，或开启浏览器兼容 TLS）。
+    【改进】未安装 curl_cffi 时，「浏览器兼容 TLS」开关直接置灰，而不是「点了才弹窗、再自动取消勾选」——置灰的控件收不到鼠标事件，这条误导路径在界面上彻底不可达；灰字提示给出可照抄的 pip 安装命令与重启说明。
+    【安全】「模型配置 → MCP 服务」的访问令牌默认以星号隐藏，并提供「显示/隐藏」开关。令牌是长期凭证，此前明文长期贴在设置页上，任何一次截图、录屏或远程协助都等于把凭证交出去；「复制令牌」与内部取值拿到的始终是完整明文，隐藏只影响屏幕呈现。
+    【改进】移除 psutil 依赖。它唯一的用武之地是一个自首个版本起从未被调用的 get_system_info()，而该包在 macOS 的 QGIS 里因 hardened runtime 签名限制本就加载不了——少一个装不上又不生效的依赖。
     【兼容】Qt5/Qt6 双兼容，最低兼容 QGIS 3.22（覆盖 QGIS 3.22~4.x）。
     v2.3.2 更新内容：
     【新增】浏览器兼容 TLS（可选）：部分 API 网关会依据客户端 TLS 指纹判断请求来源，非浏览器客户端可能在握手阶段被中断。开启该选项后改用 curl_cffi 的浏览器 TLS 栈，可提升这类接口的连接成功率（实测可连通 ai.zhaosh.fun）。默认关闭，不引入额外依赖，不影响默认发布路径。
