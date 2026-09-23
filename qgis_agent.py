@@ -1580,9 +1580,13 @@ class QGISAgent:
         row_token = QHBoxLayout()
         row_token.addWidget(QLabel("访问令牌"))
         self.leMcpToken = QLineEdit()
+        # 默认掩码：令牌是长期凭证，明文长期摊在屏幕上，截图/录屏/远程协助时等于直接泄露。
+        # 需要核对时点右侧「显示」临时展开。
+        self.leMcpToken.setEchoMode(QLineEdit.EchoMode.Password)
         self.leMcpToken.setToolTip(
             "外部客户端必须携带该令牌才能调用工具。修改后需重新启动服务。\n"
-            "令牌较长，输入框内显示不全（会滚动）：请用「复制令牌」按钮取值，不要手抄屏幕上的片段。"
+            "默认以星号隐藏，避免截图/录屏时泄露；要核对时点右侧「显示」展开。\n"
+            "取完整令牌请用「复制令牌」按钮，不要手抄屏幕上的片段。"
         )
         token = str(settings.value("mcp/token", "") or "")
         if not token:
@@ -1593,6 +1597,13 @@ class QGISAgent:
         # 用户手抄极易抄错（实测踩过：显示的是 64 位令牌的最后 34 位）。这里回到头部。
         self.leMcpToken.setCursorPosition(0)
         row_token.addWidget(self.leMcpToken)
+        self.btnMcpTokenReveal = QPushButton("显示")
+        self.btnMcpTokenReveal.setCheckable(True)
+        self.btnMcpTokenReveal.setToolTip(
+            "在明文与星号之间切换。只改变本机屏幕上的呈现，不会修改或复制令牌本身。"
+        )
+        self.btnMcpTokenReveal.toggled.connect(self._on_mcp_token_reveal_toggled)
+        row_token.addWidget(self.btnMcpTokenReveal)
         btn_regen = QPushButton("重新生成")
         btn_regen.setToolTip("生成一份新的 32 字节随机令牌（旧令牌立即失效）")
         btn_regen.clicked.connect(self._on_mcp_regenerate_token)
@@ -1774,6 +1785,19 @@ class QGISAgent:
         if callable(_set_status):
             _set_status("访问令牌已复制到剪贴板")
 
+    def _on_mcp_token_reveal_toggled(self, revealed):
+        """在明文与星号之间切换访问令牌的显示方式。
+
+        只改 EchoMode 这一个呈现层属性：令牌值、QSettings 里的持久值、
+        「复制令牌」取到的内容都不受影响。切换后把光标压回开头，
+        避免 QLineEdit 重排时把视口滚到尾部长住不动。
+        """
+        self.leMcpToken.setEchoMode(
+            QLineEdit.EchoMode.Normal if revealed else QLineEdit.EchoMode.Password
+        )
+        self.btnMcpTokenReveal.setText("隐藏" if revealed else "显示")
+        self.leMcpToken.setCursorPosition(0)
+
     def _on_mcp_copy_config(self):
         try:
             from .mcp_bridge import MCPBridge
@@ -1900,7 +1924,8 @@ class QGISAgent:
         key_widget.setText(api_key)
         key_widget.setPlaceholderText("输入 API Key")
         key_widget.setStyleSheet("QLineEdit { border: none; padding: 2px; }")
-        # 点击查看/隐藏切换
+        # 单元格宽度不足以再放一个「显示/隐藏」按钮，此处不做明文切换；
+        # 目前只有 MCP「访问令牌」那一行（_build_mcp_settings_ui）带该开关。
         key_widget.setClearButtonEnabled(False)
         table.setCellWidget(row_idx, 2, key_widget)
 

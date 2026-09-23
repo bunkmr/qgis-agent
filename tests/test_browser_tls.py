@@ -306,6 +306,69 @@ class TestSourceConstraints(unittest.TestCase):
                 found = True
         self.assertTrue(found, "令牌输入框必须把光标放回开头（setCursorPosition(0)）")
 
+    def test_token_field_masked_by_default(self):
+        """访问令牌默认必须以星号显示。
+
+        令牌是长期凭证，明文长期贴在屏幕上，等于把凭证交给了任何一次截图、
+        录屏或远程协助。需要核对时由用户主动点「显示」展开。
+        """
+        path = os.path.join(PROJECT_ROOT, "qgis_agent.py")
+        node, _ = self._func_source(path, "_build_mcp_settings_ui")
+        masked = False
+        for call in [n for n in ast.walk(node) if isinstance(n, ast.Call)]:
+            if getattr(call.func, "attr", "") != "setEchoMode":
+                continue
+            target = call.func.value
+            if not (isinstance(target, ast.Attribute) and target.attr == "leMcpToken"):
+                continue
+            if any(isinstance(a, ast.Attribute) and a.attr == "Password"
+                   for a in ast.walk(call)):
+                masked = True
+        self.assertTrue(
+            masked,
+            "leMcpToken 必须 setEchoMode(QLineEdit.EchoMode.Password) —— "
+            "默认明文会让令牌在截图/录屏里裸奔",
+        )
+
+    def test_token_reveal_button_is_wired(self):
+        """「显示」按钮必须是 checkable 且 toggled 接到了处理器，否则是个死按钮。"""
+        path = os.path.join(PROJECT_ROOT, "qgis_agent.py")
+        node, _ = self._func_source(path, "_build_mcp_settings_ui")
+        calls = [n for n in ast.walk(node) if isinstance(n, ast.Call)]
+        checkable = any(
+            getattr(c.func, "attr", "") == "setCheckable"
+            and any(isinstance(a, ast.Constant) and a.value is True for a in c.args)
+            for c in calls
+        )
+        wired = any(
+            getattr(c.func, "attr", "") == "connect"
+            and any(isinstance(a, ast.Attribute)
+                    and a.attr == "_on_mcp_token_reveal_toggled" for a in c.args)
+            for c in calls
+        )
+        self.assertTrue(checkable, "「显示」按钮必须 setCheckable(True)")
+        self.assertTrue(wired, "「显示」按钮的 toggled 必须接到 _on_mcp_token_reveal_toggled")
+
+    def test_token_reveal_toggle_switches_echo_mode(self):
+        """切换处理器必须真的改 EchoMode，而不是只换按钮文字。
+
+        只改文字会出现「按钮写着隐藏、输入框仍是星号」这类自相矛盾状态，
+        比没有这个开关更让人困惑。
+        """
+        path = os.path.join(PROJECT_ROOT, "qgis_agent.py")
+        node, _ = self._func_source(path, "_on_mcp_token_reveal_toggled")
+        modes = set()
+        for call in [n for n in ast.walk(node) if isinstance(n, ast.Call)]:
+            if getattr(call.func, "attr", "") != "setEchoMode":
+                continue
+            for sub in ast.walk(call):
+                if isinstance(sub, ast.Attribute) and sub.attr in ("Normal", "Password"):
+                    modes.add(sub.attr)
+        self.assertEqual(
+            modes, {"Normal", "Password"},
+            "切换处理器要同时覆盖明文(Normal)与掩码(Password)两种模式",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
