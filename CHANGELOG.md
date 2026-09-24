@@ -1,5 +1,43 @@
 # 更新日志
 
+## [2.4.4] - 2026-09-24
+
+### 修复
+- 🐛 **【重要】模型开始调用工具后，用户自己发出去的消息从对话区消失了**——本次报障的第一个问题。真因是聊天区存在**两套写入方式**：
+  - 「整体重写」（`_set_chat_html`）——思考流、工具状态、错误卡片都走它；
+  - 直接追加（`txHistory.append`）——**用户消息**、各类提示行走它。
+
+  而追加的内容**没有同步进内部缓冲** `_chat_html`，于是任何一次整体重写都会把它整段抹掉。这正好解释了现象为什么是「一开始看得到、模型一调工具就不见了」——工具状态一刷新即丢。现在 `append` / `setHtml` / `clear` 三条路径统一同步缓冲，并顺带修掉两个同源问题：
+  - **清空对话后内容会复活**：`clear()` 只清了控件、没清缓冲，下一次整体重写又把旧内容写回来了；
+  - **缓冲膨胀**：包装 `setHtml` 时必须剥掉 CSS 前缀，否则 CSS 会被反复记进正文、越滚越大。
+
+  实测：用户消息、工具状态、思考块可以共存且互不冲掉；`clear` 之后重写不再复活旧内容。
+
+- 🐛 **【重要】切换模型 / 温度后再对话，报 `TypeError: 'method' object is not connected`，且新对话的回复永远不显示**——本次报障的第二个问题。真因不是「disconnect 少了 try」这么简单：
+
+  `QGISAgent._on_send_message` 在模型或温度变化时会**整体替换 processor**（`self.live_conversation.processor = self._Processor(...)`），而旧 worker 的信号连接仍留在**旧对象**上。旧 worker 收尾时触发旧对象的信号，回调里 `self.processor` 却已是新对象 —— 拿新对象去 disconnect 一个从未连接过的槽，就是控制台里那串
+
+  ```
+  File ".../conversation.py", line 136, in _on_response_ready
+      self.processor.response_ready.disconnect(self._on_response_ready)
+  TypeError: 'method' object is not connected
+  ```
+
+  更糟的是：它还会把**新对象上刚建立的连接误断开**，于是新一轮的回复永远渲染不出来。修复分两层：
+  - 用 `QObject.sender()` 定位**发出信号的那个** processor，断开只在它身上做；旧对象的迟到回调一律忽略，既不渲染过期结果，也不碰新连接；
+  - 替换 processor 之前先调 `release_processor()` 清掉旧连接（`QGISAgent` 侧已接入），从源头消除迟到回调。
+
+- 🐛 **「停止」按钮永远提示「没有正在进行的生成」**，中间的「停止中…」状态形同虚设。真因是停止时会把「空闲」标志提前置真，而判断总在置真之后执行；现在停止只负责发出中断请求，状态复位统一交给收尾回调。
+
+- 🐛 **会话收尾改为幂等**：一轮请求只认第一次结果。工作线程先发错误再发完成时两个事件都已排进事件队列，`disconnect` 拦不住已排队的事件——此前第二个到达就会抛错并让界面卡在「发送中」。
+
+### 测试
+- 新增 `tests/test_conversation_signals.py`（13 例）：单轮收尾一次、双到（正序 / 反序）、重复发送不叠加连接、断开幂等、反思信号同受保护、**切换模型重建 processor 的真实现场**、停止语义。
+- ⚠️ **测试方法学修正**：PyQt 会把**槽函数里的异常交给 `sys.excepthook` 打印**，`emit` 调用处不会抛（用户在 QGIS 控制台看到 traceback，而程序不崩、界面僵在「发送中」）。所以「没报错」不能靠 `try/except` 判断 —— 必须拦 `excepthook`，否则断言是假绿。测试与真机验收脚本均已按此改造。
+- 修正 `tests/support.py` 的 `sys.path` 顺序：项目根目录里有同名的 `qgis_agent.py`（插件入口），项目目录排在父目录之前会让 `import qgis_agent` 命中**文件**而不是**包**，导致包内相对导入全部失败。现在父目录优先。
+- 新增 `tests/support.py::install_httpx_stub()`：`llm_providers` 在模块级继承了 `httpx.HTTPTransport`，替身必须是**真类**（用 `MagicMock` 当基类会在类创建时就抛错）。
+- 单测 **359 → 376** 全绿（2 xfail + 9 skip）。
+
 ## [2.4.3] - 2026-09-24
 
 ### 修复

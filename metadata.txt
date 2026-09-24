@@ -3,7 +3,7 @@ name=QGIS Agent
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
 description=LLM-powered intelligent assistant for QGIS. Natural language control of QGIS tools, plus an optional local MCP server so external AI agents (Claude Desktop, Cursor, etc.) can drive QGIS.
-version=2.4.3
+version=2.4.4
 author=bunkmr
 email=bunkr@qq.com
 about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It allows you to control QGIS through natural language conversations, including: viewing project info, adding/removing layers, executing Processing algorithms, running PyQGIS code, setting layer labels, rendering maps, and more.
@@ -49,6 +49,13 @@ deprecated=False
 hasProcessingProvider=no
 server=no
 changelog=
+    v2.4.4 更新内容：
+    【重要修复】模型开始调用工具后，用户自己发出去的消息会从对话区消失。真因是聊天区有两套写法：一套是「整体重写」（思考流、工具状态、错误卡片都会走它），另一套是直接 append（用户消息、各类提示行）。而 append 的内容没有同步进内部缓冲，于是任何一次整体重写都会把它整段抹掉——所以现象恰好是「一开始能看到，模型一调工具就不见了」。现在所有写入路径统一同步缓冲，并顺带修掉两个同源问题：清空对话后内容会复活、反复重写导致缓冲膨胀。实测：用户消息、工具状态、思考块共存且互不冲掉。
+    【重要修复】切换模型或温度后再对话，报 TypeError: 'method' object is not connected（conversation.py 的 response_ready.disconnect），且新对话的回复永远不显示。真因是切换模型时 processor 对象会被整体替换，而旧 worker 的信号连接仍留在旧对象上；旧 worker 收尾时触发旧对象的信号，回调却拿着新的 self.processor 去断开连接——既报错，又把新对象上刚建立的连接误断开。现在用信号发送者定位真正的对象，过期回调只清理自己、绝不渲染过期结果，也不碰新连接。
+    【修复】「停止」按钮永远提示「没有正在进行的生成」，中间的「停止中…」状态形同虚设。真因是停止时会把「空闲」标志提前置真，而判断总在置真之后执行。
+    【修复】会话收尾改为幂等：一轮请求只认第一次结果。工作线程先发错误再发完成时，两个事件都已排队，此前第二个到达就会抛错并让界面卡在发送中。
+    【测试】新增会话信号与 processor 生命周期回归守卫 13 例（含切换模型重建 processor 的真实现场）；测试基础设施修正 sys.path 顺序（项目根目录里有同名的 qgis_agent.py，曾使 import qgis_agent 命中文件而非包）；单测 359 → 376 全绿。
+
     v2.4.3 更新内容：
     【重要修复】本地大模型每次对话都报「模型服务内部错误 HTTP 500」，而同一个模型在别的客户端完全正常。根因是插件自己发出的消息格式有问题：Query Tuning 的改写结果此前被作为第二条 SystemMessage 追加在系统提示词之后，而 Qwen3 系 chat template 只允许第一条是 system，遇到第二条直接报 Jinja Exception: System message must be at the beginning。现已改为并入同一条系统消息，维持「有且仅有一条系统消息、且位于首位」的不变式。
     【修复】新增 template 错误分类（排在 server 之前）。此前 Jinja / chat template 报错因原文里带 HTTP 500 而被 server 抢走，给出「模型未加载 / 显存不足」这种完全不对路的建议；现在明确指出模板只允许第一条是 system，并指引先更新插件、再查消息序列、最后确认 --jinja。
