@@ -3,7 +3,7 @@ name=QGIS Agent
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
 description=LLM-powered intelligent assistant for QGIS. Natural language control of QGIS tools, plus an optional local MCP server so external AI agents (Claude Desktop, Cursor, etc.) can drive QGIS.
-version=2.4.6
+version=2.4.7
 author=bunkmr
 email=bunkr@qq.com
 about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It allows you to control QGIS through natural language conversations, including: viewing project info, adding/removing layers, executing Processing algorithms, running PyQGIS code, setting layer labels, rendering maps, and more.
@@ -49,6 +49,14 @@ deprecated=False
 hasProcessingProvider=no
 server=no
 changelog=
+    v2.4.7 更新内容：
+    【重要修复】Agent 明明调用了工具、却给出「待计算」「暂无法显示」这类空回答。真因是 execute_pyqgis 的受限执行环境里**缺少 __import__**：AST 安全检查层明确放行 import qgis，但执行层用了一份不含 __import__ 的内建白名单，结果**任何带 import 的代码都会失败**，只报一行 ImportError: __import__ not found。而系统提示词又写着「已预导入，无需 import」，模型照着写代码照样死。现在注入一个**受控 __import__**，与 AST 层**共用同一份模块白名单**：from qgis.core import ...、import math / json 等都能跑，而 import os / subprocess / shutil 在 AST 层和执行层各被拦一次，安全边界不降级。同时清理了那份从未被引用、且把 __import__ 列为「应移除」的死代码黑名单（正是它的错误意图来源）。
+    【重要修复】execute_processing 用 OUTPUT='memory:' 时结果图层不进工程，且只返回一句无用的对象 repr（<QgsVectorLayer: 'output' (memory)>），模型既拿不到图层名、也没法继续处理，只能反复重跑或放弃。现在结果图层会自动加入当前工程，并回报结构化信息（名称 / id / 是否入工程 / 要素数）与可操作的提示，模型可直接用该名称继续调用后续工具。
+    【修复】Agent 短暂失败后的重试计数在成功后不归零，导致后续偶发失败就**过早放弃**。现在每次成功都重置。
+    【修复】工具调用轮次跑满时的强制总结没有任何「不得虚报」的约束，模型会把「我准备怎么做」写成「已完成」。现在明确要求如实汇报：执行成功的结果与数值直接给出，失败或未执行的部分必须说明，严禁把计划写成已完成的成果，且不得用「待计算」「暂无法显示」等占位词搪塞。
+    【改进】系统提示词的导入规范由「已预导入，无需 import」改为**明确的导入白名单说明**，并给出统计类需求的正解范式（遍历要素 + QgsDistanceArea 椭球面积，直接输出 max/min/median 数值）。同时新增两条硬约束：结果必须给出真实数值；统计口径与单位要讲清楚。
+    【测试】新增 16 例纯 Python 契约守卫（execute_pyqgis 必须注入 __import__ 且与白名单同源、processing 的 memory 输出必须入工程、重试计数必须在循环内归零、危险模块仍被拒）；并新增真机行为守卫，用**真实的 call_tool → execute_pyqgis** 链路验证（不再用写死结果的工具替身 —— 正是它让这个 bug 一路绿着）。三处修复各做了一次反向验证：删掉任意一处，对应守卫立刻变红且无连带失败。另新增 3 例元数据守卫（metadata.txt 必须能被 configparser 解析 —— 正文里出现裸百分号会让整份元数据解析失败，手工检查发现不了）。单测 421 → 440。
+
     v2.4.6 更新内容：
     【重要修复】对话区只显示回答，看不到用户自己发出去的内容。真因是「写入约定」与「渲染约定」不一致，而且完全静默：本插件的一问一答**存在同一条 interaction 记录里**（typeMessage 恒为 return，requestText 与 responseText 同行），而重建对话历史的代码只在 typeMessage == "input" 时才渲染用户气泡 —— 那条分支永远不会成立（库里一条 input 记录都没有）。于是**每次重建历史都会把用户气泡丢掉**，而回答一到达就会重建一次，现象恰好就是「我发出去了，但只剩回答」。现在重建历史会像重建 LLM 上下文那样，把同一行的 requestText 一并渲染成用户气泡（processor 早就是这么做的，两处终于一致），并兼容「提问与回答各占一行」的旧形态数据，不会重复渲染。
     【修复】用户消息在发送瞬间与回答到达后的样式不一致（前者是右对齐纯文本、后者是气泡卡片），回答一到就肉眼可见地跳变。现在两处共用同一个气泡生成函数 user_bubble_html，从发送那一刻起就是最终样式。

@@ -82,6 +82,38 @@ AGENT_SYSTEM_PROMPT = """你是一个 QGIS 地理信息系统智能助手，运�
 - 当用户要求添加数据时，先检查文件路径是否存在
 - 对于复杂的多步骤任务，逐步执行并汇报进度
 
+## 禁止虚报成果（仅次于安全规则，违反即视为任务失败）
+- 只汇报工具**真实返回**的结果。工具报错、返回为空、或你尚未取得数据时，必须如实说明
+  「未取得」或「失败」，并说明原因。
+- 严禁把「准备」「计划」「尝试」「将要」「已确定算法路径」写成「已完成」「已确认」「已成功」。
+- 严禁用「待计算」「约为」「大概」等占位词顶替用户要的**具体数值**；严禁编造任何数值。
+- 用户要的是**结果**，不是过程总结。拿不到结果就直说拿不到，并给出下一步建议 ——
+  这比一串 ✅ 有用得多。
+
+## 统计与计算类需求的标准做法
+当用户要「统计/汇总/最大最小中位数/合计」这类结果时：
+- **首选**：一次 `execute_pyqgis` 算完并 `print` 出 JSON，直接读结果。比「先加字段再
+  Processing 统计」的两步走可靠得多（后者还会产生中间图层）。
+- 面积用 `QgsDistanceArea().measureArea(geom)` 取**椭球面积**（单位 m²），它能正确处理
+  EPSG:4490 这类**地理坐标系**（经纬度）—— 不要用 `geom.area()`。
+  注意遍历要素时要判空：`g = f.geometry()`；`if g is None or g.isEmpty(): continue`。
+- 单位换算：1 km² = 1e6 m²（要 km² 就 ÷1e6）；1 公顷 = 1e4 m²（要公顷就 ÷1e4）。
+  别乘反、别凭感觉“转成更合适的单位”。
+- 参考范式（改图层名即可用）：
+  from qgis.core import QgsProject
+  import json
+  layer = QgsProject.instance().mapLayersByName("图层名")[0]
+  calc = QgsDistanceArea(); calc.setEllipsoid("WGS84")
+  calc.setSourceCrs(layer.crs(), QgsProject.instance().transformContext())
+  vals = []
+  for f in layer.getFeatures():
+      g = f.geometry()
+      if g and not g.isEmpty(): vals.append(calc.measureArea(g) / 1e6)
+  vals.sort(); n = len(vals)
+  med = vals[n//2] if n % 2 else (vals[n//2-1] + vals[n//2]) / 2
+  print(json.dumps({"数量": n, "最大": round(vals[-1],4),
+                    "最小": round(vals[0],4), "中位数": round(med,4)}, ensure_ascii=False))
+
 ## 长期记忆
 你拥有长期记忆能力。通过 save_memory 工具可以保存重要信息（用户偏好、常用路径、项目配置、重要结论等），通过 load_memory 工具可以读取之前的记忆。
 **重要规则**：
@@ -100,8 +132,8 @@ AGENT_SYSTEM_PROMPT = """你是一个 QGIS 地理信息系统智能助手，运�
 你正在 QGIS 中运行，可以直接操作 iface（QGIS界面）、QgsProject（当前项目）等对象。
 Processing 算法 ID 格式为 "provider:algorithm"，如 "native:buffer"、"gdal:contour"。
 
-### execute_pyqgis 可用类型（已预导入，无需 import）
-以下类型已在 execute_pyqgis 环境中预先导入，生成代码时可直接使用：
+### execute_pyqgis 运行环境与导入规则
+以下类型已**预导入，可直接使用**（不写 import 也能用）：
 QgsPoint, QgsPointXY, QgsGeometry, QgsFeature, QgsField, QgsFields,
 QgsWkbTypes, QgsCoordinateTransform, QgsFeatureRequest, QgsDistanceArea, QgsUnitTypes,
 QgsVectorLayer, QgsRasterLayer, QgsCoordinateReferenceSystem, QgsProject, Qgis, iface,
@@ -109,6 +141,15 @@ QColor, QgsFillSymbol, QgsLineSymbol, QgsMarkerSymbol, QgsSingleSymbolRenderer,
 QgsCategorizedSymbolRenderer, QgsGraduatedSymbolRenderer, QgsSymbol,
 QgsRendererCategory, QgsRendererRange,
 QgsPalLayerSettings, QgsVectorLayerSimpleLabeling, QgsTextFormat
+
+**导入白名单（可正常 import，不必绕开）**：
+- QGIS 生态：`qgis.*`、`osgeo.*`、`processing`、`PyQt5`、`PyQt6`、`sip`
+- 标准库：`math`、`json`、`datetime`、`re`、`collections`、`itertools`、`functools`、
+  `operator`、`statistics`、`string`、`time`、`random`、`copy`、`decimal`、`typing` 等
+- 例：`from qgis.core import QgsDistanceArea`、`import json` —— 都可用。
+- **禁止导入**：`os` / `subprocess` / `shutil` / `socket` / `pathlib` / `io` / `threading` /
+  `inspect` 等（安全扫描会直接拒绝并返回「禁止导入模块」）。**不要尝试这些，也别用相对
+  导入**，那只会白白浪费一次工具调用轮次。
 
 ### 标注（Labeling）操作规则 — 极其重要！
 - **严禁通过 execute_pyqgis 代码方式设置标注！** QGIS 各版本标注 API 差异巨大，代码方式极易失败
@@ -772,6 +813,14 @@ class Processor(QObject):
                         if workflow_data["steps"]:
                             workflow_data["steps"][-1]["status"] = "completed"
 
+                        # ── 成功即清零失败计数（v2.4.7 修复）──
+                        # 原先 debug_retries 只在循环外初始化、失败就累加、**成功从不重置**，
+                        # 于是一轮长任务里零散的 4 次失败（哪怕每次后面都改对了）也会
+                        # 触发「已放弃自动重试」而整轮中止 —— 对「试错→修正」型的
+                        # 多步分析任务尤其致命。改为「连续失败」语义：一旦有工具成功，
+                        # 说明模型的自纠错在起效，计数归零。
+                        debug_retries = 0
+
                         # ── 工作流录制：工具调用成功后追加一步（默认关闭，仅在录制中生效）──
                         if self._workflow_store is not None and self._workflow_store.is_recording():
                             try:
@@ -841,8 +890,21 @@ class Processor(QObject):
                 thinking_callback("\n---\n")
 
         else:
-            # 达到最大轮次，强制要求 LLM 总结
-            messages.append(HumanMessage(content="请基于以上工具执行结果，用中文总结完成情况。"))
+            # 达到最大轮次，强制要求 LLM 总结。
+            # ⚠️ 措辞极其关键（v2.4.7 修复）：原先只说「总结完成情况」，于是当关键
+            #    工具全都失败时，模型会把失败包装成一串 ✅「已确认」「已准备」把用户
+            #    糊过去 —— 用户报障原文就是这样（通篇 ✅，数值全是「待计算」）。
+            #    这里把「如实区分成败、拿不到就说没拿到」写成硬性要求。
+            messages.append(HumanMessage(content=(
+                "工具调用轮次已达上限。请基于以上工具执行结果，用中文**如实总结**"
+                "（不要美化、不要凑成果）：\n"
+                "1) 哪些步骤真正成功了 —— 必须有工具返回的**具体数据**为证；"
+                "「准备」「计划」「尝试」「将要」都不算完成，禁止写成 ✅；\n"
+                "2) 哪些步骤失败了，失败原因是什么；\n"
+                "3) 若用户要的最终结果（数值/图层/文件）尚未取得，**必须直接说明没有取得**，"
+                "不得用「待计算」等占位词顶替答案，也不得编造任何数值；\n"
+                "4) 给出下一步可执行的具体建议。"
+            )))
             try:
                 final_resp = self.llm.invoke(messages)
                 final_response = (final_resp.content if hasattr(final_resp, 'content') and final_resp.content

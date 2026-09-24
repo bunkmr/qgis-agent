@@ -325,14 +325,49 @@ def execute_processing(algorithm: str, parameters: dict):
     try:
         import processing
         result = processing.run(algorithm, parameters)
-        # 将结果值转为可序列化的字符串
         serialized = {}
+        added_layers = []
         for k, v in result.items():
+            # ── 图层类输出：显式加入工程并回报结构化信息 ──
+            # v2.4.7 修复：OUTPUT='memory:' 的结果图层**不会自动进工程**，
+            # 而旧实现只回一个 str(v)，即 "<QgsVectorLayer: 'output' (memory)>"。
+            # 现场表现（用户报障）是：模型算完面积字段后去 find 图层名叫 "output"，
+            # 报「未找到图层: output」，接着连续两轮空转 —— 因为那个 repr 字符串
+            # 既没给名字、也没给 ID，更没说明结果在哪。工具的合理契约是
+            # 「执行完能在图层列表里看到结果」，这里把它补上。
+            if isinstance(v, QgsMapLayer):
+                try:
+                    name = v.name()
+                    layer_id = v.id()
+                    if QgsProject.instance().mapLayer(layer_id) is None:
+                        QgsProject.instance().addMapLayer(v)
+                        added_layers.append(name)
+                    info = {
+                        "name": name,
+                        "id": layer_id,
+                        "added_to_project": QgsProject.instance().mapLayer(layer_id) is not None,
+                    }
+                    try:
+                        if hasattr(v, "featureCount"):
+                            info["feature_count"] = v.featureCount()
+                    except Exception as _e:
+                        logger.debug("读取要素数失败（已忽略）: %s", _e)
+                    serialized[k] = info
+                    continue
+                except Exception as _e:
+                    logger.debug("图层输出处理失败，回落为字符串: %s", _e, exc_info=True)
             try:
                 serialized[k] = str(v)
             except Exception:
                 serialized[k] = type(v).__name__
-        return {"algorithm": algorithm, "result": serialized}
+        out = {"algorithm": algorithm, "result": serialized}
+        if added_layers:
+            out["hint"] = (
+                "结果图层已加入当前工程：%s。可直接用该名称或 id 调用 "
+                "get_layer_features / get_layer_profile 查看内容，无需重新添加。"
+                % "、".join(added_layers)
+            )
+        return out
     except Exception as e:
         # Use SmartDebugger for intelligent error analysis
         debugger = SmartDebugger()
@@ -394,22 +429,18 @@ _UNSAFE_NAME_CALLS = {
 # 允许出现在字符串参数中的属性名前缀（getattr/setattr 等的第二参）
 # 双下划线属性一律拒绝，防沙箱逃逸
 _FORBIDDEN_STRING_ATTR_PREFIX = "__"
-# 从 exec namespace 中移除的内建能力（黑名单）
-_REMOVED_BUILTINS = (
-    "eval", "exec", "compile", "__import__", "open", "getattr", "setattr",
-    "delattr", "globals", "locals", "vars", "breakpoint", "input",
-    "memoryview", "type", "classmethod", "staticmethod", "property",
-    "object", "super", "__build_class__", "help", "license", "copyright",
-    "credits", "exit", "quit",
-)
-# 保留在受限命名空间中的安全内建（白名单优先）
+# ⚠️ 受限命名空间的内建能力**只由下面这份白名单决定**（v2.4.7 起为唯一真源）。
+# 这里原先还有一份 _REMOVED_BUILTINS「黑名单」，但它从未被任何代码引用（纯死代码），
+# 且与白名单语义重复、互相矛盾 —— 尤其它把 __import__ 列为「应移除」，而白名单本身
+# 也漏了 __import__，两者叠加导致 execute_pyqgis 里任何 import 都必然失败。
+# 黑名单已删除，避免后来者误以为存在第二套策略。
 _SAFE_BUILTINS = (
     "abs", "all", "any", "ascii", "bin", "bool", "bytearray", "bytes",
     "callable", "chr", "dict", "dir", "divmod", "enumerate", "filter",
     "float", "format", "frozenset", "hash", "hex", "id", "int", "isinstance",
     "issubclass", "iter", "len", "list", "map", "max", "min", "next",
     "oct", "ord", "pow", "print", "range", "repr", "reversed", "round",
-    "set", "slice", "sorted", "str", "sum", "tuple", "zip", "Exception",
+    "set", "slice", "sorted", "str", "sum", "tuple", "type", "zip", "Exception",
     "ValueError", "TypeError", "KeyError", "IndexError", "RuntimeError",
     "StopIteration", "True", "False", "None", "NotImplemented", "Ellipsis",
     "BaseException", "ArithmeticError", "AssertionError", "AttributeError",
@@ -428,6 +459,37 @@ def _is_module_allowed(root: str) -> bool:
     if root in _SAFE_MODULES:
         return True
     return any(root.startswith(prefix) for prefix in _SAFE_MODULE_PREFIXES)
+
+
+def _make_safe_import():
+    """构造「受控 __import__」，与 _scan_code_safety 共用同一份模块白名单。
+
+    背景（v2.4.7 修复）：受限命名空间的 ``__builtins__`` 原先是一份纯白名单
+    字典，**里面没有 __import__**（它还被列在 _REMOVED_BUILTINS 里）。于是
+    ``exec(code, namespace)`` 里任何 ``import`` / ``from ... import`` 都直接抛
+    ``ImportError: __import__ not found`` —— 而错误信息**完全不指向根因**，
+    模型看到只会以为自己写错了，于是反复重写、白烧轮次。
+
+    更糟的是两层安全策略互相矛盾：AST 扫描层（_scan_code_safety）明确**放行**
+    qgis / processing / math / json 等模块，执行层却把所有导入能力删光了。
+    净效果是「execute_pyqgis 这把枪永远打不响」—— 因为 LLM 写 PyQGIS 代码的
+    天然起手式就是 ``from qgis.core import ...``，那是它见过的一切文档的样子。
+
+    现在把执行层的导入能力收回到与 AST 层**同一个判据**（_is_module_allowed）：
+    白名单内可正常导入，白名单外一律 ImportError。安全边界不降级。
+    """
+    real_import = builtins.__import__
+
+    def _safe_import(name, globals=None, locals=None, fromlist=(), level=0):
+        if level and level > 0:
+            raise ImportError("禁止相对导入，请使用绝对模块路径")
+        root = (name or "").split(".")[0]
+        if not _is_module_allowed(root):
+            raise ImportError(
+                f"禁止导入模块 '{name}'，该模块可触达系统/进程/网络")
+        return real_import(name, globals, locals, fromlist, level)
+
+    return _safe_import
 
 
 def _called_name(node) -> str:
@@ -529,6 +591,10 @@ def execute_pyqgis(code: str):
         safe_builtins.setdefault("True", True)
         safe_builtins.setdefault("False", False)
         safe_builtins.setdefault("None", None)
+        # 受控导入能力：与 _scan_code_safety 共用 _is_module_allowed 判据。
+        # 缺了它，代码里任何 `import` 都会失败（ImportError: __import__ not found），
+        # 而 LLM 写 PyQGIS 几乎必然带 import。
+        safe_builtins["__import__"] = _make_safe_import()
         namespace = {
             "iface": iface,
             "QgsProject": QgsProject,

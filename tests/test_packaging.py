@@ -310,5 +310,57 @@ class TestPackageManagerBrokenDependencies(unittest.TestCase):
         self.assertIn("手动 import", hint)
 
 
+class TestMetadataIsParserSafe(unittest.TestCase):
+    """metadata.txt 必须能被 Python 的 configparser 正常解析。
+
+    这不是洁癖：plugins.qgis.org 的检查器与 QGIS 自身都会用 configparser
+    读 metadata.txt，而它默认开启 `%` 插值 —— 正文里出现一个**裸 `%`**
+    （例如写「100% 失败」）就会让整份元数据解析失败：
+
+        InterpolationSyntaxError: '%' must be followed by '%' or '('
+
+    手工 grep 检查发现不了这类问题，所以在此钉死。写百分号请用「百分之百」
+    或写 `%%`。
+    """
+
+    def _parsed(self):
+        import configparser
+
+        with open(METADATA_PATH, "r", encoding="utf-8-sig") as fh:
+            raw = fh.read()
+        parser = configparser.ConfigParser()
+        parser.read_string(raw)          # 解析失败即测试失败
+        return parser
+
+    def test_metadata_parses_with_configparser(self):
+        parser = self._parsed()
+        self.assertIn("general", parser)
+        self.assertRegex(parser["general"]["version"], r"^\d+\.\d+\.\d+$")
+
+    def test_changelog_has_no_raw_percent(self):
+        """显式给出可读的错误信息（否则只能看到 configparser 的原始堆栈）"""
+        with open(METADATA_PATH, "r", encoding="utf-8-sig") as fh:
+            raw = fh.read()
+        changelog = raw.split("changelog=", 1)[1]
+        offenders = [
+            line.strip()[:70]
+            for line in changelog.splitlines()
+            if "%" in line.replace("%%", "")
+        ]
+        self.assertFalse(
+            offenders,
+            "metadata.txt 的 changelog 里有裸百分号，会让 configparser 插值报错：\n  "
+            + "\n  ".join(offenders[:3]))
+
+    def test_all_version_headings_survive(self):
+        """每个历史版本标题都必须在 —— 新增版本时最容易整段覆盖掉旧的"""
+        changelog = self._parsed()["general"]["changelog"]
+        versions = re.findall(r"v(\d+\.\d+\.\d+) 更新内容", changelog)
+        self.assertGreaterEqual(len(versions), 10, "changelog 版本标题疑似被整段覆盖")
+        self.assertEqual(len(versions), len(set(versions)), "changelog 有重复的版本标题")
+        self.assertEqual(versions[0], read_metadata_version(),
+                         "changelog 首段必须是当前版本")
+
+
 if __name__ == "__main__":
     unittest.main()
