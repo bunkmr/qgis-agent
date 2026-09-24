@@ -3,7 +3,7 @@ name=QGIS Agent
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
 description=LLM-powered intelligent assistant for QGIS. Natural language control of QGIS tools, plus an optional local MCP server so external AI agents (Claude Desktop, Cursor, etc.) can drive QGIS.
-version=2.4.4
+version=2.4.5
 author=bunkmr
 email=bunkr@qq.com
 about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It allows you to control QGIS through natural language conversations, including: viewing project info, adding/removing layers, executing Processing algorithms, running PyQGIS code, setting layer labels, rendering maps, and more.
@@ -49,6 +49,14 @@ deprecated=False
 hasProcessingProvider=no
 server=no
 changelog=
+    v2.4.5 更新内容：
+    【重要修复】把「复制客户端配置」给出的 JSON 粘进 Claude Desktop / Cursor 后连不上，甚至一启动就多出一个 QGIS 窗口。真因是配置里的 command 直接用了 sys.executable，而 macOS 上 QGIS 的 Python 嵌在 app 里，GUI 进程的 sys.executable 就是 QGIS 的 GUI 主程序（/Applications/QGIS.app/Contents/MacOS/QGIS）——它不是解释器，不读 stdin、不讲 JSON-RPC，被客户端当 stdio 服务拉起来只会再开一个 QGIS 界面然后握手超时。Windows 上 sys.executable 正好是 python.exe，所以这个坑只在 macOS 发作。现在配置生成会实际执行一次校验再落笔：把候选解释器真的跑一遍服务脚本的 --help，退出码为 0 才算通过（只看文件存在不够：macOS 上 QGIS.app/Contents/MacOS/python3.12 确实存在，但脱离 app 直接跑会报 Could not find platform independent libraries）。并优先选「在干净环境下就能启动」的解释器，因为客户端是在自己的环境里拉起 command 的；只在 QGIS 进程环境里能跑的解释器只作兜底且在界面上明确提示。候选一律先过「文件名像 python」这一关，绝不执行看起来不像解释器的可执行文件；一个都找不到时不回吐 sys.executable，而是退化成裸命令名 python3 / python。
+    【修复】「测试连通性」按钮也会误启动一个 QGIS 窗口（同一根因：同样用 sys.executable 拉子进程跑 --check）。现在与客户端配置共用同一套解释器解析逻辑，并在自检结果里写明用的是哪个解释器。
+    【修复】页签切换回调硬编码下标（模型页 = index 2），新增页签后即指向别的页。改为按控件定位。
+    【新增】MCP 服务独立成「MCP」页签，不再挂在「模型」页底部。分组框标题压短为「MCP 服务」（窄面板下过长标题会被裁掉）。「复制客户端配置」的弹窗会说明解释器为何不是 QGIS 的路径；README 新增「外部 Agent 接入」章节。
+    【文档】全量清理指向旧路径「模型配置 → MCP 服务」的提示与文档，并写明 macOS 上 QGIS.app/Contents/MacOS/python3.12 不能当 command 的原因。
+    【测试】单测 376 → 412（新增 23 例解释器解析 + 13 例页签结构守卫，均含反向验证）；真机双版本验收：新页签与配置生成 63/63（Qt5+Qt6，含用生成的 command 做真实 stdio 握手与 tools/list）、MCP 安装回归 50/50、对话 UI 137/137、dock 尺寸 29/29 与 27/27、浏览器兼容 TLS 15/15、令牌显示 21/21。
+
     v2.4.4 更新内容：
     【重要修复】模型开始调用工具后，用户自己发出去的消息会从对话区消失。真因是聊天区有两套写法：一套是「整体重写」（思考流、工具状态、错误卡片都会走它），另一套是直接 append（用户消息、各类提示行）。而 append 的内容没有同步进内部缓冲，于是任何一次整体重写都会把它整段抹掉——所以现象恰好是「一开始能看到，模型一调工具就不见了」。现在所有写入路径统一同步缓冲，并顺带修掉两个同源问题：清空对话后内容会复活、反复重写导致缓冲膨胀。实测：用户消息、工具状态、思考块共存且互不冲掉。
     【重要修复】切换模型或温度后再对话，报 TypeError: 'method' object is not connected（conversation.py 的 response_ready.disconnect），且新对话的回复永远不显示。真因是切换模型时 processor 对象会被整体替换，而旧 worker 的信号连接仍留在旧对象上；旧 worker 收尾时触发旧对象的信号，回调却拿着新的 self.processor 去断开连接——既报错，又把新对象上刚建立的连接误断开。现在用信号发送者定位真正的对象，过期回调只清理自己、绝不渲染过期结果，也不碰新连接。

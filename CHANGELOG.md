@@ -1,5 +1,37 @@
 # 更新日志
 
+## [2.4.5] - 2026-09-24
+
+### 修复
+- 🐛 **【重要】把「复制客户端配置」给出的 JSON 粘进 Claude Desktop / Cursor 后连不上，甚至一启动就多出一个 QGIS 窗口。**
+
+  真因是配置里的 `command` 直接用的是 `sys.executable` —— 而 **macOS 上 QGIS 的 Python 是嵌在 app 里的，GUI 进程的 `sys.executable` 就是 QGIS 的 GUI 主程序**（`/Applications/QGIS.app/Contents/MacOS/QGIS`）。它不是解释器：不读 stdin、不输出 JSON-RPC，被客户端当 stdio 服务拉起来只会**再开一个 QGIS 界面**，然后握手超时。Windows 上 `sys.executable` 正好就是 `python.exe`，所以这个坑一直没有暴露，只在 macOS 上发作。
+
+  现在配置生成会**实际执行一次校验**再落笔：把候选解释器真的跑一遍服务脚本的 `--help`，退出码为 0 才算通过 —— 只看「文件存在」是不够的，macOS 上 `QGIS.app/Contents/MacOS/python3.12` 确实存在，但它是给 app 内部用的 framework 解释器，脱离 app 直接跑会报 `Could not find platform independent libraries <prefix>`。
+
+  两个附带要点：
+  - **优先选「在干净环境下就能启动」的解释器**：客户端是在自己的环境里拉起 `command` 的，所以判定要模拟那个环境。只在 QGIS 进程环境里能跑（靠继承的 `PYTHONPATH` / `PYTHONHOME` 活着）的解释器只作兜底，并在界面上明确提示「客户端可能拉不起来」。
+  - **绝不执行看起来不像解释器的可执行文件**：候选一律先过「文件名像 python」这一关，否则探测本身就会误启动 GUI 程序。同理，一个都找不到时不回吐 `sys.executable`，而是退化成裸命令名 `python3` / `python` 交给客户端从 PATH 解析。
+
+- 🐛 **「测试连通性」按钮也会误启动一个 QGIS 窗口**——同一个根因（它同样用 `sys.executable` 拉子进程跑 `--check`）。现在与客户端配置共用同一套解释器解析逻辑，并在自检结果里写明用的是哪个解释器。
+
+- 🐛 **页签切换回调硬编码下标**：`_on_tab_changed` 原本写死「模型页 = index 2」。这次新增页签后它就指向了别的页——虽未造成可见故障，但下次增删页签必然踩雷。改为按控件定位（`twTabs.indexOf(tbSettings)`）。
+
+### 新增
+- ✨ **MCP 服务独立成「MCP」页签**（原挂在「模型」页底部）。MCP 面向的是「把 QGIS 交给外部 Agent 驱动」，与「选哪个模型对话」是两件不相干的事；混在一起时它被压在模型表格、测试连接、TLS 开关之后，窄面板里要滚很久才看得到，还容易被误认成模型相关设置。切到该页签时 MCP 控件可见、切回「模型」页即隐藏。
+
+  分组框标题顺带压短为「MCP 服务」（原先是「MCP 服务（供 Claude Desktop / Cursor 等外部 Agent 调用）」）—— 窄 dock 下 `QGroupBox` 的标题会被裁掉，长说明移到下方灰字里更稳妥。
+
+- ✨ 「复制客户端配置」的弹窗会附带说明「解释器为什么不是 QGIS 的路径」，避免用户把 `command` 手动改回 QGIS 主程序。README 新增「外部 Agent 接入（MCP，可选）」章节。
+
+### 文档
+- 全量清理指向旧路径「模型配置 → MCP 服务」的提示与文档（`mcp_protocol` 的两条错误提示、MCP Server 的握手说明与自检提示、帮助页页签表、两份 README）。
+- 明确写出 macOS 上 `QGIS.app/Contents/MacOS/python3.12` **不能**当 `command`，以及为什么。
+
+### 测试
+- 单测 **376 → 412**（新增 23 例解释器解析 + 13 例页签结构守卫）。解释器解析的守卫含反向验证：把优先级改回「第一个能跑的就行」，`test_clean_capable_candidate_beats_earlier_inherited_only` 会立刻变红。页签守卫也用 AST 跨文件校验「tooltip 数量 == 页签数量」——tooltip 是按顺序下发的，少写一条会让后面所有页签的提示整体错位，且不会有任何报错。
+- 真机双版本验收：新页签与配置生成 **63/63**（Qt5 + Qt6 各一遍，含用生成的 `command` 做真实 stdio 握手 + `tools/list`）、MCP 安装回归 **50/50**（双版本）、对话 UI **137/137**、dock 尺寸 **29/29 (Qt5) / 27/27 (Qt6)**、`浏览器兼容 TLS` 15/15、令牌显示 21/21。
+
 ## [2.4.4] - 2026-09-24
 
 ### 修复
