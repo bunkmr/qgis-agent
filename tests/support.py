@@ -22,10 +22,20 @@ _STUB_MARK = "_is_qgis_agent_test_stub"
 
 
 def ensure_project_path():
-    """把项目父目录（必要时还有项目目录本身）加入 sys.path"""
+    """把项目父目录（必要时还有项目目录本身）加入 sys.path。
+
+    ⚠️ 顺序很关键：**父目录必须排在项目目录之前**。
+    项目目录里有 `qgis_agent.py`（插件入口文件），若项目目录优先，
+    `import qgis_agent` 会命中这个**文件**而不是同名的**包目录**，
+    于是包内相对导入（`from .utils import ...`）全部失败，报
+    `attempted relative import with no known parent package`。
+    工具类模块（config / utils 等）仍可从项目目录按顶层名导入。
+    """
     for path in (PARENT_DIR, PROJECT_ROOT):
-        if path not in sys.path:
-            sys.path.insert(0, path)
+        while path in sys.path:
+            sys.path.remove(path)
+    sys.path.insert(0, PROJECT_ROOT)
+    sys.path.insert(0, PARENT_DIR)
 
 
 def has_module(name):
@@ -61,6 +71,9 @@ class Signal:
         self.arg_types = arg_types
         self.emitted = []
         self.slots = []
+        # 由 _SignalDescriptor 在首次访问时填入「信号属于哪个 QObject」，
+        # 供 QObject.sender() 在槽函数里反查发送者（对齐真实 Qt 语义）。
+        self.owner = None
 
     def connect(self, slot):
         self.slots.append(slot)
@@ -70,8 +83,14 @@ class Signal:
 
     def emit(self, *args):
         self.emitted.append(args)
-        for slot in list(self.slots):
-            slot(*args)
+        if self.owner is not None:
+            QObject._sender_stack.append(self.owner)
+        try:
+            for slot in list(self.slots):
+                slot(*args)
+        finally:
+            if self.owner is not None:
+                QObject._sender_stack.pop()
 
     @property
     def count(self):
@@ -97,13 +116,21 @@ class _SignalDescriptor:
         signal = obj.__dict__.get(self.name)
         if signal is None:
             signal = Signal(*self.arg_types)
+            signal.owner = obj
             setattr(obj, self.name, signal)
         return signal
 
 
 class QObject:
+    #: emit 期间的发送者栈，供 QObject.sender() 使用（对齐 Qt 的 sender() 语义）
+    _sender_stack = []
+
     def __init__(self, *args, **kwargs):
         self._children = []
+
+    def sender(self):
+        """返回当前正在执行的槽所对应的信号发送者（不在槽内时返回 None）。"""
+        return self._sender_stack[-1] if self._sender_stack else None
 
     def deleteLater(self):
         pass
@@ -348,6 +375,64 @@ def install_module_stub(dotted_name, **attrs):
         if parent is not None:
             setattr(parent, child, mod)
     return mod
+
+
+def install_httpx_stub():
+    """注入 httpx 替身（裸环境没有该库，而 llm_providers 在**模块级**继承了它）。
+
+    必须是「真类」而不是 MagicMock：llm_providers 里有
+        class _CurlTransport(httpx.HTTPTransport): ...
+    以 MagicMock 为基类会在类创建时就抛错，导致整个包导不进来。
+
+    返回 True 表示注入成功，False 表示环境里已有真实 httpx。
+    """
+    if has_module("httpx"):
+        return False
+
+    class _Transport:
+        def __init__(self, *args, **kwargs):
+            self.args = args
+            self.kwargs = kwargs
+
+        def handle_request(self, request):  # pragma: no cover - 测试不发真请求
+            raise RuntimeError("测试替身：httpx 在本用例中不可用")
+
+    class _Client(_Transport):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.is_closed = False
+
+        def close(self):
+            self.is_closed = True
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            self.close()
+            return False
+
+    mod = install_module_stub(
+        "httpx",
+        HTTPTransport=_Transport,
+        AsyncHTTPTransport=_Transport,
+        Client=_Client,
+        AsyncClient=_Client,
+        Headers=dict,
+        Proxy=dict,
+        Response=lambda *a, **kw: None,
+        HTTPError=RuntimeError,
+        TransportError=RuntimeError,
+        TimeoutException=RuntimeError,
+    )
+    return mod is not None
+
+
+def install_runtime_stubs():
+    """一次装齐导入被测运行时模块所需的全部替身（顺序无关，幂等）。"""
+    install_qgis_stub()
+    install_langchain_stub()
+    install_httpx_stub()
 
 
 def temp_home():

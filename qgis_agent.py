@@ -781,6 +781,15 @@ class QGISAgent:
             # 不 shutdown 会泄漏线程池，且上一轮未结束时可能拖垮 QGIS
             old_processor = getattr(self.live_conversation, "processor", None)
             if old_processor is not None:
+                # ⚠️ 必须先让会话把挂在旧 processor 上的信号连接清掉，再 shutdown。
+                # 否则旧 worker 收尾时仍会触发会话的槽，而那时 self.processor 已是
+                # 新对象 —— 拿新对象去 disconnect 就是用户现场看到的
+                # `TypeError: 'method' object is not connected`（并连带把新对象的
+                # 连接误断开，导致新一轮的回复永远渲染不出来）。
+                try:
+                    self.live_conversation.release_processor()
+                except Exception as _e:
+                    logger.debug("清理旧 Processor 的连接失败，继续重建: %s", _e, exc_info=True)
                 try:
                     old_processor.shutdown()
                 except Exception as _e:
@@ -1267,10 +1276,16 @@ class QGISAgent:
 
         若当前并无在途调用，则直接恢复界面，不进入中间态。
         """
-        if self.live_conversation:
-            self.live_conversation.stop()
+        conv = self.live_conversation
+        # ⚠️ 必须在 stop() **之前**读「是否有在途调用」：stop() 只负责发出中断请求，
+        # 但旧实现顺带把 llm_finished 置了 True，于是这里永远判成「没有正在进行的
+        # 生成」，「停止中…」中间态形同虚设。Conversation.stop 已不再置位，
+        # 这里仍保持「先读状态、再发中断」的写法，不依赖对方实现细节。
+        busy = conv is not None and not getattr(conv, "llm_finished", True)
+        if conv is not None:
+            conv.stop()
 
-        if getattr(self.live_conversation, "llm_finished", True):
+        if not busy:
             # 没有在途调用：直接恢复界面
             self.dockwidget.set_sending_state(False)
             self.dockwidget.enableAllButtons()

@@ -277,22 +277,64 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
             logger.warning("聊天区装配自检失败：search=%s chat=%s input=%s bar=%s footer=%s",
                            i_search, chat_index, i_input, i_bar, i_footer)
 
-        # 监测 txHistory 内容变化以切换空状态/历史视图
+        # 监测 txHistory 内容变化以切换空状态/历史视图。
+        #
+        # ⚠️ 这里同时承担一件更要紧的事：**任何直接写入 txHistory 的内容都必须
+        # 同步进 self._chat_html 缓冲**。原因是本类有些渲染走「整体重写」
+        # （_set_chat_html：思考流、工具状态、错误卡片），而那些不走缓冲的调用
+        # （qgis_agent 里的 txHistory.append —— 用户消息、各类提示行）会在下一次
+        # 重写时被整段抹掉。此前只包了调用没同步缓冲，症状就是
+        # **「我发出去的文本，在模型开始调工具后就不见了」**（工具状态一刷新即丢）。
         self._txhistory_orig_append = self.txHistory.append
         self._txhistory_orig_sethtml = self.txHistory.setHtml
+        self._txhistory_orig_clear = self.txHistory.clear
+
+        def _sync_buffer(chunk):
+            """把一段正文并入缓冲（纯字符串操作，失败不影响渲染）。"""
+            try:
+                text = "" if chunk is None else str(chunk)
+                if text:
+                    self._chat_html = (self._chat_html or "") + text
+            except Exception:
+                logger.debug("同步聊天区缓冲失败", exc_info=True)
 
         def _wrap_append(*args, **kwargs):
+            # 保持原生 append 的渲染行为不变（它天然追加一个段落），只额外记一份缓冲。
             result = self._txhistory_orig_append(*args, **kwargs)
+            _sync_buffer("".join(str(a) for a in args if a is not None))
             self._update_empty_state()
             return result
 
         def _wrap_sethtml(*args, **kwargs):
             result = self._txhistory_orig_sethtml(*args, **kwargs)
+            try:
+                html = args[0] if args else kwargs.get("html")
+                text = "" if html is None else str(html)
+                # 内部 _set_chat_html 传进来的是「CSS + 正文」，而它自己已维护缓冲；
+                # 这里必须剥掉 CSS 前缀再赋值，否则缓冲会被 CSS 反复污染、越滚越大。
+                css = self._chat_css()
+                if css and text.startswith(css):
+                    text = text[len(css):]
+                self._chat_html = text
+            except Exception:
+                logger.debug("同步聊天区缓冲失败（setHtml）", exc_info=True)
+            self._update_empty_state()
+            return result
+
+        def _wrap_clear(*args, **kwargs):
+            # 清空必须连缓冲一起清，否则下一次整体重写会把「已清掉的内容」复活
+            # （例如删除会话后 txHistory.clear()，紧接着一次工具状态刷新就写回来了）。
+            result = self._txhistory_orig_clear(*args, **kwargs)
+            try:
+                self._chat_html = ""
+            except Exception:
+                logger.debug("清空聊天区缓冲失败", exc_info=True)
             self._update_empty_state()
             return result
 
         self.txHistory.append = _wrap_append
         self.txHistory.setHtml = _wrap_sethtml
+        self.txHistory.clear = _wrap_clear
 
         # 聊天区当前 HTML（原始串，不改道 toHtml()）。
         # 思考流是「原地替换」实现，若每帧都走 toHtml()→setHtml() 往返，Qt 会把
