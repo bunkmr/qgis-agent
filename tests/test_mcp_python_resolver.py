@@ -89,6 +89,31 @@ class TestCandidateOrdering(unittest.TestCase):
         self.assertEqual(len(candidates), len(set(candidates)))
 
 
+class TestServerScriptPrerequisites(unittest.TestCase):
+    """解析器的判据依赖「服务脚本支持 --help」，这条前提本身要守住。
+
+    解析器把「跑一遍服务脚本的 --help，退出码 0」当作合格证据。所以**服务脚本
+    必须真的实现 --help**（argparse 给的）。哪天有人把 argparse 去掉，解析器不会
+    报错，只会悄悄退化成「随便挑一个能启动的解释器」—— 这正是要在测试里钉死的。
+    """
+
+    def test_server_script_exists(self):
+        self.assertTrue(os.path.exists(SERVER), SERVER)
+
+    def test_server_script_supports_help(self):
+        import subprocess
+        proc = subprocess.run([sys.executable, SERVER, "--help"],
+                              capture_output=True, text=True, timeout=30)
+        self.assertEqual(proc.returncode, 0, proc.stderr[:400])
+        self.assertIn("usage", (proc.stdout or "").lower())
+
+    def test_can_run_accepts_current_interpreter(self):
+        mb.clear_python_cache()
+        self.addCleanup(mb.clear_python_cache)
+        self.assertTrue(mb._can_run(sys.executable, SERVER),
+                        "当前解释器跑不起来自家服务脚本：%s" % sys.executable)
+
+
 class TestResolvePrefersCleanEnv(unittest.TestCase):
     """客户端在**自己的**环境里拉起 command，所以干净环境可用才是硬指标。"""
 

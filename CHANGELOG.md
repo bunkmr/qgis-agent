@@ -29,7 +29,7 @@
 - 明确写出 macOS 上 `QGIS.app/Contents/MacOS/python3.12` **不能**当 `command`，以及为什么。
 
 ### 测试
-- 单测 **376 → 412**（新增 23 例解释器解析 + 13 例页签结构守卫）。解释器解析的守卫含反向验证：把优先级改回「第一个能跑的就行」，`test_clean_capable_candidate_beats_earlier_inherited_only` 会立刻变红。页签守卫也用 AST 跨文件校验「tooltip 数量 == 页签数量」——tooltip 是按顺序下发的，少写一条会让后面所有页签的提示整体错位，且不会有任何报错。
+- 单测 **376 → 415**（新增 26 例解释器解析 + 13 例页签结构守卫）。解释器解析的守卫含反向验证：把优先级改回「第一个能跑的就行」，`test_clean_capable_candidate_beats_earlier_inherited_only` 会立刻变红。页签守卫也用 AST 跨文件校验「tooltip 数量 == 页签数量」——tooltip 是按顺序下发的，少写一条会让后面所有页签的提示整体错位，且不会有任何报错。
 - 真机双版本验收：新页签与配置生成 **63/63**（Qt5 + Qt6 各一遍，含用生成的 `command` 做真实 stdio 握手 + `tools/list`）、MCP 安装回归 **50/50**（双版本）、对话 UI **137/137**、dock 尺寸 **29/29 (Qt5) / 27/27 (Qt6)**、`浏览器兼容 TLS` 15/15、令牌显示 21/21。
 
 ## [2.4.4] - 2026-09-24
