@@ -183,46 +183,92 @@ class _RagBuildWorker(QThread):
             logger.debug("RAG 后台建索引异常（已忽略，不影响使用）", exc_info=True)
 
 
-class _TestConnectionWorker(QThread):
-    """D14 后台测试模型 API 连通性，避免界面假死。
+class DiagnosisDialog(QDialog):
+    """连接诊断结果：一句结论 + 可滚动的明细报告 + 复制。
 
-    finished(success: bool, message: str)
+    为什么不用 QMessageBox：诊断报告有十几行（含服务端原文与建议），塞进
+    QMessageBox 的正文会被撑得很丑，塞进「详细」又要用户再点一次展开；
+    而且那里没有「复制」——用户想把这个报告发给别人看时只能手抄。
     """
 
-    finished = pyqtSignal(bool, str)
+    def __init__(self, headline, report, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("连接诊断")
+        self.resize(600, 440)
 
-    def __init__(self, provider, model, api_key, endpoint, timeout=20):
+        layout = QVBoxLayout(self)
+        layout.setSpacing(6)
+
+        self.lblHeadline = QLabel(str(headline or "诊断完成"))
+        self.lblHeadline.setWordWrap(True)
+        font = self.lblHeadline.font()
+        font.setBold(True)
+        self.lblHeadline.setFont(font)
+        layout.addWidget(self.lblHeadline)
+
+        self.txtReport = QPlainTextEdit(str(report or ""))
+        self.txtReport.setReadOnly(True)
+        self.txtReport.setStyleSheet(
+            "font-family: Consolas, Menlo, Monaco, monospace; font-size: 11px;"
+        )
+        layout.addWidget(self.txtReport, 1)
+
+        buttons = QHBoxLayout()
+        self.pbCopy = QPushButton("复制报告")
+        self.pbCopy.clicked.connect(self._copy_report)
+        pbClose = QPushButton("关闭")
+        pbClose.clicked.connect(self.accept)
+        buttons.addWidget(self.pbCopy)
+        buttons.addStretch(1)
+        buttons.addWidget(pbClose)
+        layout.addLayout(buttons)
+
+    def _copy_report(self):
+        try:
+            QApplication.clipboard().setText(self.txtReport.toPlainText())
+            self.pbCopy.setText("已复制 ✓")
+        except Exception as _e:
+            logger.debug("复制诊断报告失败: %s", _e, exc_info=True)
+
+
+class _EndpointDiagnoseWorker(QThread):
+    """后台跑端点诊断（地址 / 模型名 / 上下文 / 工具支持四项检查）。
+
+    为什么必须后台：诊断会依次发起最多 6 个 HTTP 请求，每项各自带 timeout，
+    最坏情况要等十几秒；放主线程会把 QGIS 界面卡住。
+
+    finished(ok: bool, headline: str, report: str)
+    """
+
+    finished = pyqtSignal(bool, str, str)
+
+    def __init__(self, provider, model, api_key, endpoint, timeout=8, browser_tls=False):
         super().__init__()
         self.provider = provider
         self.model = model
         self.api_key = api_key
         self.endpoint = endpoint
         self.timeout = timeout
+        self.browser_tls = browser_tls
 
     def run(self):
         try:
-            from .llm_providers import get_llm_instance, resolve_browser_tls
-            from langchain_core.messages import HumanMessage
-            requested = bool(QSettings("QGIS", "QGISAgent").value("use_browser_tls", False))
-            # 依赖缺失时降级为标准 TLS 栈：连接测试要给出「能不能用」的结论，
-            # 而不是被一个可选依赖卡死在弹窗上。
-            effective, tls_reason = resolve_browser_tls(requested)
-            llm = get_llm_instance(
+            try:
+                from .endpoint_diagnostics import diagnose, format_report
+            except ImportError:
+                from endpoint_diagnostics import diagnose, format_report
+            result = diagnose(
                 self.provider, self.model, self.api_key, self.endpoint,
-                temperature=0, timeout=self.timeout, browser_tls=effective,
+                timeout=self.timeout, browser_tls=self.browser_tls,
             )
-            resp = llm.invoke([HumanMessage(content="请只回复字符 OK")])
-            text = getattr(resp, "content", str(resp))
-            if isinstance(text, list):
-                text = " ".join(str(p.get("text", p)) for p in text)
-            note = ""
-            if tls_reason:
-                note = ("\n\n注：「浏览器兼容 TLS」已勾选但未生效（%s），本次使用标准 TLS 栈。"
-                        "仅当接口连接被网关重置时才需要它，可在 QGIS 自带 Python 中执行 "
-                        "pip install curl_cffi 后重开本页。" % tls_reason)
-            self.finished.emit(True, f"连接成功：{str(text)[:80]}{note}")
-        except Exception as _e:
-            self.finished.emit(False, str(_e)[:300])
+            self.finished.emit(
+                bool(result.get("ok")),
+                str(result.get("headline") or "诊断完成"),
+                format_report(result),
+            )
+        except Exception as _e:  # noqa: BLE001 - 诊断失败也要给用户一个明确交代
+            logger.debug("端点诊断异常: %s", _e, exc_info=True)
+            self.finished.emit(False, "诊断未能完成", "诊断过程中出现异常：%s" % _e)
 
 
 class _CodeReviewWorker(QThread):
@@ -565,6 +611,8 @@ class QGISAgent:
         )
         self.dockwidget.searchPressed.connect(self._on_search_conversation)
         self.dockwidget.switchClearMode.connect(self._switch_clear_mode)
+        # 对话里错误卡片的「诊断连接」链接 —— dock 只发信号，网络请求在这里跑
+        self.dockwidget.endpointDiagnosisRequested.connect(self._on_test_connection)
 
         # 报告页签按钮事件
         self.dockwidget.pbRunCode.clicked.connect(self._on_run_code)
@@ -927,10 +975,12 @@ class QGISAgent:
         # 尝试用 error_classifier 做错误分级；模块缺失或异常时降级为原始展示
         info = None
         try:
-            from .error_classifier import classify_error
+            from .error_classifier import classify_error, summarize_error
             info = classify_error(err_text)
+            detail = summarize_error(err_text)
         except Exception as _e:
             logger.debug("错误分级不可用，回退为原始错误信息展示: %s", _e, exc_info=True)
+            detail = err_text[:240]
 
         if isinstance(info, dict) and info.get("title"):
             title = str(info.get("title"))
@@ -951,20 +1001,22 @@ class QGISAgent:
             message = err_text
             hint = ""
 
-        html_parts = [
-            f"<p style='color:red;'><b>{html_module.escape(title)}</b></p>",
-            f"<p style='margin:0;'>{html_module.escape(message)}</p>",
-        ]
-        if hint:
-            html_parts.append(
-                f"<p style='margin:0;color:#666;'>建议：{html_module.escape(hint)}</p>"
-            )
-        # 技术细节（原始堆栈）不直接铺在对话里，写入执行日志面板供排查
-        html_parts.append(
-            "<p style='margin:0;color:#888;font-size:11px;'>"
-            f"类型：{html_module.escape(category)}，技术细节已写入「报告」页签的执行日志。</p>"
+        # 关键改动：无论分级成功与否都带上服务端原文。
+        # 此前只把原始报错写进「报告」页签的日志，用户看到的永远是
+        # 「错误原因无法自动识别」，必须自己去翻日志才能拿到真正的信息。
+        rendered = self.dockwidget.append_error_notice(
+            title=title, message=message, hint=hint, detail=detail,
+            category=category, raw_text=err_text,
         )
-        self.dockwidget.txHistory.append("".join(html_parts))
+        if not rendered:
+            # 极端兜底：连卡片都渲染不出来时，至少往聊天区写一行红字
+            try:
+                self.dockwidget.txHistory.append(
+                    "<p style='color:red;'><b>%s</b> %s</p>"
+                    % (html_module.escape(title), html_module.escape(message))
+                )
+            except Exception as _e:
+                logger.debug("兜底错误展示失败: %s", _e, exc_info=True)
 
         try:
             self.dockwidget.append_execution_log(f"❌ {title}\n{err_text}")
@@ -1421,8 +1473,14 @@ class QGISAgent:
         self.dockwidget.btnAddModel.clicked.connect(self._add_model_row)
 
         # D14：测试连接按钮（点击后后台线程执行，不阻塞界面）
-        self.btnTestConnection = QPushButton("🔌 测试连接")
-        self.btnTestConnection.setToolTip("用当前选中的模型测试 API 连通性（后台线程执行，不阻塞界面）")
+        # v2.4.2 起升级为「测试连接与诊断」：一次跑完地址 / 模型名 / 上下文 / 工具支持
+        # 四项检查 —— 只测「连不连得上」会漏掉最坑的一类故障（模型不支持工具调用时
+        # 连接测试照样通过，但对话每次都失败）。
+        self.btnTestConnection = QPushButton("🔌 测试连接与诊断")
+        self.btnTestConnection.setToolTip(
+            "逐项检查：服务地址是否可达、模型名是否与服务端一致、"
+            "上下文长度是否够用、是否支持工具调用（后台线程执行，不阻塞界面）"
+        )
         self.btnTestConnection.clicked.connect(self._on_test_connection)
         self.dockwidget.settingsLayout.addWidget(self.btnTestConnection)
 
@@ -1843,7 +1901,12 @@ class QGISAgent:
 
 
     def _on_test_connection(self):
-        """D14：后台测试当前选中模型的 API 连通性，避免界面假死。"""
+        """测试连接与诊断：后台跑四项检查（地址 / 模型名 / 上下文 / 工具支持）。
+
+        与旧实现的区别：旧版只发一条纯文本消息，因此**模型不支持工具调用时它照样
+        报「连接成功」**，而真实对话每次都失败 —— 用户看到的现象就是「模型在别处
+        能用，这里不行」。现在会额外发一次带 tools 的请求，把这个差异显式暴露出来。
+        """
         llm_id = self._get_selected_llm_id()
         if not llm_id:
             QMessageBox.warning(
@@ -1860,27 +1923,36 @@ class QGISAgent:
         btn = getattr(self, "btnTestConnection", None)
         if btn is not None:
             btn.setEnabled(False)
-            btn.setText("测试中…")
+            btn.setText("诊断中…")
         _set_status = getattr(self.dockwidget, "_set_status", None)
         if callable(_set_status):
-            _set_status("🔌 正在测试连接…")
+            _set_status("🔍 正在诊断连接…")
 
-        worker = _TestConnectionWorker(provider, model_name, api_key, endpoint, timeout=20)
-        self._test_conn_worker = worker  # 保持引用，避免被 GC 回收
+        # 诊断要反映真实请求栈：勾了浏览器兼容 TLS 就按同一栈去探
+        effective_tls = False
+        try:
+            from .llm_providers import resolve_browser_tls
+            requested = bool(QSettings("QGIS", "QGISAgent").value("use_browser_tls", False))
+            effective_tls = bool(resolve_browser_tls(requested)[0])
+        except Exception as _e:
+            logger.debug("读取浏览器兼容 TLS 设置失败，按未启用处理: %s", _e, exc_info=True)
 
-        def _on_done(success, message):
+        worker = _EndpointDiagnoseWorker(
+            provider, model_name, api_key, endpoint, timeout=8, browser_tls=effective_tls
+        )
+        self._diagnose_worker = worker  # 保持引用，避免被 GC 回收
+
+        def _on_done(ok, headline, report):
             try:
                 if btn is not None:
                     btn.setEnabled(True)
-                    btn.setText("🔌 测试连接")
+                    btn.setText("🔌 测试连接与诊断")
                 if callable(_set_status):
-                    _set_status("✅ 连接成功" if success else "⚠ 连接失败")
-                if success:
-                    QMessageBox.information(self.dockwidget, "连接测试", message)
-                else:
-                    QMessageBox.warning(self.dockwidget, "连接测试失败", message)
+                    _set_status("✅ 诊断通过" if ok else "⚠ 诊断发现问题")
+                dlg = DiagnosisDialog(headline, report, self.dockwidget)
+                dlg.exec()
             except Exception as _e:
-                logger.debug("测试连接回调异常: %s", _e, exc_info=True)
+                logger.debug("诊断回调异常: %s", _e, exc_info=True)
 
         worker.finished.connect(_on_done)
         worker.start()

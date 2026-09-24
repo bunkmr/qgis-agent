@@ -24,7 +24,7 @@ from qgis.PyQt.QtWidgets import (
 from qgis.PyQt.QtGui import QFont, QTextDocument, QTextLayout, QTextOption
 
 from .utils import (handle_none_conversation, pack, unpack, format_description,
-                    create_markdown, chat_colors)
+                    create_markdown, chat_colors, is_dark_color)
 from .qgis_agent_dockwidget_base_ui import Ui_QGISAgentDockWidget
 from .thinking_display import ThinkingManager, create_thinking_block
 
@@ -44,6 +44,23 @@ MESSAGE_INPUT_MAX_HEIGHT = 140
 USER_BUBBLE_WIDTH = "78%"
 AI_BUBBLE_WIDTH = "88%"
 
+# 等宽字体栈（代码块、原始报错原文共用）。
+# 不用 `font-family: monospace` 单值：Qt 在部分平台上会退化成难看的位图字体。
+MONO_FONT_STACK = '"SF Mono", Menlo, Consolas, Monaco, monospace'
+
+# 告警色：浅色主题用深红，深色主题必须亮一档，否则 #C0392B 在深底上发闷、几乎看不出是红的
+ALERT_COLOR_LIGHT = "#C0392B"
+ALERT_COLOR_DARK = "#FF7A70"
+
+
+def alert_color(colors):
+    """按主题给出可读的告警色。colors 为 utils.chat_colors() 的结果。"""
+    try:
+        base = (colors or {}).get("chat_bg") or "#ffffff"
+        return ALERT_COLOR_DARK if is_dark_color(base) else ALERT_COLOR_LIGHT
+    except Exception:
+        return ALERT_COLOR_LIGHT
+
 
 class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
     """
@@ -60,6 +77,8 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
     searchPressed = pyqtSignal(str)
     switchClearMode = pyqtSignal(str)
     stopRequested = pyqtSignal()
+    # 聊天区里点了「诊断连接」——由 QGISAgent 接住并跑端点诊断（dock 本身不碰网络）
+    endpointDiagnosisRequested = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -82,6 +101,7 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         self.ptSearchConversationCard.installEventFilter(self)
 
         self.twTabs.setCurrentWidget(self.tbMessages)
+        self._configure_tab_bar()
 
         # 思考内容管理器与累积缓冲
         self._thinking_manager = ThinkingManager()
@@ -91,6 +111,11 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         # 思考块折叠态（<details> 在 QTextDocument 里不生效，折叠由本类自己实现）
         self._thinking_final_collapsed = True
         self._last_thinking_time = ""
+
+        # 最近一次请求失败的完整原始报错（供「复制报错详情」用）。
+        # 界面上只展示提炼后的一句，完整文本留给复制/反馈。
+        self._last_error_detail = ""
+        self._last_error_category = ""
 
         # 输入框高度随内容自适应（44–140px）
         # 注意：Qt6 已移除 QTextDocument.sizeChanged 信号，改用 QTextEdit.textChanged（Qt5/Qt6 通用）
@@ -283,6 +308,39 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
 
     # ── 聊天区样式 ──────────────────────────────────────────────────
 
+    def _configure_tab_bar(self):
+        """顶部页签的行为配置（样式在 _apply_chat_style 里，颜色随调色板走）。
+
+        窄 dock 下 6 个页签会被挤压成半截文字，因此：
+          - 不扩展（setExpanding(False)）：每个页签只占自己需要的宽度，
+            多余空间留白，而不是把 6 个页签均分拉宽；
+          - 允许滚动（setUsesScrollButtons(True)）：真的放不下时出现左右箭头，
+            而不是把文字截断成「对…」「模…」；
+          - 省略号放右侧。
+        页签文案已缩短为 2–3 字（见 base_ui），配合 tooltip 说明完整含义。
+        """
+        try:
+            bar = self.twTabs.tabBar()
+            bar.setExpanding(False)
+            bar.setUsesScrollButtons(True)
+            bar.setElideMode(Qt.TextElideMode.ElideRight)
+            bar.setDrawBase(False)
+        except Exception as e:
+            logger.debug("配置页签行为失败: %s", e, exc_info=True)
+
+        for index, tip in enumerate([
+            "与 Agent 对话，用自然语言执行 QGIS 任务",
+            "历史对话：加载 / 搜索 / 删除",
+            "模型配置：添加模型、测试连接与诊断、浏览器兼容 TLS、MCP 服务",
+            "工作流：本次任务已执行的步骤",
+            "报告：生成的代码与执行日志（排查报错看这里）",
+            "帮助：功能说明、快速上手与常见问题",
+        ]):
+            try:
+                self.twTabs.setTabToolTip(index, tip)
+            except Exception:
+                break
+
     def _apply_chat_style(self):
         """按当前调色板给聊天区控件上样式；任何异常都不影响功能。
 
@@ -355,12 +413,25 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         for widget in (self.lblModel, self.lblTemperature, self.lblTempValue):
             _qss(widget, "font-size: 12px; color: %(muted)s;" % c)
         _qss(self.cbSkipConfirm, "QCheckBox { font-size: 11px; color: %(muted)s; }" % c)
+        # 顶部页签：下划线式（不画边框盒子），选中项用强调色下划线 + 淡底色标出。
+        # 全部色值来自调色板派生，两个主题下都能读；页签是真实控件（不是富文本），
+        # 因此这里的 border-radius 是生效的。
+        # 内边距刻意压到 5px/7px：dock 最小宽度只有 360px，6 个页签在 9px 内边距下
+        # 会差一个页签放不下（实测约 390px），压紧后 360px 可完整显示全部页签。
         _qss(self.twTabs, (
-            "QTabBar::tab { padding: 5px 8px; font-size: 12px; color: %(fg)s;"
-            " background: %(ai_bg)s; }"
-            "QTabBar::tab:selected { background: %(chat_bg)s; border-bottom: 2px solid"
-            " %(user_edge)s; }"
-            "QTabWidget::pane { border: 1px solid %(border)s; }"
+            "QTabWidget::pane { border: none; border-top: 1px solid %(border)s; }"
+            "QTabBar { background: transparent; qproperty-drawBase: 0; font-size: 12px; }"
+            "QTabBar::tab {"
+            " background: transparent; color: %(muted)s;"
+            " padding: 5px 7px; margin: 0;"
+            " border: 1px solid transparent; border-bottom: 2px solid transparent;"
+            " border-top-left-radius: 4px; border-top-right-radius: 4px;"
+            " font-size: 12px; }"
+            "QTabBar::tab:hover { color: %(fg)s; background: %(ai_bg)s;"
+            " border-bottom: 2px solid %(border)s; }"
+            "QTabBar::tab:selected { color: %(user_edge)s; background: %(ai_bg)s;"
+            " border-bottom: 2px solid %(user_edge)s; }"
+            "QTabBar::tab:disabled { color: %(border)s; }"
         ) % c)
 
     def _set_chat_html(self, body_html):
@@ -399,7 +470,7 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
             "pre { background-color: %(code_bg)s; padding: 8px 10px;"
             " border-left: 3px solid %(border)s; white-space: pre-wrap;"
             " word-break: break-word;"
-            " font-family: \"SF Mono\", Menlo, Consolas, Monaco, monospace;"
+            " font-family: " + MONO_FONT_STACK + ";"
             " font-size: 12px; }"
             "code { background-color: %(code_bg)s; padding: 1px 3px; }"
             "blockquote { border-left: 3px solid %(border)s; margin: 4px 0;"
@@ -701,8 +772,10 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
     def _on_history_anchor_clicked(self, url):
         """处理历史区链接点击：
 
-        #copy-thinking  复制思考全文
-        #toggle-thinking 展开/收起思考块
+        #copy-thinking     复制思考全文
+        #toggle-thinking   展开/收起思考块
+        #copy-error        复制最近一次失败的完整报错
+        #diagnose-endpoint 触发端点诊断（由 QGISAgent 执行，dock 本身不碰网络）
         其余链接保持默认行为。
         """
         try:
@@ -716,6 +789,15 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
                     self._set_status("已复制思考内容")
             elif fragment == "toggle-thinking":
                 self._toggle_thinking_block()
+            elif fragment == "copy-error":
+                text = self._last_error_detail
+                if text:
+                    QApplication.clipboard().setText(text)
+                    self._set_status("已复制报错详情")
+                else:
+                    self._append_chat_info("没有可复制的报错详情。")
+            elif fragment == "diagnose-endpoint":
+                self.endpointDiagnosisRequested.emit()
         except Exception as e:
             logger.debug("处理历史区链接失败: %s", e, exc_info=True)
 
@@ -1150,6 +1232,73 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
             logger.debug("回放工作流失败: %s", e, exc_info=True)
             self._append_chat_error(f"回放工作流失败: {e}")
 
+    def append_error_notice(self, title, message, hint="", detail="",
+                            category="", raw_text=""):
+        """在聊天区渲染一张「请求失败」卡片。
+
+        为什么不沿用 txHistory.append()：append 只往文档里塞一段，下一次
+        _set_chat_html 整体重写时那段就没了（错误提示会在用户下一次发问时凭空消失）。
+        这里统一走 _set_chat_html，保证错误提示留在对话里可回看。
+
+        参数都是**未转义**的原始文本，转义在本方法内完成（调用方不要自己转义，
+        否则会出现 &amp;lt; 这类双重转义）。
+        """
+        try:
+            esc = html_module.escape
+            self._last_error_detail = str(raw_text or detail or message or "")
+            self._last_error_category = str(category or "")
+
+            c = getattr(self, "_chat_colors", None) or chat_colors()
+            alert = alert_color(c)
+            body = [
+                '<p style="margin:0;"><b style="color:%s;">%s</b></p>'
+                % (alert, esc(str(title))),
+                '<p style="margin:2px 0 0 0;">%s</p>' % esc(str(message)),
+            ]
+            if hint:
+                body.append(
+                    '<p style="margin:3px 0 0 0; color:%s;">建议：%s</p>'
+                    % (c["muted"], esc(str(hint)))
+                )
+            if detail:
+                # 服务端原文：这是用户排查问题的唯一线索，必须展示而不是只写日志
+                body.append(
+                    '<p style="margin:4px 0 0 0; color:%s; font-size:11px;">'
+                    '服务端原文：<span style="font-family:%s;">%s</span></p>'
+                    % (c["muted"], MONO_FONT_STACK, esc(str(detail)))
+                )
+
+            actions = []
+            if detail:
+                actions.append('<a href="#copy-error">复制报错详情</a>')
+            actions.append('<a href="#diagnose-endpoint">诊断连接</a>')
+            if category:
+                actions.append(
+                    '<span style="color:%s; font-size:11px;">类型：%s</span>'
+                    % (c["muted"], esc(str(category)))
+                )
+            body.append(
+                '<p style="margin:5px 0 0 0; font-size:11px;">%s</p>'
+                % "　·　".join(actions)
+            )
+
+            card = (
+                '<table width="%s" cellpadding="0" cellspacing="0"'
+                ' style="margin-top:6px;"><tr>'
+                '<td style="border-left:3px solid %s; background:%s;'
+                ' padding:6px 10px;">%s</td></tr></table>'
+            ) % (AI_BUBBLE_WIDTH, alert, c["tool_bg"], "".join(body))
+            self._set_chat_html(self._chat_html + card)
+            return True
+        except Exception as e:
+            logger.debug("渲染错误卡片失败: %s", e, exc_info=True)
+            # 兜底：至少让用户看到标题，绝不静默
+            try:
+                self._append_chat_error(str(title))
+            except Exception:
+                logger.debug("兜底错误提示也失败", exc_info=True)
+            return False
+
     def _append_chat_error(self, text):
         """在聊天框以红字追加错误提示（不静默吞异常）。"""
         try:
@@ -1174,7 +1323,7 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         """
         c = getattr(self, "_chat_colors", None) or chat_colors()
         if kind == "error":
-            color, mark = "#C0392B", "错误"
+            color, mark = alert_color(c), "错误"
         else:
             color, mark = c["tool_edge"], "提示"
         return (

@@ -13,7 +13,9 @@
     - 纯 Python，只依赖 `re` 与 `typing`，不 import 任何 Qt / qgis 模块，
       这样该模块可以被独立引入并做单元测试；
     - `classify_error` 永不抛异常，内部异常一律退化为 unknown 分类；
-    - 返回的 dict 键固定：category / title / message / hint / action / retryable。
+    - 返回的 dict 键固定：category / title / message / hint / action / retryable；
+    - 除分类外还提供 `summarize_error` / `extract_status_code`：把原始报错提炼成
+      一句能直接展示的说明，避免用户只看到「错误原因无法自动识别」。
 """
 
 import re
@@ -29,6 +31,8 @@ CATEGORY_CONTEXT_LENGTH = "context_length"
 CATEGORY_MODEL = "model"
 CATEGORY_TOOL = "tool"
 CATEGORY_TLS = "tls_blocked"
+CATEGORY_ENDPOINT = "endpoint"
+CATEGORY_SERVER = "server"
 CATEGORY_UNKNOWN = "unknown"
 
 # ── 可执行动作常量 ──
@@ -45,6 +49,22 @@ _CLOUDFLARE_PATTERN = re.compile(
 # 分类规则表：按「从具体到宽泛」顺序匹配，命中第一条即返回
 # 每条规则: (分类, 正则列表, 标题, 说明, 建议, 动作, 可重试)
 _RULES = [
+    (
+        # 必须排在通用 auth 之前：这里给出的建议是「填个占位符，但不能留空」，
+        # 而通用 auth 的建议是「检查密钥是否正确」，对本地/自托管端点完全是误导。
+        CATEGORY_AUTH,
+        [
+            r"api_?key\s+client\s+option\s+must\s+be\s+set",
+            r"must\s+be\s+set\s+either\s+by\s+passing\s+api_?key",
+            r"(缺少|未填写|没有)\s*api\s*key",
+        ],
+        "没有填写 API Key",
+        "本次请求缺少 API Key。OpenAI 兼容协议要求该字段必须存在（服务端通常并不校验它的内容）。",
+        "请在「模型配置」中为该模型填写 API Key：使用本地 / 自托管服务"
+        "（llama.cpp、Ollama、LM Studio 等）时填任意占位符即可（例如 sk-local），但**不能留空**。",
+        ACTION_OPEN_SETTINGS,
+        False,
+    ),
     (
         CATEGORY_AUTH,
         [
@@ -89,6 +109,12 @@ _RULES = [
             r"too\s+many\s+requests",
             r"requests\s+per\s+(minute|second)",
             r"insufficient[\s_-]*quota",
+            # OpenAI 真实文案是 "You exceeded your current quota"，quota 在 exceed 之后，
+            # 与上面「quota 紧邻 exceed」的顺序相反（旧版因此落到 unknown）。
+            r"exceed\w*\s+(your\s+)?(current\s+)?quota",
+            r"quota[\s_-]*(reached|exceeded)",
+            r"billing\s+(hard\s+)?limit",
+            r"余额不足|欠费",
             r"限流|配额(不足|已用尽)|请求过于频繁",
         ],
         "请求过于频繁",
@@ -158,11 +184,20 @@ _RULES = [
             r"token[\s_-]*limit",
             r"reduce\s+the\s+length",
             r"context[\s_-]*window",
-            r"上下文(长度|过长|超出)|超出(最大)?上下文",
+            # llama.cpp / 自托管推理服务的措辞：上下文叫 "context size"，且是被请求超出
+            # （"the request exceeds the available context size (4096 tokens)"）。
+            r"available\s+context",
+            r"context[\s_-]*size",
+            r"exceeds?\s+the\s+(available\s+)?context",
+            r"n_ctx",
+            r"上下文(长度|过长|超出|上限|大小)|超出(最大)?上下文",
         ],
         "对话内容过长",
-        "本次请求携带的历史对话过多，已超出模型的上下文长度上限。",
-        "请新建一个对话重新开始，或在设置中减少携带的历史消息条数后再试。",
+        "本次请求的上下文超出模型上限：要么携带的历史对话过多，要么服务端的上下文窗口本身开得太小。",
+        "① 先新建一个对话重新开始，减少携带的历史消息；"
+        "② 若使用本地推理服务（llama.cpp / Ollama / LM Studio 等），很可能是服务端上下文设得太小 —— "
+        "插件每次都会携带全部工具定义，请把服务端上下文调大后重试"
+        "（llama.cpp：--ctx-size / -c；Ollama：num_ctx；LM Studio：Context Length）。",
         None,
         False,
     ),
@@ -175,11 +210,23 @@ _RULES = [
             r"no\s+such\s+model",
             r"invalid\s+model",
             r"unknown\s+model",
-            r"模型不存在|不支持该模型",
+            # llama.cpp 的两种真实措辞（实测均会落到 unknown）：
+            #   {"message":"model 'qwen3' not found"}      ← 名字与服务端 --alias 不一致
+            #   {"message":"model is not loaded"}          ← 服务端没加载成功
+            r"model\s+['\"][^'\"]+['\"]\s+not\s+found",
+            r"model\s+is\s+not\s+loaded",
+            r"no\s+model\s+loaded",
+            r"model\s+not\s+loaded",
+            r"failed\s+to\s+load\s+(the\s+)?model",
+            r"模型(不存在|未加载|未找到|加载失败)|不支持该模型",
         ],
         "模型不可用",
-        "所选择的模型在服务端不存在，或当前账号无权使用该模型。",
-        "请在「设置 / 模型配置」中核对模型名称（含版本后缀），或换用一个可用模型。",
+        "所选择的模型在服务端不存在、未加载成功，或当前账号无权使用该模型。",
+        "请在「模型配置」中核对模型名称（含版本后缀）。"
+        "使用本地 / 自托管服务时，模型名必须与服务端「/v1/models」列出的名称完全一致："
+        "llama.cpp 默认用启动参数 --model 的文件名（或 --alias 指定的名字），"
+        "ollama 是 ollama list 里的 NAME（不含 :latest 也能通过，但带 tag 更稳妥）。"
+        "也可点击「测试连接与诊断」，插件会直接列出服务端实际提供的模型名。",
         ACTION_OPEN_SETTINGS,
         False,
     ),
@@ -195,9 +242,49 @@ _RULES = [
         ],
         "模型不支持工具调用",
         "当前模型未能正确处理工具调用（函数调用 / 结构化输出），导致任务无法继续。",
-        "请在「设置 / 模型配置」中换用支持工具调用的模型后重试。",
+        "本插件的 GIS 操作全部依赖工具调用（function calling），模型不支持就无法工作。"
+        "使用 llama.cpp 本地服务时，请确认启动参数带 --jinja、且所用 GGUF 的 chat template "
+        "支持 tools；Ollama / LM Studio 请换用支持工具调用的模型后重试。",
         ACTION_SWITCH_MODEL,
         False,
+    ),
+    (
+        # 排在 model / tool 之后：`model 'x' not found` 必须由 model 规则先接住，
+        # 这里的裸 404 只用来兜住「地址路径不对」这一类。
+        CATEGORY_ENDPOINT,
+        [
+            r"file\s+not\s+found",
+            r"\b404\b",
+            r"not\s+found",
+            r"cannot\s+(post|get)\s+/",
+            r"不存在的(路径|地址|接口)|地址(错误|不正确)",
+        ],
+        "服务地址不正确",
+        "请求的地址在服务端不存在（HTTP 404）：Base URL 的路径很可能不对。",
+        "请检查「模型配置」里的地址。OpenAI 兼容接口通常需要以 /v1 结尾，例如"
+        " http://127.0.0.1:8080/v1（llama.cpp / Ollama / LM Studio 都是这个写法）。"
+        "可点击「测试连接与诊断」自动确认哪个地址可用。",
+        ACTION_OPEN_SETTINGS,
+        False,
+    ),
+    (
+        CATEGORY_SERVER,
+        [
+            r"error\s+code:\s*5\d\d",
+            r"\b50[0-9]\b",
+            r"internal\s+server\s+error",
+            r"server_error",
+            r"bad\s+gateway",
+            r"service\s+unavailable",
+            r"gateway\s+time-?out",
+            r"服务端(内部)?错误|服务器内部错误",
+        ],
+        "模型服务内部错误",
+        "模型服务返回了服务器错误（HTTP 5xx）：问题出在服务端，不是你的请求格式。",
+        "请查看服务端日志。本地推理服务（llama.cpp / Ollama / LM Studio 等）"
+        "最常见的三种原因是：模型未加载、显存不足、请求超出上下文长度；稍后重试也可能恢复。",
+        ACTION_RETRY,
+        True,
     ),
 ]
 
@@ -229,8 +316,9 @@ def _unknown_result() -> dict:
     return _build_result(
         CATEGORY_UNKNOWN,
         "请求失败",
-        "本次请求未能完成，错误原因无法自动识别。",
-        "请重试一次；若反复失败，可在「设置 / 模型配置」中检查服务地址与 API Key，或换用其他模型。",
+        "本次请求未能完成，插件无法自动识别错误原因（原始报错见下方，可据此排查）。",
+        "请先看下方的原始报错；也可点击「测试连接与诊断」，插件会直接检查地址、"
+        "模型名、上下文长度与工具支持四项是否匹配。",
         None,
         False,
     )
@@ -270,3 +358,100 @@ def classify_error(error_text: str) -> dict:
     except Exception:
         # 分类器本身绝不抛异常，任何意外都退化为 unknown
         return _unknown_result()
+
+
+# ──────────────────────────────────────────────────────────────
+# 原始报文提炼
+#
+# 分类规则再全也有兜不住的时候（各家网关的措辞千奇百怪）。此前遇到未收录的报错，
+# 用户只看得到「错误原因无法自动识别」，真正的信息藏在「报告」页签的日志里 ——
+# 等于逼用户自己去翻。这里把原始报错里最有价值的那一句提出来，让界面直接展示。
+# ──────────────────────────────────────────────────────────────
+
+# 各家 SDK / 网关都把真正的说明放在 JSON 的 message 字段里
+_JSON_MESSAGE_RE = re.compile(r"""['"]message['"]\s*:\s*(['"])(.*?)\1""", re.DOTALL)
+# openai SDK 会把 HTTP 状态码拼在错误文本最前面："Error code: 404 - {...}"
+_STATUS_RE = re.compile(r"error\s+code:\s*(\d{3})", re.IGNORECASE)
+_STATUS_RE_LOOSE = re.compile(r"\b([45]\d\d)\b")
+# 兜底提取时顺手抹掉 "'code': 404," 这类键名残留，只留下人话。
+# ⚠️ 只对**看起来像 JSON / py-dict** 的文本启用：否则会把
+# `openai.APIConnectionError: Connection error.` 里的类名一起吃掉。
+_KEYNAME_RE = re.compile(r"""['"]?\w+['"]?\s*:\s*""")
+_JSONISH_RE = re.compile(r"""[{,]\s*['"]\w+['"]\s*:""")
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+# 提示里绝不允许出现形似密钥的片段（错误报文经常把 Authorization 头一起吐回来）
+_SECRET_RE = re.compile(
+    r"(sk-[A-Za-z0-9_\-]{6,}|Bearer\s+[A-Za-z0-9._\-]{6,})", re.IGNORECASE
+)
+_WS_RE = re.compile(r"\s+")
+
+SUMMARY_MAX_LEN = 240
+
+
+def extract_status_code(error_text) -> Optional[int]:
+    """从原始错误文本里抽出 HTTP 状态码；抽不到返回 None。永不抛异常。"""
+    try:
+        text = error_text if isinstance(error_text, str) else str(error_text)
+    except Exception:
+        return None
+    match = _STATUS_RE.search(text)
+    if match:
+        return int(match.group(1))
+    match = _STATUS_RE_LOOSE.search(text)
+    if match:
+        return int(match.group(1))
+    return None
+
+
+def summarize_error(error_text, max_len: int = SUMMARY_MAX_LEN) -> str:
+    """把原始报错提炼成一句可直接展示给用户的说明。
+
+    输入通常是 langchain/openai 抛出的整段文本，例如：
+
+        Error code: 404 - {'error': {'code': 404,
+                          'message': "model 'qwen3' not found",
+                          'type': 'not_found_error'}}
+
+    输出：
+
+        HTTP 404 · model 'qwen3' not found
+
+    处理顺序：剥 ANSI 控制符 → 优先取 JSON message 字段 → 否则抹掉键名与状态码前缀
+    → 压空白 → 脱敏 → 截断。任何异常都返回空串，绝不抛。
+    """
+    try:
+        text = error_text if isinstance(error_text, str) else str(error_text)
+    except Exception:
+        return ""
+    if not text.strip():
+        return ""
+
+    text = _ANSI_RE.sub(" ", text)
+
+    message = ""
+    match = _JSON_MESSAGE_RE.search(text)
+    if match:
+        message = match.group(2)
+        # SDK 的 repr 里会带转义（\\n、\\'），去掉反斜杠让文案干净
+        message = (message.replace("\\n", " ").replace("\\t", " ")
+                          .replace("\\'", "'").replace('\\"', '"'))
+
+    if not message:
+        # 没有 JSON message 字段：退化为「抹掉结构符号后的全文」
+        message = _STATUS_RE.sub(" ", text)
+        if _JSONISH_RE.search(message):
+            message = _KEYNAME_RE.sub(" ", message)
+
+    message = _WS_RE.sub(" ", message).strip().strip("{}[]()'\",;:-").strip()
+    if not message:
+        return ""
+
+    status = extract_status_code(text)
+    if status is not None and str(status) not in message:
+        message = "HTTP %d · %s" % (status, message)
+
+    message = _SECRET_RE.sub("[已隐去]", message)
+
+    if max_len and len(message) > max_len:
+        message = message[:max_len].rstrip() + "…"
+    return message
