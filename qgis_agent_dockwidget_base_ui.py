@@ -6,6 +6,67 @@ from qgis.PyQt import QtCore, QtWidgets
 logger = logging.getLogger(__name__)
 
 
+class _DockTabWidget(QtWidgets.QTabWidget):
+    """侧栏用的页签容器：sizeHint / minimumSizeHint 只按**当前页**算。
+
+    默认实现（QTabWidget::sizeHint）取**所有页** sizeHint 的最大值，于是只要
+    有一页里存在 sizeHint 虚高的控件，整个 dock 在尺寸自适应时就会被撑到屏幕
+    之外 —— 哪怕用户当时根本没停在那页。
+
+    实测现场（QGIS 3.44.14 / Qt5）：「工作流」页里的 QtWebKit ``QWebView``
+    没有实现 sizeHint，Qt 返回默认的 800x600，把本控件的 sizeHint 顶到
+    **812x805**。表现就是切过一次「工作流」页签之后，回到「对话」页时 dock
+    已经把高度撑到屏幕以外 —— 底部输入框（发送/停止按钮）直接看不见。
+
+    改成「只看当前页」，并把结果夹在 [MIN_HINT_H, MAX_HINT_H] 区间：下限保证
+    初始高度不至于扁得没法用，上限保证**任何**页面都不可能把 dock 顶出屏幕。
+    """
+
+    MIN_HINT_W = 360
+    MAX_HINT_W = 560
+    MIN_HINT_H = 430
+    MAX_HINT_H = 720
+
+    def _clamp(self, size):
+        w = max(self.MIN_HINT_W, min(self.MAX_HINT_W, size.width()))
+        h = max(self.MIN_HINT_H, min(self.MAX_HINT_H, size.height()))
+        return QtCore.QSize(w, h)
+
+    def sizeHint(self):
+        try:
+            base = super().sizeHint()
+            cur = self.currentWidget()
+            if cur is None:
+                return base
+            bar = self.tabBar().sizeHint().height()
+            return self._clamp(QtCore.QSize(
+                base.width(), cur.sizeHint().height() + bar + 8))
+        except Exception:  # noqa: BLE001 —— 尺寸提示无论如何不能抛异常
+            return super().sizeHint()
+
+    def minimumSizeHint(self):
+        """同理按当前页算，避免「切到矮页签后高度回不来」。
+
+        默认实现取所有页的最大值（报告页约 400），切到矮页签时 dock 能变小，
+        切回对话页时主窗口却不把高度还回来 —— 底部同样会被裁掉。
+
+        ⚠️ **宽度必须沿用父类**，不能一起夹：抬高最小宽度会让 dock 再也缩不回
+        最窄（实测：宽度夹到 360 再加两侧边距，dock 最小宽度变成 372，在
+        360px 的窄面板里就放不下了）。
+        """
+        try:
+            base = super().minimumSizeHint()
+            cur = self.currentWidget()
+            if cur is None:
+                return base
+            bar = self.tabBar().sizeHint().height()
+            h = max(self.MIN_HINT_H,
+                    min(self.MAX_HINT_H, cur.minimumSizeHint().height() + bar + 8))
+            return QtCore.QSize(base.width(), h)
+        except Exception:  # noqa: BLE001
+            return super().minimumSizeHint()
+
+
 class Ui_QGISAgentDockWidget(object):
     def setupUi(self, QGISAgentDockWidget):
         QGISAgentDockWidget.setObjectName("QGISAgentDockWidget")
@@ -19,8 +80,9 @@ class Ui_QGISAgentDockWidget(object):
         self.mainLayout.setContentsMargins(6, 6, 6, 6)
         self.mainLayout.setSpacing(4)
 
-        # 标签页
-        self.twTabs = QtWidgets.QTabWidget()
+        # 标签页（用 _DockTabWidget：sizeHint 只按当前页算，防止某一页的
+        # 虚高控件把整个 dock 撑出屏幕 —— 见类文档）
+        self.twTabs = _DockTabWidget()
         self.twTabs.setObjectName("twTabs")
 
         # --- 对话标签页 ---
@@ -252,6 +314,18 @@ class Ui_QGISAgentDockWidget(object):
         try:
             from qgis.PyQt.QtWebKitWidgets import QWebView
             self.workflowWebView = QWebView()
+            # ⚠️ QWebView 没有实现 sizeHint()，Qt 回落到 QWidget 的默认值
+            #    800x600，而 minimumSizeHint() 更是无效的 (-1,-1)。实测它把
+            #    「工作流」页的 sizeHint 顶到 773、整个 QTabWidget 顶到
+            #    812x805 —— dock 一旦做尺寸自适应就会被撑到屏幕之外，切回
+            #    「对话」页时底部输入框正好落在屏幕外。（QGIS4/Qt6 没有
+            #    QtWebKit，退化用 QTextBrowser，所以只有 Qt5 侧会中招。）
+            #    Ignored = 「忽略 sizeHint，尽量占满可用空间」，正好匹配它
+            #    本来就该填满工作流页的用法。
+            self.workflowWebView.setSizePolicy(
+                QtWidgets.QSizePolicy.Policy.Ignored,
+                QtWidgets.QSizePolicy.Policy.Ignored)
+            self.workflowWebView.setMinimumSize(1, 160)   # 顺便替掉 (-1,-1)
             self.workflowWebView.setHtml("<html><body><h3>等待任务执行...</h3><p>执行任务后，工作流将在此可视化展示。</p></body></html>")
         except ImportError:
             # 如果QWebView不可用，使用QTextBrowser

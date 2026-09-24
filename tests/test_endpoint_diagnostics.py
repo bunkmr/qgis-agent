@@ -26,6 +26,9 @@ MODE_OK = "ok"
 MODE_MODEL_MISMATCH = "model_mismatch"
 MODE_CTX_EXCEEDED = "ctx_exceeded"
 MODE_NO_TOOLS = "no_tools"
+# 只在请求**带 system 消息**时失败（照抄用户现场的 llama.cpp 行为：
+# 模板只允许第一条是 system，而单模型服务又忽略 model 字段）
+MODE_SYSTEM_POS = "system_pos"
 
 
 def _has_httpx():
@@ -87,6 +90,17 @@ def _make_handler(mode, n_ctx=4096, strict_v1=False):
             if mode == MODE_NO_TOOLS and has_tools:
                 return self._send(*_err(
                     500, "Failed to parse chat template: this model does not support tools",
+                    "server_error"))
+            if mode == MODE_SYSTEM_POS and any(
+                    m.get("role") == "system" for m in (req.get("messages") or [])):
+                # 照抄用户现场：模板只允许第一条是 system，出现第二条就 raise。
+                # ⚠️ **不带 system 的请求是 200** —— 所以旧版探测（只有 user: ping）
+                #    会报「对话接口可用」，真实对话却每次都 500，诊断与事实相反。
+                return self._send(*_err(
+                    500,
+                    "While executing CallExpression at line 85, column 32 in source: ..."
+                    " {{- raise_exception('System message must be at the beginning.') }}"
+                    " ^ Error: Jinja Exception: System message must be at the beginning.",
                     "server_error"))
             return self._send(200, json.dumps({
                 "id": "chatcmpl-t", "object": "chat.completion", "created": 1,
@@ -273,15 +287,55 @@ class TestDiagnoseAgainstMockServer(PureTestCase):
         self.assertFalse(result["model_mismatch"])
 
     def test_detects_model_name_mismatch(self):
-        """llama.cpp 的经典报错：model 'qwen3' not found —— 必须给出可用的真实名字。"""
+        """llama.cpp 的经典报错：model 'qwen3' not found —— 必须给出可用的真实名字。
+
+        定性是**延迟**的：模型名不一致先登记为信息级，只有对话实测也确认是
+        「模型不存在」时才升级为失败，避免「一口咬定模型名错、实际另有原因」。
+        """
         with MockServer(MODE_MODEL_MISMATCH) as server:
             result = self.diagnose(server, model="qwen3")
         self.assertFalse(result["ok"])
         self.assertTrue(result["model_mismatch"])
         titles = [c["title"] for c in result["checks"]]
-        self.assertIn("模型名不匹配", titles)
+        self.assertIn("模型名与服务端清单不一致", titles)
+        levels = {c["title"]: c["level"] for c in result["checks"]}
+        self.assertEqual(levels["模型名与服务端清单不一致"], "fail",
+                         "对话实测确认了模型名问题 → 该升级为失败")
         joined = " ".join(result["suggestions"])
         self.assertIn(SERVER_MODEL, joined)
+
+    def test_model_name_mismatch_stays_info_when_chat_works(self):
+        """单模型服务忽略 model 字段时，不能把「模型名不一致」报成失败。
+
+        实测用户现场：同一份报告里第 2 项「服务端没有这个模型」、第 4 项
+        「对话接口可用 HTTP 200」 —— 自相矛盾，用户直接判定诊断坏了。
+        llama.cpp 单模型模式下 model 字段本就是被忽略的。
+        """
+        with MockServer(MODE_OK) as server:
+            result = self.diagnose(server, model="120ad088")
+        levels = {c["title"]: c["level"] for c in result["checks"]}
+        self.assertIn("模型名与服务端清单不一致", levels)
+        self.assertEqual(levels["模型名与服务端清单不一致"], "info")
+        self.assertNotIn("服务端没有这个模型", levels)
+        self.assertIn("对话接口可用", levels)
+        self.assertTrue(result["ok"], "对话实测通过 → 整体应判定为可用")
+
+    def test_detects_system_position_template_failure(self):
+        """探测必须带上 system 消息，否则复现不了这类故障。
+
+        用户现场：诊断报「对话接口可用 / 工具调用可用」，真实对话却每次都
+        500（插件发了第二条 system，Qwen3 模板直接 raise）。旧探测的 messages
+        只有 user: ping，所以永远测不出来。
+        """
+        with MockServer(MODE_SYSTEM_POS) as server:
+            result = self.diagnose(server)
+        self.assertFalse(result["ok"])
+        wrong = [c for c in result["checks"] if c["title"] == "对话接口返回错误"]
+        self.assertTrue(wrong, "应复现出对话失败：%s"
+                        % [c["title"] for c in result["checks"]])
+        self.assertIn("System message must be at the beginning", wrong[0]["detail"])
+        joined = " ".join(result["suggestions"])
+        self.assertIn("system", joined.lower())
 
     def test_detects_context_too_small(self):
         with MockServer(MODE_CTX_EXCEEDED, n_ctx=4096) as server:

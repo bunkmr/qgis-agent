@@ -538,7 +538,8 @@ class Processor(QObject):
                 logger.debug("task_graph 分支失败，回退到线性流程: %s", _e, exc_info=True)
 
         # ── Query Tuning: 优化用户查询 ──
-        # 改写结果会作为一条 SystemMessage 真正进入 messages 参与后续推理，避免白烧一次 LLM 往返。
+        # 改写结果会并入系统提示词一起送给模型，避免白烧一次 LLM 往返。
+        # ⚠️ 注意：**不能**把它做成第二条 SystemMessage —— 见下方 messages 组装处的说明。
         tuned_query = user_input
         try:
             data_overview_text = self.data_overview.get_data_overview()
@@ -591,14 +592,26 @@ class Processor(QObject):
         if cookbook_context:
             system_prompt += f"\n\n{cookbook_context}"
 
+        # ── Query Tuning 的改写：**并入系统提示词，不另起一条 SystemMessage** ──
+        # ⚠️ 实测踩坑（2026-09-24，用户报障）：Qwen3 系的 chat template 只接受
+        #    「第一条是 system」，messages 里一旦出现第二条 SystemMessage，服务端
+        #    直接抛异常：
+        #        Jinja Exception: System message must be at the beginning.
+        #    llama.cpp 把它包成 HTTP 500 / Error: Jinja Exception: ...，用户侧只
+        #    看到「模型服务内部错误」，而同一个模型在别的客户端（不带 system）
+        #    一切正常 —— 这类问题极难自查。所以这里拼进 system_prompt 文本，
+        #    维持「有且仅有一条系统消息、且位于首位」这个不变式。
+        #    （回归守卫见 tests/test_processor_agent_loop.py
+        #      ::TestSystemMessageInvariant.test_tuned_query_merges_into_the_single_system_message）
+        if tuned_query and tuned_query != user_input:
+            system_prompt += (
+                "\n\n## 用户意图改写（由 Query Tuning 生成，仅供参考）\n"
+                + tuned_query
+            )
+
         # ── 加载对话历史上下文 ──
         messages = [SystemMessage(content=system_prompt)]
         history_limit = 20  # 最多加载最近 20 条历史消息（10 轮对话）
-
-        # Query Tuning 的改写结果以 SystemMessage 形式紧随系统提示词，真正参与后续推理
-        # （放在系统位而非对话中段，避免部分模型忽略中途插入的 SystemMessage）
-        if tuned_query and tuned_query != user_input:
-            messages.append(SystemMessage(content=f"## 用户意图改写（由 Query Tuning 生成，仅供参考）\n{tuned_query}"))
 
         try:
             history_rows = self.dataloader.select_interaction(self.conversation_id)

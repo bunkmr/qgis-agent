@@ -30,6 +30,7 @@ CATEGORY_CONNECTION = "connection"
 CATEGORY_CONTEXT_LENGTH = "context_length"
 CATEGORY_MODEL = "model"
 CATEGORY_TOOL = "tool"
+CATEGORY_TEMPLATE = "template"
 CATEGORY_TLS = "tls_blocked"
 CATEGORY_ENDPOINT = "endpoint"
 CATEGORY_SERVER = "server"
@@ -245,6 +246,53 @@ _RULES = [
         "本插件的 GIS 操作全部依赖工具调用（function calling），模型不支持就无法工作。"
         "使用 llama.cpp 本地服务时，请确认启动参数带 --jinja、且所用 GGUF 的 chat template "
         "支持 tools；Ollama / LM Studio 请换用支持工具调用的模型后重试。",
+        ACTION_SWITCH_MODEL,
+        False,
+    ),
+    (
+        # 排在最前（先于 endpoint / server）：这条报错的成因非常具体 ——
+        # messages 里出现了**第二条** system 消息 —— 给出定向建议远比通用模板
+        # 说明有用。实测原文（llama.cpp + Qwen3 系模板）：
+        #   HTTP 500 · ... {{- raise_exception('System message must be at
+        #   the beginning.') }} ^ Error: Jinja Exception: System message must
+        #   be at the beginning.
+        # 关键点：它**含 "HTTP 500"**，若 template 规则晚于 server 规则，
+        # 就会被 `\b50[0-9]\b` 抢走，然后给用户一句「模型未加载/显存不足」的
+        # 完全不对路的建议 —— 这正是用户报障时的现场。
+        CATEGORY_TEMPLATE,
+        [
+            r"system\s+message\s+must\s+be\s+at\s+the\s+beginning",
+            r"(系统|system)\s*消息.{0,8}(开头|最前)",
+        ],
+        "消息格式不被模型接受",
+        "服务端套用 chat template 时报错：该模板只允许**第一条**消息是 system，"
+        "本次请求里出现了位置不对的系统消息。这属于消息格式问题，"
+        "既不是服务端故障，也不是模型不可用。",
+        "旧版插件会把 Query Tuning 的改写结果作为第二条 system 消息发出，"
+        "遇到此错时**先更新插件**（新版本已改为并入同一条系统消息）。"
+        "更新后若仍出现，请检查发给模型的消息序列里是否夹带了第二条 system 消息"
+        "（Qwen3 系模板会直接拒绝），并确认 llama.cpp 启动时带 --jinja。",
+        ACTION_RETRY,
+        True,
+    ),
+    (
+        # 通用模板兜底：上一类没接住时，只要报错里出现 Jinja / template 就等于
+        # 「模板与请求格式不匹配」，绝不能落进 server 那套「显存不足」的说辞。
+        CATEGORY_TEMPLATE,
+        [
+            r"jinja",
+            r"raise_exception",
+            r"chat[\s_-]*template",
+            r"failed\s+to\s+parse\s+(the\s+)?template",
+            r"template[\s_-]*(error|exception)",
+            r"模板(错误|解析失败|异常)",
+        ],
+        "模型模板不兼容",
+        "服务端套用 chat template（对话模板）时报错：模型自带的模板不接受"
+        "本次请求的消息格式。这不是服务端故障，也不是网络问题。",
+        "使用 llama.cpp 本地服务时，请确认启动参数带 --jinja"
+        "（否则特殊 token 的处理可能与模板不一致），"
+        "或改用与该模板匹配的模型；Ollama / LM Studio 可换用官方推荐的模型版本。",
         ACTION_SWITCH_MODEL,
         False,
     ),

@@ -5,7 +5,8 @@ import re
 import html as html_module
 
 from qgis.PyQt.QtCore import (
-    QSettings, QTranslator, QCoreApplication, Qt, QTimer, pyqtSignal, QThread
+    QSettings, QTranslator, QCoreApplication, Qt, QTimer, QPoint,
+    pyqtSignal, QThread
 )
 from qgis.PyQt.QtGui import QIcon, QPalette, QFont
 from qgis.PyQt.QtWidgets import (
@@ -411,6 +412,41 @@ class QGISAgent:
             parent=self.iface.mainWindow(),
         )
 
+    def _clamp_dock_to_screen(self):
+        """把底边落到屏幕可用区之外的 dock 收回来（一次性的历史尺寸纠正）。
+
+        背景：v2.4.2 及以前，Qt5 侧「工作流」页使用的 QtWebKit ``QWebView``
+        没有实现 sizeHint()，Qt 回落到默认的 800x600，把 QTabWidget 的
+        sizeHint 顶到 812x805。dock 一旦做尺寸自适应就被撑到屏幕之外，而
+        QGIS 会把这个尺寸记进 profile —— 因此**升级后底座尺寸依然是坏的**，
+        表现就是底部输入框（发送 / 停止）永远在屏幕外面。
+
+        修 sizeHint 只保证「以后不再被撑大」，已经存下来的坏尺寸必须就地
+        收回一次。判定是客观的：**dock 底边坐标超出屏幕可用区** → 底部控件
+        必然看不见。屏幕内的布局（哪怕是用户故意拉满高度）一律不动。
+        """
+        try:
+            dw = self.dockwidget
+            if dw is None or not dw.isVisible():
+                return
+            top = dw.mapToGlobal(QPoint(0, 0))
+            screen = dw.screen()
+            if screen is None:
+                return
+            avail = screen.availableGeometry()
+            bottom = top.y() + dw.height()
+            if bottom <= avail.bottom():
+                return
+            new_h = max(dw.minimumHeight(), avail.bottom() - top.y())
+            new_h = min(new_h, dw.height())
+            if new_h >= dw.height():
+                return
+            logger.info("dock 底边超出屏幕可用区 %dpx，高度 %d → %d",
+                        bottom - avail.bottom(), dw.height(), new_h)
+            dw.resize(dw.width(), new_h)
+        except Exception as _e:  # noqa: BLE001 - 尺寸纠正失败绝不能影响启动
+            logger.debug("dock 尺寸纠正跳过: %s", _e)
+
     def onClosePlugin(self):
         # 关闭 dock 时中断可能在跑的后台对话线程，避免线程继续占用资源
         try:
@@ -589,6 +625,10 @@ class QGISAgent:
         self.dockwidget.closingPlugin.connect(self.onClosePlugin)
         self.iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dockwidget)
         self.dockwidget.show()
+
+        # 一次性纠正历史遗留的 dock 尺寸（详见 _clamp_dock_to_screen 说明）。
+        # 延后到事件循环里跑：dock 的实际尺寸要等布局跑完才定下来。
+        QTimer.singleShot(600, self._clamp_dock_to_screen)
 
         # ── D4 首次启动引导（仅首次弹出，之后持久化 firstRunDone） ──
         self._maybe_show_first_run_guide()

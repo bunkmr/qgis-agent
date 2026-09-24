@@ -79,6 +79,18 @@ class TestCategoryRouting(ClassifierTestCase):
         ("OpenAIError: The api_key client option must be set either by passing api_key"
          " to the client or by setting the OPENAI_API_KEY environment variable", "auth"),
         ("Error code: 502 - {'error': {'message': 'bad gateway'}}", "server"),
+        # ── chat template / 消息格式（2026-09-24 用户现场）──
+        # 用户配置本地 llama.cpp 后每次对话都报「模型服务内部错误 HTTP 500」，
+        # 而这个模型在别的客户端一切正常。原文是 Jinja 模板拒绝第二条 system。
+        # ⚠️ 注意这条报错里**含 "HTTP 500"**，所以 template 规则必须排在 server
+        #    之前，否则会被 `\b50[0-9]\b` 抢走，然后给出「模型未加载 / 显存不足」
+        #    这种完全不对路的建议 —— 这正是用户当时的现场。
+        ("While executing CallExpression at line 85, column 32 in source: ... first %}"
+         " {{- raise_exception('System message must be at the beginning.') }} ^"
+         " Error: Jinja Exception: System message must be at the beginning.",
+         "template"),
+        ("Error: Jinja Exception: unknown filter 'x'", "template"),
+        ("Failed to parse chat template: invalid role", "template"),
     ]
 
     def test_cases_route_to_expected_category(self):
@@ -240,6 +252,7 @@ class TestConstants(ClassifierTestCase):
         self.assertEqual(self.ec.CATEGORY_CONTEXT_LENGTH, "context_length")
         self.assertEqual(self.ec.CATEGORY_ENDPOINT, "endpoint")
         self.assertEqual(self.ec.CATEGORY_SERVER, "server")
+        self.assertEqual(self.ec.CATEGORY_TEMPLATE, "template")
         self.assertEqual(self.ec.CATEGORY_UNKNOWN, "unknown")
 
     def test_rule_order_is_specific_before_generic(self):
@@ -250,6 +263,26 @@ class TestConstants(ClassifierTestCase):
                         categories.index(self.ec.CATEGORY_ENDPOINT))
         self.assertLess(categories.index(self.ec.CATEGORY_MODEL),
                         categories.index(self.ec.CATEGORY_SERVER))
+
+    def test_template_rule_precedes_server(self):
+        """template 必须排在 server 之前。
+
+        Jinja 模板报错一律伴随 "HTTP 500"，而 server 规则里有 `\\b50[0-9]\\b`。
+        顺序一旦反了，用户看到的建议就会变成「模型未加载 / 显存不足」——
+        与真实成因毫无关系（用户现场实测）。"""
+        categories = [category for category, *_ in self.ec._RULES]
+        self.assertLess(categories.index(self.ec.CATEGORY_TEMPLATE),
+                        categories.index(self.ec.CATEGORY_SERVER))
+
+    def test_system_position_error_is_not_swallowed_by_server(self):
+        """端到端锁死：把 system 位置报错喂进来，绝不能落到 server。"""
+        raw = ("HTTP 500 · While executing CallExpression at line 85, column 32 in source:"
+               " ... first %} {{- raise_exception('System message must be at the"
+               " beginning.') }} ^ Error: Jinja Exception: System message must be at"
+               " the beginning.")
+        info = self.ec.classify_error(raw)
+        self.assertEqual(info.get("category"), self.ec.CATEGORY_TEMPLATE)
+        self.assertIn("system", (info.get("hint") or "").lower())
 
     def test_every_rule_has_compiled_patterns(self):
         self.assertEqual(len(self.ec._COMPILED_RULES), len(self.ec._RULES))

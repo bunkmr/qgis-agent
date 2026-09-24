@@ -280,6 +280,79 @@ class TestHistoryReconstruction(ProcessorTestCase):
         ])
 
 
+class TestSystemMessageInvariant(ProcessorTestCase):
+    """system 消息不变式：**有且仅有一条，且必须位于首位**。
+
+    实测踩坑（2026-09-24 用户报障）：旧实现把 Query Tuning 的改写结果作为
+    **第二条** SystemMessage 追加在系统提示词之后，Qwen3 系的 chat template
+    直接拒绝：
+
+        Error: Jinja Exception: System message must be at the beginning.
+
+    llama.cpp 把它包成 HTTP 500，用户侧只看到「模型服务内部错误」，而同一个
+    模型在别的客户端（不带 system）一切正常 —— 这类问题极难自查。所以这里把
+    不变式锁死：改写结果只能**并入**第一条系统消息，不能另起一条。
+    """
+
+    TUNED = "把「画个图」改写得更具体"
+
+    class _Tuner:
+        def tune_query(self, user_input, overview):
+            return TestSystemMessageInvariant.TUNED
+
+    class _Overview:
+        def get_data_overview(self):
+            return "图层 3 个"
+
+    def _processor_with_tuning(self, llm):
+        _h, module, proc, _l = self.new_processor(llm)
+        proc.query_tuner = self._Tuner()
+        proc.data_overview = self._Overview()
+        return module, proc
+
+    def test_tuned_query_merges_into_the_single_system_message(self):
+        llm = fakes.FakeToolCallingLLM(["直接回答"])
+        module, proc = self._processor_with_tuning(llm)
+
+        proc.agent_chat("画个图")
+
+        sent = llm.contents_of(0)
+        roles = [role for role, _content in sent]
+        self.assertEqual(
+            roles.count("SystemMessage"), 1,
+            "system 消息必须只有一条，否则 Qwen3 系模板会直接报 500：%s" % roles)
+        self.assertEqual(roles[0], "SystemMessage",
+                         "system 消息必须在首位：%s" % roles)
+
+        system_text = sent[0][1]
+        self.assertIn("用户意图改写", system_text,
+                      "改写结果不能因为合并而丢失")
+        self.assertIn(self.TUNED, system_text)
+        self.assertIn(module.AGENT_SYSTEM_PROMPT[:20], system_text,
+                      "原始系统提示词不能被改写结果顶掉")
+
+    def test_no_system_message_after_first_when_history_exists(self):
+        """带历史对话时同样只能有一条 system，且仍在首位。"""
+        history = [
+            fakes.make_interaction_row(ID="c1", conversationID=self.CONVERSATION_ID,
+                                       typeMessage="input", requestText="之前的问题"),
+            fakes.make_interaction_row(ID="c2", conversationID=self.CONVERSATION_ID,
+                                       typeMessage="return", requestText="之前的问题",
+                                       responseText="之前的回答"),
+        ]
+        llm = fakes.FakeToolCallingLLM(["直接回答"])
+        _h, _m, proc, _l = self.new_processor(
+            llm, dataloader=fakes.FakeDataloader(history=history))
+        proc.query_tuner = self._Tuner()
+        proc.data_overview = self._Overview()
+
+        proc.agent_chat("继续")
+
+        roles = [role for role, _c in llm.contents_of(0)]
+        self.assertEqual(roles.count("SystemMessage"), 1, "roles=%s" % roles)
+        self.assertEqual(roles[0], "SystemMessage", "roles=%s" % roles)
+
+
 class TestToolErrorDiagnosis(ProcessorTestCase):
     def _error_result(self, message):
         return lambda args: {"executed": False, "error": message}

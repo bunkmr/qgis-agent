@@ -78,6 +78,14 @@ MINIMAL_TOOLS = [
     }
 ]
 
+# 探测对话时带上的系统消息 —— **必须带**。
+# 插件的每一次真实请求都以 SystemMessage 开头，而 Qwen3 系等 chat template 对
+# system 的位置很挑剔（出现第二条 system 时直接 raise）。不带 system 的探测
+# 复现不了这类故障：实测用户的现场就是——诊断报「对话接口可用 HTTP 200 /
+# 工具调用可用」，真实对话却每次都 500（Error: Jinja Exception: System message
+# must be at the beginning.）。
+PROBE_SYSTEM = "你是 QGIS 助手。这是一次连接自检，请只回复 pong。"
+
 
 # ──────────────────────────────────────────────────────────────
 # 纯函数部分（不依赖 httpx，可直接单测）
@@ -241,11 +249,21 @@ def _get_json(client, url, api_key, timeout):
         return None, None, "", str(exc)
 
 
-def _post_chat(client, base, api_key, model, timeout, with_tools=False):
-    """向 {base}/chat/completions 发一条最小请求。返回 (status, snippet, error_text)。"""
+def _post_chat(client, base, api_key, model, timeout, with_tools=False,
+               with_system=True):
+    """向 {base}/chat/completions 发一条最小请求。返回 (status, snippet, error_text)。
+
+    with_system 默认为 True：插件的真实请求总是以 SystemMessage 开头，探测也
+    必须跟上，否则「模板不接受 system」这类故障永远测不出来（详见 PROBE_SYSTEM）。
+    """
+    messages = []
+    if with_system:
+        messages.append({"role": "system", "content": PROBE_SYSTEM})
+    messages.append({"role": "user", "content": "ping"})
+
     payload = {
         "model": model,
-        "messages": [{"role": "user", "content": "ping"}],
+        "messages": messages,
         "max_tokens": 4,
         "stream": False,
         "temperature": 0,
@@ -392,6 +410,14 @@ def _run_checks(client, provider, model, api_key, endpoint, timeout,
     result["base_url"] = working_base
 
     # ── 第 2 步：模型名比对 ──
+    # ⚠️ 这里**不立刻下"失败"结论**，只登记为「信息」。
+    #    原因：单模型推理服务（llama.cpp 等）的 model 字段其实是**被忽略**的
+    #    —— /v1/models 报的是 --alias 的名字，而 /v1/chat/completions 收任何
+    #    名字都返回 200。此时若把它判成失败，报告就会自相矛盾：第 2 项说
+    #    「服务端没有这个模型」、第 4 项却是「对话接口可用 HTTP 200」，
+    #    用户会以为诊断坏了（实测用户现场就是这个）。定性推迟到第 4 步，
+    #    按对话实测结果决定是否升级为失败。
+    model_check_title = ""
     if available_models:
         shown = "、".join(available_models[:MAX_LISTED_MODELS])
         if len(available_models) > MAX_LISTED_MODELS:
@@ -401,15 +427,22 @@ def _run_checks(client, provider, model, api_key, endpoint, timeout,
         else:
             closest = _pick_closest(model, available_models)
             result["model_mismatch"] = True
+            model_check_title = "模型名与服务端清单不一致"
+            add(LEVEL_INFO, model_check_title,
+                "你填的是「%s」，服务端 /v1/models 报的是：%s" % (model, shown))
             if closest:
-                add(LEVEL_FAIL, "模型名不匹配",
-                    "你填的是「%s」，服务端只有：%s" % (model, shown))
                 _add_suggestion(suggestions,
                     "把模型名改成「%s」（服务端实际使用的名字）。" % closest)
             else:
-                add(LEVEL_FAIL, "服务端没有这个模型",
-                    "你填的是「%s」，服务端提供：%s" % (model, shown))
-                _add_suggestion(suggestions, "把模型名改成上面列出的其中一个。")
+                # 没有相近候选时不能说「改成上面列出的其中一个」——太空泛，
+                # 用户面对一长串名字还是不知道填哪个。llama.cpp 这类单模型
+                # 服务只有一个名字，直接点名即可。
+                _add_suggestion(
+                    suggestions,
+                    "服务端实际提供的是「%s」，模型名请照它填写。" % available_models[0])
+            _add_suggestion(suggestions,
+                "单模型推理服务（llama.cpp 等）通常会忽略模型名，填错也照样能用；"
+                "但若你的地址后面是网关 / 多模型服务，就必须填对，否则会选错模型。")
     else:
         add(LEVEL_INFO, "未取到模型清单",
             "/models 返回 200 但没有 data 字段，可能是网关屏蔽了该接口。")
@@ -441,7 +474,33 @@ def _run_checks(client, provider, model, api_key, endpoint, timeout,
                 add(LEVEL_INFO, "上下文长度", detail)
 
     # ── 第 4 步：纯对话 + 工具调用 ──
-    _probe_chat(client, working_base, api_key, model, timeout, add, suggestions, result)
+    _probe_chat(client, working_base, api_key, model, timeout, add, suggestions, result,
+                model_check_title=model_check_title)
+
+
+def _relabel(checks, title, level):
+    """把某一项检查的级别改成 level（用于「先登记、后定性」的检查项）。
+
+    模型名比对就属于这一类：单看清单下不了结论（单模型服务会忽略该字段），
+    必须等对话实测结果出来才能定性。
+    """
+    if not title:
+        return False
+    for check in checks or []:
+        if check.get("title") == title:
+            check["level"] = level
+            return True
+    return False
+
+
+def _category_of(snippet):
+    """取报错原文的归因分类（永不抛异常）。"""
+    if not snippet:
+        return None
+    try:
+        return (classify_error(snippet) or {}).get("category")
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def _add_suggestion(suggestions, text):
@@ -488,7 +547,7 @@ def _suggest_from_error(snippet, result, suggestions, skip_categories=()):
 
 
 def _probe_chat(client, base, api_key, model, timeout, add, suggestions, result,
-                reachable=True):
+                reachable=True, model_check_title=""):
     """发两次请求：不带 tools（模拟「测试连接」）与带 tools（模拟真实对话）。
 
     两次结果必须分开看 —— 这是本模块存在的核心理由：**纯对话通过不等于插件可用**。
@@ -500,7 +559,7 @@ def _probe_chat(client, base, api_key, model, timeout, add, suggestions, result,
         result["ok"] = False
         return
 
-    # 4a 纯对话
+    # 4a 纯对话（已带 system 消息，与插件真实请求形态一致）
     skip = (CATEGORY_MODEL,) if result.get("model_mismatch") else ()
     status, snippet, err = _post_chat(client, base, api_key, model, timeout)
     chat_ok = status == 200
@@ -513,6 +572,11 @@ def _probe_chat(client, base, api_key, model, timeout, add, suggestions, result,
     else:
         # snippet 已含 "HTTP NNN · ..."，不再另加状态码前缀，避免 "HTTP 400：HTTP 400"
         add(LEVEL_FAIL, "对话接口返回错误", snippet or "HTTP %s" % status)
+        # 只有报错**确实是模型名问题**时，才把第 2 步登记的「信息」升为失败。
+        # 报错另有原因时保留信息级 —— 否则又会出现「一口咬定模型名错、
+        # 真实原因在别处」的误导（用户现场就是这种）。
+        if result.get("model_mismatch") and _category_of(snippet) == CATEGORY_MODEL:
+            _relabel(result.get("checks"), model_check_title, LEVEL_FAIL)
         _suggest_from_error(snippet, result, suggestions, skip_categories=skip)
 
     # 4b 带工具（真实对话走的是这条路径）
