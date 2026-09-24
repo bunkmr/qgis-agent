@@ -1,5 +1,35 @@
 # 更新日志
 
+## [2.4.3] - 2026-09-24
+
+### 修复
+- 🐛 **【重要】本地大模型每次对话都报「模型服务内部错误 HTTP 500」，同一个模型在别的客户端却完全正常**——本次报障的主场景。根因是**插件自己发出的消息格式有问题**：Query Tuning 的改写结果此前被作为**第二条 `SystemMessage`** 追加在系统提示词之后，而 Qwen3 系的 chat template 只允许第一条消息是 system，遇到第二条直接 `raise_exception`：
+  ```
+  Error: Jinja Exception: System message must be at the beginning.
+  ```
+  llama.cpp 把它包成 HTTP 500，用户侧只能看到「模型服务内部错误」。现已改为**并入同一条系统消息**，维持「有且仅有一条系统消息、且位于首位」的不变式。
+- 🐛 **新增 `template` 错误分类**（两条规则，排在 `server` 之前）。此前 Jinja / chat template 类报错一律落到 `server`——因为报错原文里恰好带 "HTTP 500"，被 `\b50[0-9]\b` 抢走——于是给出的建议是「模型未加载 / 显存不足 / 超出上下文」，与真实成因毫无关系。现在会明确指出「该模板只允许第一条消息是 system」，并指引：先更新插件 → 再查消息序列 → 最后确认 `--jinja`。规则顺序有专门的不变式测试守着。
+- 🐛 **诊断报告自相矛盾**：「服务端没有这个模型」（失败）与「对话接口可用 HTTP 200」（通过）出现在同一份报告里。真因是**单模型推理服务（llama.cpp 等）会忽略 `model` 字段**——`/v1/models` 报的是 `--alias` 的名字，而 `/v1/chat/completions` 收任何名字都返回 200。现在模型名比对先登记为**信息级**，只有对话实测也确认是模型问题才升级为失败。
+- 🐛 **诊断的探测请求没带 system 消息**，因此测不出上面那条 500。现在两次探测都以 `system + user` 的形态发出，与插件的真实请求形态一致——「模板对 system 位置挑剔」这类故障才能在诊断里直接复现。`PROBE_SYSTEM` 常量上写明了为什么必须带。
+- 🐛 **【重要】切换页签后回到「对话」页，底部输入框与发送按钮消失**——用户报障的第二个问题。真因是 Qt5 侧「工作流」页使用的 QtWebKit `QWebView` **没有实现 `sizeHint()`**，Qt 回落到默认的 **800x600**，把 `QTabWidget` 的 sizeHint 顶到 **812x805**。切过一次「工作流」页就触发一次尺寸自适应，dock 被撑到屏幕之外，而 QGIS 会把这个尺寸记进 profile——之后每次打开，输入区都在屏幕外面。三处修复：
+  1. 给 `QWebView` 设 `Ignored` 尺寸策略（它的 `minimumSizeHint()` 还会返回无效的 `(-1,-1)`，一并替掉）；
+  2. 新增 `_DockTabWidget`：`sizeHint` / `minimumSizeHint` **只按当前页算**并夹在 `[430, 720]`，任何一页都不可能再把 dock 顶出屏幕（宽度必须沿用父类，否则 dock 再也缩不回 360px 最窄宽度）；
+  3. 新增 `QGISAgent._clamp_dock_to_screen()`：dock 首次显示后，把**底边超出屏幕可用区**的历史坏尺寸收回一次——客观判定，屏幕内的正常布局（哪怕用户故意拉满高度）一律不动。
+  实测 `QTabWidget.sizeHint` 由 **812x805 → 366x430**，工作流页 sizeHint 由 **773 → 173**。
+
+### 改进
+- 🔍 **诊断建议定向化**：模型名与服务端清单不一致、且没有相近候选时（如用户填 `120ad088`、服务端是 `qwen3.6-35B`），不再说「改成上面列出的其中一个」这种空话，而是直接点名「服务端实际提供的是「X」，模型名请照它填写」；并补充说明「单模型服务会忽略模型名，填错也照样能用；但网关 / 多模型服务就必须填对」。
+
+### 测试
+- 🧪 新增 `TestSystemMessageInvariant`（**2 例**）：锁死「有且仅有一条 system 消息且位于首位」，并覆盖「带历史对话」的情形。**已做反向验证**——把实现改回旧写法，守卫会以 `['SystemMessage', 'SystemMessage', 'HumanMessage']` 失败。
+- 🧪 `tests/test_error_classifier.py`：新增 template 用例（含用户现场原文）、`CATEGORY_TEMPLATE` 常量、`template` 必须排在 `server` 之前的顺序不变式，以及一条端到端断言（system 位置报错绝不能被 `server` 吞掉）。
+- 🧪 `tests/test_endpoint_diagnostics.py`：新增 mock 模式 `MODE_SYSTEM_POS`（**只在带 system 时失败**，照抄用户现场）与 3 例——模型名不一致但对话可用 → 信息级；模板报错必须被复现；模型名确认失败 → 升级为失败。
+- 🧪 新增真机验收脚本能力：`dock_size_accept_test.py`（页签容器 sizeHint 上下限、逐页签几何、切过「工作流」再回「对话」、`_clamp_dock_to_screen` 六个场景）。
+
+### 验收
+- 单测 **359 例**全绿（2 xfail + 11 skip）。
+- 真机验收双版本（QGIS 3.44.14/Qt5 与 QGIS 4.2.1/Qt6）：既有 UI 验收各 **137/137**；`dock_size_accept_test.py` Qt5 **28/28**、Qt6 **26/26**。
+
 ## [2.4.2] - 2026-09-24
 
 ### 修复

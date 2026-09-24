@@ -3,7 +3,7 @@ name=QGIS Agent
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
 description=LLM-powered intelligent assistant for QGIS. Natural language control of QGIS tools, plus an optional local MCP server so external AI agents (Claude Desktop, Cursor, etc.) can drive QGIS.
-version=2.4.2
+version=2.4.3
 author=bunkmr
 email=bunkr@qq.com
 about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It allows you to control QGIS through natural language conversations, including: viewing project info, adding/removing layers, executing Processing algorithms, running PyQGIS code, setting layer labels, rendering maps, and more.
@@ -49,6 +49,15 @@ deprecated=False
 hasProcessingProvider=no
 server=no
 changelog=
+    v2.4.3 更新内容：
+    【重要修复】本地大模型每次对话都报「模型服务内部错误 HTTP 500」，而同一个模型在别的客户端完全正常。根因是插件自己发出的消息格式有问题：Query Tuning 的改写结果此前被作为第二条 SystemMessage 追加在系统提示词之后，而 Qwen3 系 chat template 只允许第一条是 system，遇到第二条直接报 Jinja Exception: System message must be at the beginning。现已改为并入同一条系统消息，维持「有且仅有一条系统消息、且位于首位」的不变式。
+    【修复】新增 template 错误分类（排在 server 之前）。此前 Jinja / chat template 报错因原文里带 HTTP 500 而被 server 抢走，给出「模型未加载 / 显存不足」这种完全不对路的建议；现在明确指出模板只允许第一条是 system，并指引先更新插件、再查消息序列、最后确认 --jinja。
+    【修复】诊断报告自相矛盾（「服务端没有这个模型」与「对话接口可用 HTTP 200」并存）。真因是单模型推理服务会忽略 model 字段。现在模型名比对先登记为信息级，只有对话实测也确认是模型问题才升级为失败。
+    【修复】诊断的探测请求没带 system 消息，因此测不出上面那条 500。现在两次探测都以 system + user 的形态发出，与插件真实请求形态一致。
+    【重要修复】切换页签后回到「对话」页，底部输入框与发送按钮消失。真因是 Qt5 侧工作流页的 QtWebKit QWebView 没有实现 sizeHint，Qt 回落到默认 800x600，把 QTabWidget 的 sizeHint 顶到 812x805，触发尺寸自适应后 dock 被撑到屏幕之外并被 QGIS 记入 profile。三处修复：① QWebView 设 Ignored 尺寸策略；② 新增 _DockTabWidget，sizeHint / minimumSizeHint 只按当前页算并夹在 [430,720]；③ 新增 QGISAgent._clamp_dock_to_screen()，首次显示后把底边超出屏幕的旧尺寸收回一次。实测 QTabWidget.sizeHint 由 812x805 降至 366x430，工作流页 sizeHint 由 773 降至 173。
+    【改进】诊断建议定向化：模型名与服务端清单不一致且无相近候选时，直接点名「服务端实际提供的是「X」，模型名请照它填写」，不再说「改成上面列出的其中一个」；并说明单模型服务会忽略模型名、网关则必须填对。
+    【测试】新增 system 消息不变式守卫（已反向验证，旧写法会以 ['SystemMessage','SystemMessage','HumanMessage'] 失败）、template 分类与规则顺序不变式、mock 模式 MODE_SYSTEM_POS 及 3 例诊断用例；单测 355 → 359 全绿；真机验收双版本既有 UI 各 137/137，新增 dock 尺寸验收 Qt5 28/28、Qt6 26/26。
+
     v2.4.2 更新内容：
     【修复】本地模型报「模型错误 / 错误原因无法自动识别（unknown）」——本次报障的主场景。补上四条此前落到 unknown 的真实措辞：model 'x' not found、model is not loaded、the request exceeds the available context size (NNNN tokens)、Failed to parse chat template: this model does not support tools；新增「地址路径不对」与「服务端 5xx（可重试）」两个分类。
     【修复】API Key 留空时报错无法归类。本地服务（llama.cpp / Ollama / LM Studio）通常「随便填」即可，但留空会让 OpenAI SDK 自己先抛 The api_key client option must be set；现在这条单独接住，明确说明填任意占位符（如 sk-local）即可但不能留空。
