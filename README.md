@@ -140,7 +140,7 @@ cp -r qgis_agent/ ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/
 ## ⚙️ 配置
 
 1. 打开 QGIS，点击工具栏 **QGIS Agent** 图标
-2. 切换到「模型配置」标签页
+2. 切换到「模型」标签页
 3. 添加 LLM 配置：
    - **名称**：任意（如 `DeepSeek`）
    - **API 端点**：如 `https://api.deepseek.com/v1`
@@ -159,6 +159,43 @@ cp -r qgis_agent/ ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/
 | 本地部署 | `http://localhost:11434/v1` 等 | 任意模型名（Ollama / vLLM / llama.cpp） |
 
 > 🔑 **本地 / 自托管模型无需密码**：自定义端点的 **API Key 可留空**。部分网关后的端点会返回 `403 PermissionDenied` 并提示请求被拦截——插件会发送一个常规浏览器 `User-Agent` 以提高兼容性，通常无需手动改配置。
+
+### 外部 Agent 接入（MCP，可选）
+
+把 QGIS 交给 Claude Desktop / Cursor 等 MCP 客户端驱动：
+
+1. 打开「**MCP**」页签（与「模型」分开的独立页签）；
+2. 点「**启动服务**」（端口与令牌已自动生成，通常无需改动）；
+3. 点「**复制客户端配置**」，把 JSON 粘进客户端的 `mcpServers`；
+4. 重启客户端，即可在工具列表里看到 QGIS 工具。
+
+```json
+{
+  "mcpServers": {
+    "qgis-agent": {
+      "command": "/path/to/python3",
+      "args": ["/path/to/plugins/qgis_agent/mcp_server/qgis_agent_mcp_server.py"],
+      "env": {
+        "QGIS_AGENT_MCP_PORT": "9876",
+        "QGIS_AGENT_MCP_TOKEN": "<在 MCP 页签点「复制令牌」拿到>"
+      }
+    }
+  }
+}
+```
+
+> ⚠️ **`command` 必须是 Python 解释器，不能写 QGIS 主程序。**
+> 客户端会用 `command` 拉起一个讲 stdio 的 MCP 服务，而
+> `QGIS.app/Contents/MacOS/QGIS`（macOS）、`qgis-bin.exe`（Windows）是 GUI 主程序：
+> 它不读 stdin、不输出 JSON-RPC，只会再弹一个 QGIS 窗口然后握手超时。
+> 插件生成的配置已自动挑选一个**真的能跑起来**的解释器（会实际执行一次校验，
+> 不是只看文件存不存在），所以**优先用「复制客户端配置」，不要手改 `command`**。
+>
+> macOS 还有个坑：QGIS 自带的 `Contents/MacOS/python3.12` 是给 app 内部用的
+> framework 解释器，脱离 app 直接运行会报
+> `Could not find platform independent libraries <prefix>` —— 别把它写进配置，
+> 用 `/usr/bin/python3`、Homebrew 或 python.org 装的 Python 都可以
+> （MCP Server 只用标准库，无需 pip install）。
 
 ## 🚀 快速上手
 

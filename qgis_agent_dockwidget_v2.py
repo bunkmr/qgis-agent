@@ -373,7 +373,8 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         for index, tip in enumerate([
             "与 Agent 对话，用自然语言执行 QGIS 任务",
             "历史对话：加载 / 搜索 / 删除",
-            "模型配置：添加模型、测试连接与诊断、浏览器兼容 TLS、MCP 服务",
+            "模型配置：添加模型、测试连接与诊断、浏览器兼容 TLS",
+            "MCP 服务：让 Claude Desktop / Cursor 等外部 Agent 驱动本 QGIS",
             "工作流：本次任务已执行的步骤",
             "报告：生成的代码与执行日志（排查报错看这里）",
             "帮助：功能说明、快速上手与常见问题",

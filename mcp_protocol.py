@@ -201,7 +201,7 @@ class MCPProtocolHandler(object):
         if not self.check_token(req.get("token")):
             return self._error(
                 ERR_UNAUTHORIZED,
-                "访问令牌无效。请在 QGIS Agent 的「模型配置 → MCP 服务」中复制最新令牌。",
+                "访问令牌无效。请在 QGIS Agent 的「MCP」页签中复制最新令牌。",
             )
 
         method = req.get("method")
@@ -245,7 +245,7 @@ class MCPProtocolHandler(object):
             return self._error(
                 ERR_TOOL_NOT_ALLOWED,
                 "工具 %s 属于危险操作，当前未在设置中允许外部调用。"
-                "如需使用，请在 QGIS Agent「模型配置 → MCP 服务」中勾选"
+                "如需使用，请在 QGIS Agent 的「MCP」页签中勾选"
                 "「允许外部调用危险工具」（每次执行仍会在 QGIS 界面弹窗确认）。" % name,
             )
 

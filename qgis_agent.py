@@ -2,6 +2,7 @@
 
 import os
 import re
+import sys
 import html as html_module
 
 from qgis.PyQt.QtCore import (
@@ -1517,9 +1518,17 @@ class QGISAgent:
 
     def _on_tab_changed(self, index):
         """标签页切换时刷新模型配置页"""
-        # 模型配置标签页是 index 2
-        if index == 2:
-            self._refresh_settings_tab()
+        # 按控件定位而不是写死下标：页签增删（如 v2.4.5 插入「MCP」页）时
+        # 硬编码的 index 会静默指向别的页 —— 表现是「切到某个页签时表格莫名刷新」。
+        tabs = getattr(self.dockwidget, "twTabs", None)
+        target = getattr(self.dockwidget, "tbSettings", None)
+        if tabs is None or target is None:
+            return
+        try:
+            if index == tabs.indexOf(target):
+                self._refresh_settings_tab()
+        except Exception as _e:  # noqa: BLE001
+            logger.debug("切换页签刷新模型表失败，忽略: %s", _e, exc_info=True)
 
     def _init_settings_tab(self):
         """初始化模型配置标签页"""
@@ -1648,9 +1657,11 @@ class QGISAgent:
         return QSettings("QGIS", "QGISAgent")
 
     def _build_mcp_settings_ui(self):
-        """在模型配置页底部插入「MCP 服务」设置区。"""
+        """把「MCP 服务」设置区填进独立的「MCP」页签（见 base_ui 的 tbMcp）。"""
         settings = self._mcp_settings()
-        group = QGroupBox("MCP 服务（供 Claude Desktop / Cursor 等外部 Agent 调用）")
+        # 分组标题保持短（只写「MCP 服务」）：窄 dock 下 QGroupBox 的标题会被裁掉，
+        # 「供 Claude Desktop / Cursor …」这类说明放到下边的 hint 里更稳妥。
+        group = QGroupBox("MCP 服务")
         outer = QVBoxLayout(group)
         outer.setSpacing(6)
 
@@ -1663,6 +1674,7 @@ class QGISAgent:
             session_hint = "~/.qgis_agent/mcp_session.json"
 
         hint = QLabel(
+            "把本插件的 GIS 工具暴露给 Claude Desktop / Cursor 等外部 Agent 调用。"
             "启动后仅在 127.0.0.1 上监听，且强制校验访问令牌，局域网内其他机器无法连接。"
             "端口与令牌已写入 %s，外部 MCP Server 会自动读取，通常无需手工配置。"
             % session_hint
@@ -1746,7 +1758,9 @@ class QGISAgent:
         row_actions = QHBoxLayout()
         self.btnMcpCopyConfig = QPushButton("复制客户端配置")
         self.btnMcpCopyConfig.setToolTip(
-            "复制一段可直接粘贴进 Claude Desktop / Cursor 配置文件的 mcpServers JSON"
+            "复制一段可直接粘贴进 Claude Desktop / Cursor 配置文件的 mcpServers JSON。\n"
+            "其中的 command 会自动换成「本机确实能跑起 MCP Server」的 Python 解释器 —— "
+            "不能直接用 QGIS 主程序，它不会讲 MCP 协议。"
         )
         self.btnMcpCopyConfig.clicked.connect(self._on_mcp_copy_config)
         row_actions.addWidget(self.btnMcpCopyConfig)
@@ -1757,8 +1771,9 @@ class QGISAgent:
         outer.addLayout(row_actions)
 
         self.boxMcp = group
-        layout = self.dockwidget.settingsLayout
-        layout.insertWidget(layout.count() - 1, group)
+        layout = self.dockwidget.mcpLayout
+        # 插到末尾的空档（各页布局末尾都有一个 addStretch，占位用的弹簧必须留在最后）
+        layout.insertWidget(max(0, layout.count() - 1), group)
 
         # 桥接服务状态变化时刷新显示
         try:
@@ -1919,18 +1934,27 @@ class QGISAgent:
             config = bridge.client_config()
             text = _json.dumps(config, ensure_ascii=False, indent=2)
             QApplication.clipboard().setText(text)
+            # 解释器被自动替换过就一并说明 —— 否则用户看到 command 不是 QGIS 的
+            # 路径会以为复制错了，或者反过来把 command 手动改回 QGIS 主程序。
+            hint = str(getattr(bridge, "last_python_hint", "") or "")
+            extra = ("\n\n" + hint) if hint else ""
             QMessageBox.information(
                 self.dockwidget, "客户端配置已复制",
                 "已复制 Claude Desktop / Cursor 的 mcpServers 配置片段：\n\n"
-                + text + "\n\n粘贴到客户端的配置文件后重启客户端即可。"
+                + text + extra + "\n\n粘贴到客户端的配置文件后重启客户端即可。"
             )
         except Exception as _e:
             QMessageBox.warning(self.dockwidget, "复制失败", "生成配置片段失败：%s" % _e)
 
     def _on_mcp_selfcheck(self):
-        """在 QGIS 自带 Python 里跑一次 MCP Server 自检，确认整条链路通。"""
+        """用一个真能跑的解释器执行 MCP Server 自检，确认整条链路通。
+
+        ⚠️ 必须走 ``resolve_python_executable``，不能直接用 ``sys.executable``：
+        macOS 上它是 QGIS 的 GUI 主程序，拿它去跑脚本等于**再启动一个 QGIS 界面**
+        （自检会永远等不到输出，用户屏幕上还会多出一个窗口）。这与「复制客户端
+        配置」是同一个坑，必须共用同一套解析逻辑。
+        """
         import subprocess
-        import sys as _sys
         server_script = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             "mcp_server", "qgis_agent_mcp_server.py",
@@ -1940,8 +1964,14 @@ class QGISAgent:
                                 "未找到 %s" % server_script)
             return
         try:
+            from .mcp_bridge import resolve_python_executable
+            python, _note = resolve_python_executable(server_script=server_script)
+        except Exception as _e:  # noqa: BLE001
+            logger.debug("解析自检解释器失败，回退当前进程: %s", _e, exc_info=True)
+            python = sys.executable
+        try:
             proc = subprocess.run(
-                [_sys.executable, server_script, "--check"],
+                [python, server_script, "--check"],
                 capture_output=True, text=True, timeout=30,
             )
             output = (proc.stdout or "") + (proc.stderr or "")
@@ -1951,7 +1981,7 @@ class QGISAgent:
         box = QMessageBox(self.dockwidget)
         box.setWindowTitle("MCP 连通性自检")
         box.setText("自检%s" % ("通过" if proc.returncode == 0 else "未通过"))
-        box.setDetailedText(output.strip())
+        box.setDetailedText("解释器：%s\n\n%s" % (python, output.strip()))
         box.exec()
 
 

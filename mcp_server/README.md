@@ -18,7 +18,7 @@ MCP 客户端  ──stdio JSON-RPC──▶  qgis_agent_mcp_server.py  ──TC
 
 ## 快速开始
 
-1. 打开 QGIS → 「QGIS Agent」面板 → **模型配置** 标签页 → 找到 **MCP 服务** 分组；
+1. 打开 QGIS → 「QGIS Agent」面板 → **MCP** 标签页（与「模型」分开的独立页签）；
 2. 点 **启动服务**（端口与令牌已自动生成，通常无需改动）；
 3. 点 **复制客户端配置**，把得到的 JSON 粘进客户端的 `mcpServers`；
 4. 重启客户端，即可在工具列表里看到 QGIS 工具。
@@ -36,21 +36,32 @@ MCP 客户端  ──stdio JSON-RPC──▶  qgis_agent_mcp_server.py  ──TC
 {
   "mcpServers": {
     "qgis-agent": {
-      "command": "/Applications/QGIS-final-4_2_1.app/Contents/MacOS/python3.12",
+      "command": "/path/to/python3",
       "args": ["/path/to/plugins/qgis_agent/mcp_server/qgis_agent_mcp_server.py"],
       "env": {
         "QGIS_AGENT_MCP_PORT": "9876",
-        "QGIS_AGENT_MCP_TOKEN": "<在设置页复制的令牌>"
+        "QGIS_AGENT_MCP_TOKEN": "<在 MCP 页签点「复制令牌」拿到>"
       }
     }
   }
 }
 ```
 
+> ⚠️ **`command` 必须是 Python 解释器**，不要写 QGIS 主程序
+> （`QGIS.app/Contents/MacOS/QGIS`、`qgis-bin.exe` 等）——那是 GUI 程序，
+> 不会讲 stdio 的 JSON-RPC。**优先直接「复制客户端配置」**：插件会实际执行
+> 一次校验，挑一个真的能跑起来的解释器写进去。
+
 ## 零依赖
 
-本 Server 只用 Python 标准库，**不需要 pip install 任何东西**。
-`command` 用系统 `python3` 或 QGIS 自带解释器都可以（推荐后者，路径见设置页）。
+本 Server 只用 Python 标准库，**不需要 pip install 任何东西**，
+因此任意 Python 3.8+ 都可以当 `command`：系统 `python3`、Homebrew、
+python.org 或 QGIS 自带的解释器都行。
+
+⚠️ 唯一的例外是 macOS 上 QGIS 自带的 `QGIS.app/Contents/MacOS/python3.12`：
+它是给 app 内部用的 framework 解释器，**脱离 app 直接运行会报**
+`Could not find platform independent libraries <prefix>`，不能写进 `command`。
+（插件会真的拿候选解释器跑一遍 `--help` 来判定，这类跑不起来的会被自动跳过。）
 
 ## 命令行
 
@@ -79,7 +90,7 @@ python3 qgis_agent_mcp_server.py --check --port 9876 --token <token>
 |---|---|
 | 监听地址 | **仅 127.0.0.1**，不支持绑定其它地址，局域网内其他机器连不上 |
 | 认证 | **强制令牌**（32 字节随机），常数时间比较；无令牌一律拒绝 |
-| 危险工具 | `execute_pyqgis` / `execute_processing` / `remove_layer` / `load_project` / `save_project` **默认不出现在工具清单里**，需在设置页显式放开 |
+| 危险工具 | `execute_pyqgis` / `execute_processing` / `remove_layer` / `load_project` / `save_project` **默认不出现在工具清单里**，需在「MCP」页签显式放开 |
 | 危险操作确认 | 即便放开，每次执行仍会在 QGIS 界面上弹确认框，由用户本人点击 |
 | 默认状态 | 插件启动时**不自动监听**，需用户点「启动服务」；可勾选「随插件自动启动」 |
 | 会话文件 | 写入时收紧权限到 `0600`（Windows 等平台自动忽略） |

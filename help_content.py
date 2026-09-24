@@ -177,7 +177,8 @@ __CARD_TIP__
 <tr><th style="width:64px;">页签</th><th>作用</th></tr>
 <tr><td>对话</td><td>下达任务、查看回复（带思考过程，可折叠展开）</td></tr>
 <tr><td>历史</td><td>历史对话列表，可搜索 / 加载 / 删除</td></tr>
-<tr><td>模型</td><td>模型增删、测试连接与诊断、浏览器兼容 TLS、MCP 服务开关</td></tr>
+<tr><td>模型</td><td>模型增删、测试连接与诊断、浏览器兼容 TLS</td></tr>
+<tr><td>MCP</td><td>把 QGIS 工具暴露给 Claude Desktop / Cursor 等外部 Agent：启停服务、端口与令牌、复制客户端配置、连通性自检</td></tr>
 <tr><td>工作流</td><td>本次任务已执行的步骤可视化</td></tr>
 <tr><td>报告</td><td>生成的 PyQGIS 代码、执行日志、SmartDebugger 诊断结论（<b>排查报错看这里</b>）</td></tr>
 <tr><td>帮助</td><td>本页</td></tr>
@@ -224,8 +225,12 @@ __CARD_TIP__
 __CARD_LOCAL__
 
 <h2>🔌 MCP 服务（可选）</h2>
-<p>开启后，Claude Desktop、Cursor 等支持 MCP 的外部 Agent 可以直接驱动本 QGIS 执行 GIS 任务。</p>
+<p>在独立的「<b>MCP</b>」页签里开启后，Claude Desktop、Cursor 等支持 MCP 的外部 Agent
+可以直接驱动本 QGIS 执行 GIS 任务。</p>
 <ul>
+<li>点「复制客户端配置」拿到现成的 <code>mcpServers</code> JSON，<b>直接粘贴即可</b>——
+    其中的 <code>command</code> 会自动换成本机确实能跑起来的 Python 解释器
+    （不是 QGIS 主程序，那是个 GUI 程序，不会讲 MCP 协议）</li>
 <li>仅在 <code>127.0.0.1</code> 上监听，并强制校验访问令牌，局域网其它机器连不上</li>
 <li>端口与令牌写入 <code>~/.qgis_agent/mcp_session.json</code>（权限 0600），
     外部 MCP Server 会自动读取，通常无需手工配置</li>

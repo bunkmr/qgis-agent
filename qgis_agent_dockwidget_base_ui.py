@@ -295,6 +295,20 @@ class Ui_QGISAgentDockWidget(object):
         self.settingsLayout.addWidget(self.cbSkipConfirmSettings)
         self.settingsLayout.addStretch()
 
+        # --- MCP 服务标签页 ---
+        # 独立成页（而不是塞在「模型」页底部）：MCP 面向的是「把 QGIS 交给外部
+        # Agent 驱动」，与「选哪个模型对话」是两件不相干的事。混在一起时它被压在
+        # 模型表格 / 测试连接 / TLS 开关之后，窄面板里要滚很久才看得到，还容易被
+        # 当成模型相关设置。控件本体由 qgis_agent._build_mcp_settings_ui 在运行时
+        # 填入 mcpLayout（与「模型」页同一套做法）。
+        self.tbMcp = QtWidgets.QWidget()
+        self.tbMcp.setObjectName("tbMcp")
+        self.mcpLayout = QtWidgets.QVBoxLayout(self.tbMcp)
+        self.mcpLayout.setContentsMargins(4, 4, 4, 4)
+        self.mcpLayout.setSpacing(6)
+        # 末尾留一根弹簧，控件按自身高度贴顶，不被拉长填满整页
+        self.mcpLayout.addStretch()
+
         # --- 工作流标签页 ---
         self.tbWorkflow = QtWidgets.QWidget()
         self.tbWorkflow.setObjectName("tbWorkflow")
@@ -463,6 +477,7 @@ class Ui_QGISAgentDockWidget(object):
         self.twTabs.addTab(self.tbMessages, "对话")
         self.twTabs.addTab(self.tbConversations, "历史")
         self.twTabs.addTab(self.tbSettings, "模型")
+        self.twTabs.addTab(self.tbMcp, "MCP")
         self.twTabs.addTab(self.tbWorkflow, "工作流")
         self.twTabs.addTab(self.tbReports, "报告")
         self.twTabs.addTab(self.tbAbout, "帮助")

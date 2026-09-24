@@ -134,8 +134,8 @@ class BridgeError(Exception):
 
 
 HELP_HINT = (
-    "请确认：① QGIS 正在运行；② 插件「模型配置 → MCP 服务」中已点「启动」；"
-    "③ 端口 / 令牌与设置页一致（默认 9876）。"
+    "请确认：① QGIS 正在运行；② 插件「MCP」页签中已点「启动服务」；"
+    "③ 端口 / 令牌与该页签一致（默认 9876）。"
 )
 
 
@@ -206,8 +206,8 @@ class MCPServer(object):
             "capabilities": {"tools": {"listChanged": False}},
             "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION},
             "instructions": (
-                "本服务把 QGIS Agent 插件暴露为工具。QGIS 必须正在运行且插件里的"
-                "「MCP 服务」已启动。工具清单由插件动态提供；危险操作（执行任意 PyQGIS "
+                "本服务把 QGIS Agent 插件暴露为工具。QGIS 必须正在运行且插件「MCP」"
+                "页签里的服务已启动。工具清单由插件动态提供；危险操作（执行任意 PyQGIS "
                 "代码等）即使被允许，也会在 QGIS 界面上弹出确认框，需要用户点击确认。"
             ),
         })

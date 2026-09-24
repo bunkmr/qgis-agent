@@ -21,7 +21,11 @@
 
 import json
 import os
+import re
+import shutil
 import socket
+import subprocess
+import sys
 import threading
 
 from qgis.PyQt.QtCore import QObject, QThread, pyqtSignal
@@ -54,10 +58,237 @@ RECV_CHUNK = 65536
 # 注意：这只影响 MCP 这条通道，插件内置 Agent 的行为不变。
 PRIVILEGED_EXTRA_TOOLS = ("run_skill",)
 
+# 实在找不到任何可验证的 Python 时，配置里退化成这个裸命令名，由客户端从 PATH 解析。
+# Windows 上解释器叫 python（或 py），没有 python3 这个约定名。
+PYTHON_PATH_COMMAND = "python" if os.name == "nt" else "python3"
+
+# 探测候选解释器时的单次超时（秒）。探测只做一次并缓存，正常机器上是几十毫秒。
+PYTHON_PROBE_TIMEOUT = 5.0
+# 最多「真的执行」几个候选，避免在异常机器上把 GUI 线程卡住。
+# 注意上限计的是**实际发起探测的次数**，不是候选列表下标 ——
+# 绝大多数候选（各种前缀下猜出来的路径）根本不存在，跳过它们是零成本的；
+# 按下标截断会把 PATH 上的可用解释器一起截掉（实测踩过）。
+PYTHON_PROBE_LIMIT = 8
+
 
 def _default_token():
     """生成 32 字节随机十六进制令牌。"""
     return os.urandom(32).hex()
+
+
+def _looks_like_python(path):
+    """按文件名判断是不是 Python 解释器。
+
+    只看文件名是刻意的：这是唯一在三个平台都成立、且不会误判的廉价判据
+    （Windows ``python.exe`` / ``pythonw.exe``、Linux ``python3.12``、
+    macOS 独立安装 ``python3`` 全部命中；而 ``QGIS``、``QGIS-final-4_2_1``
+    这类 GUI 主程序一律不命中）。
+    """
+    # 不能用 os.path.basename：它只认当前平台的分隔符，在 POSIX 上传入
+    # r"C:\OSGeo4W\bin\python.exe" 会原样返回整串（判不出 python）。
+    base = re.split(r"[\\/]", str(path or ""))[-1].lower()
+    return base.startswith("python")
+
+
+def _python_candidates(server_script=None, python_executable=None):
+    """按优先级列出候选解释器路径（去重保序）。
+
+    优先级：调用方显式指定 > sys.executable（仅当它确实像 python）>
+    QGIS 前缀下的各种布局 > sys.base_prefix / sys.prefix 下的布局 >
+    PATH 上的 python3 / python。
+
+    ⚠️ 为什么不能无条件信 sys.executable：macOS 上 QGIS 的 Python 是嵌在
+    app 里的，GUI 进程里 ``sys.executable`` 就是
+    ``/Applications/QGIS.app/Contents/MacOS/QGIS``（GUI 主程序）。把它写进
+    客户端配置的 ``command``，等于让 MCP 客户端去「启动一个 QGIS 界面」当
+    stdio 服务 —— 它既不读 stdin、也不讲 JSON-RPC。Windows 上
+    ``sys.executable`` 正好就是 python.exe，所以这个坑只在 macOS 暴露。
+    """
+    candidates = []
+
+    def _add(path):
+        path = str(path or "")
+        # ⚠️ 一律只收「名字像 python」的候选：下面的探测会真的把它执行起来，
+        # 放进一个 GUI 程序等于在用户屏幕上弹一个窗口。
+        if path and _looks_like_python(path) and path not in candidates:
+            candidates.append(path)
+
+    _add(python_executable)
+    _add(getattr(sys, "executable", "") or "")
+
+    version = "python%d.%d" % tuple(sys.version_info[:2])
+    relative = ("bin/python3", "bin/" + version, "bin/python",
+                version, "python3", "python.exe", "bin/python.exe")
+
+    prefixes = []
+    try:
+        from qgis.core import QgsApplication
+        prefixes.append(QgsApplication.prefixPath())
+    except Exception:  # noqa: BLE001 —— 不在 QGIS 里运行时忽略
+        pass
+    prefixes.append(getattr(sys, "base_prefix", "") or "")
+    prefixes.append(getattr(sys, "prefix", "") or "")
+    for prefix in prefixes:
+        if not prefix:
+            continue
+        for rel in relative:
+            _add(os.path.join(prefix, rel))
+
+    for name in ("python3", "python"):
+        try:
+            _add(shutil.which(name))
+        except Exception:  # noqa: BLE001
+            pass
+
+    return candidates, server_script
+
+
+def _clean_env():
+    """去掉会干扰解释器启动的 Python 环境变量，模拟 MCP 客户端的启动环境。"""
+    env = dict(os.environ)
+    for key in ("PYTHONPATH", "PYTHONHOME", "PYTHONSTARTUP", "PYTHONEXECUTABLE"):
+        env.pop(key, None)
+    return env
+
+
+def _try_run(argv, env=None):
+    """跑一次探测命令，退出码为 0 且没有崩在解释器初始化上才算通过。"""
+    try:
+        proc = subprocess.run(
+            argv, stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            timeout=PYTHON_PROBE_TIMEOUT, env=env,
+        )
+    except Exception:  # noqa: BLE001 —— 超时 / 权限 / 不是可执行文件等一律判不合格
+        return False
+    return proc.returncode == 0
+
+
+def _probe_environment(candidate, script=None):
+    """探测候选解释器，返回它**在哪种环境下**可用；不可用返回 ``None``。
+
+    判据刻意不是「文件存在」—— 存在也可能跑不起来。实测 macOS 上
+    ``QGIS.app/Contents/MacOS/python3.12`` 是存在的，但它是给 app 内部用的
+    framework 解释器，裸跑缺 PYTHONHOME，直接报
+    ``Could not find platform independent libraries <prefix>`` 并退出。
+
+    所以这里**真的执行一次**：有服务脚本就跑它的 ``--help``（退出码 0 才算
+    通过，顺带证明它还能 import 到脚本所需的标准库），没有脚本就退化成
+    ``python -c "import sys"``。
+
+    为什么要试两种环境、且**先干净后继承**：
+    - MCP 客户端拉起子进程时用的是**它自己**的环境，所以「干净环境下能跑」
+      才是真正相关的判据 —— 先按这个判；
+    - 但 QGIS 自带的解释器（Windows OSGeo4W、Linux 发行版包）往往要靠进程里
+      已有的 PYTHONPATH / PYTHONHOME 才能初始化，所以干净环境失败时再按继承
+      环境兜一次，避免漏掉本来可用的解释器。
+
+    返回 ``"inherited"`` 时调用方要提醒用户：这个选择只在 QGIS 进程的环境下
+    成立，客户端可能拉不起来。
+    """
+    # 名字闸门（第二道，见 _python_candidates 的说明）：探测会真的执行候选，
+    # 绝不能对「看起来不像解释器」的可执行文件动手。
+    if not _looks_like_python(candidate):
+        return None
+    if not os.path.exists(candidate):
+        return None
+    if not os.access(candidate, os.X_OK):
+        return None
+    argv = ([candidate, script, "--help"] if script
+            else [candidate, "-c", "import sys"])
+    if _try_run(argv, _clean_env()):
+        return "clean"
+    if _try_run(argv, None):
+        return "inherited"
+    return None
+
+
+def _can_run(candidate, script=None):
+    """这个候选**真的**能当解释器用吗？（任一环境能跑即算能跑）"""
+    return _probe_environment(candidate, script) is not None
+
+
+# 探测结果缓存：(server_script, python_executable) -> (path, note)
+_PYTHON_CACHE = {}
+
+
+def clear_python_cache():
+    """清掉解释器探测缓存（换 QGIS 前缀、装了新 Python 后调用）。"""
+    _PYTHON_CACHE.clear()
+
+
+def resolve_python_executable(server_script=None, python_executable=None):
+    """挑一个「真能跑起 MCP Server」的 Python 解释器，返回 ``(路径, 说明)``。
+
+    ``说明`` 为空表示不需要特殊处理（``command`` 就是当前进程的解释器）；
+    非空时是给用户看的一句话，解释为什么配置里的 ``command`` 不是 QGIS 的路径。
+
+    保底策略：任何一步出意外，都退回 ``sys.executable``（即改动前的行为），
+    绝不抛异常 —— 生成一段配置失败不该让整个设置页崩掉。
+    """
+    fallback = (getattr(sys, "executable", "") or "python3")
+    try:
+        key = (str(server_script or ""), str(python_executable or ""))
+        if key in _PYTHON_CACHE:
+            return _PYTHON_CACHE[key]
+
+        candidates, script = _python_candidates(server_script, python_executable)
+        have_script = bool(script) and os.path.exists(script)
+        probe_target = script if have_script else None
+
+        # 猜出来的路径大多不存在，先按「存在」筛一遍，让探测上限只花在真候选上
+        existing = [c for c in candidates
+                    if c and os.path.exists(c)][:PYTHON_PROBE_LIMIT]
+
+        # ⚠️ 两趟探测，且**干净环境那趟必须优先**：客户端是在自己的环境里拉起
+        # command 的，所以「干净环境下能跑」才等同于「配置能用」。只在 QGIS
+        # 进程环境里能跑的解释器（靠继承的 PYTHONPATH/PYTHONHOME 活着）只能当
+        # 兜底 —— 拿它当首选，用户会看到客户端一启动就退出。
+        result = None
+        env_used = None
+        for wanted, label in (("clean", "clean"), ("inherited", "inherited")):
+            for candidate in existing:
+                if _probe_environment(candidate, probe_target) == wanted:
+                    result = candidate
+                    env_used = label
+                    break
+            if result is not None:
+                break
+
+        if result is None:
+            # 一个都跑不起来。此时**不要**回吐 sys.executable —— 在 macOS GUI 上
+            # 它是 QGIS 的 GUI 主程序，写进配置只会换来一个「客户端一启动就弹
+            # QGIS 窗口、然后握手超时」。改成一个裸命令名交给客户端从 PATH 解析，
+            # 至少在装了 Python 的机器上是可用方向。
+            if _looks_like_python(fallback):
+                result = fallback
+                note = ("⚠ 未能确认 %s 能跑起 MCP Server（电脑上没找到其它可用的 "
+                        "Python）。若客户端连不上，请手动把 command 改成 Python 的"
+                        "绝对路径。" % fallback)
+            else:
+                result = PYTHON_PATH_COMMAND
+                note = ("⚠ 未在本机找到可用的 Python 解释器，配置里先写成 %r，"
+                        "由客户端从 PATH 里解析。若仍是连不上，请把它改成 Python 的"
+                        "绝对路径。" % PYTHON_PATH_COMMAND)
+        elif _looks_like_python(fallback) and os.path.normcase(result) == os.path.normcase(fallback):
+            note = ""
+        elif not _looks_like_python(fallback):
+            note = ("ℹ 当前进程的可执行文件（%s）不是 Python 解释器，"
+                    "配置里的 command 已自动改用 %s。" % (fallback, result))
+        else:
+            note = ("ℹ 当前解释器（%s）跑不起来 MCP Server，"
+                    "配置里的 command 已自动改用 %s。" % (fallback, result))
+
+        if env_used == "inherited":
+            note = ("⚠ 本机没有「干净环境下就能启动」的 Python，已选用 %s —— "
+                    "它需要 QGIS 进程的环境变量才能初始化，MCP 客户端可能拉不起来。"
+                    "若客户端报「意外退出」，请手动把 command 换成"
+                    "一个独立安装的 Python 绝对路径。" % result)
+
+        _PYTHON_CACHE[key] = (result, note)
+        return result, note
+    except Exception:  # noqa: BLE001
+        return fallback, ""
 
 
 def _safe_qgis_info():
@@ -256,6 +487,10 @@ class MCPBridge(QObject):
         self._port = None
         self._token = ""
         self._allow_dangerous = False
+        # 最近一次生成客户端配置时对解释器做的替换说明（空串 = 无需替换）。
+        # 设置页把它附在「复制客户端配置」的弹窗里，免得用户看到 command
+        # 不是 QGIS 的路径时以为哪里出错了。
+        self.last_python_hint = ""
 
     # ── 单例 ──
     @classmethod
@@ -392,16 +627,24 @@ class MCPBridge(QObject):
             self._allow_dangerous = bool(allow_dangerous)
 
     def client_config(self, python_executable=None, server_script=None):
-        """生成客户端（Claude Desktop / Cursor）可用的 mcpServers 配置片段。"""
+        """生成客户端（Claude Desktop / Cursor）可用的 mcpServers 配置片段。
+
+        ``command`` 必须是**能真正跑起 MCP Server 的 Python 解释器**，不能直接
+        用 ``sys.executable`` —— macOS 上它是 QGIS 的 GUI 主程序（详见
+        ``resolve_python_executable``）。解析结果与替换说明分别落在
+        ``command`` 与 ``self.last_python_hint``。
+        """
         try:
-            import sys
-            if python_executable is None:
-                python_executable = sys.executable or "python3"
             if server_script is None:
                 server_script = os.path.join(
                     os.path.dirname(os.path.abspath(__file__)),
                     "mcp_server", "qgis_agent_mcp_server.py",
                 )
+            resolved, note = resolve_python_executable(
+                server_script=server_script, python_executable=python_executable
+            )
+            self.last_python_hint = note
+            python_executable = resolved
             return {
                 "mcpServers": {
                     "qgis-agent": {
