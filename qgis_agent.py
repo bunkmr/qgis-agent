@@ -6,7 +6,7 @@ import sys
 import html as html_module
 
 from qgis.PyQt.QtCore import (
-    QSettings, QTranslator, QCoreApplication, Qt, QTimer, QPoint,
+    QSettings, Qt, QTimer, QPoint,
     pyqtSignal, QThread
 )
 from qgis.PyQt.QtGui import QIcon, QPalette, QFont
@@ -320,17 +320,11 @@ class QGISAgent:
         self.iface = iface
         self.plugin_dir = os.path.dirname(__file__)
 
-        # locale/userLocale 在极端情况下可能为 None（例如 QGIS 尚未注册 locale、
-        # 或插件被非标准方式实例化），此时直接切片会 TypeError 导致整个插件加载失败。
-        locale = str(QSettings().value("locale/userLocale") or "en")[0:2]
-        locale_path = os.path.join(self.plugin_dir, "i18n", f"QGISAgent_{locale}.qm")
-        if os.path.exists(locale_path):
-            self.translator = QTranslator()
-            self.translator.load(locale_path)
-            QCoreApplication.installTranslator(self.translator)
-
         self.actions = []
-        self.menu = self.tr("&QGIS Agent")
+        # 菜单名直接用中文：插件 UI 本身就是中文原生，此前经 .qm 翻译
+        # "QGIS Agent"→"QGIS 智能助手"，但 .qm 是空文件从未生效（12 字节，
+        # 只有 magic 头）。与其维护 lrelease 链路只为这一条文案，不如硬编码。
+        self.menu = "QGIS 智能助手(&Q)"
         self.toolbar = self.iface.addToolBar("QGIS Agent")
         self.toolbar.setObjectName("QGISAgentToolbar")
 
@@ -384,9 +378,6 @@ class QGISAgent:
             # 如果找不到Python控制台，使用默认位置
             logger.debug("Could not find Python console toolbar: %s", e)
 
-    def tr(self, message):
-        return QCoreApplication.translate("QGISAgent", message)
-
     def add_action(self, icon_path, text, callback, enabled_flag=True,
                    add_to_menu=True, add_to_toolbar=True, status_tip=None,
                    whats_this=None, parent=None):
@@ -409,7 +400,7 @@ class QGISAgent:
         icon_path = os.path.join(self.plugin_dir, "icon.png")
         self.add_action(
             icon_path,
-            text=self.tr("打开 QGIS Agent"),
+            text="打开 QGIS Agent",
             callback=self.run,
             parent=self.iface.mainWindow(),
         )
@@ -513,7 +504,7 @@ class QGISAgent:
         # 5) 清理菜单与工具栏（必须放在最后，且全程 try，unload 抛异常会让 QGIS 关闭卡死）
         for action in list(self.actions):
             try:
-                self.iface.removePluginMenu(self.tr("&QGIS Agent"), action)
+                self.iface.removePluginMenu("QGIS 智能助手(&Q)", action)
                 self.iface.removeToolBarIcon(action)
             except Exception as _e:
                 logger.debug("ignored exception", exc_info=True)

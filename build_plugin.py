@@ -54,8 +54,9 @@ EXCLUDE_PATTERNS = [
     "tests",  # 测试文件
     "scripts",  # 脚本文件
     "help",  # 帮助文档源（rst/Makefile）
-    # 注意：i18n 不再排除。这里放的是编译产物 *.qm（INCLUDE_PATTERNS 白名单已放行），
-    # 源翻译 *.ts 不在白名单内，不会进包。此前排除 i18n 导致翻译文件永不进 ZIP。
+    # i18n 目录已移除（2026-09-24）：插件 UI 本就是中文原生，唯一一条菜单翻译
+    # 直接硬编码进 qgis_agent.py，不再维护 .ts/.qm/lrelease 链路（原 .qm 是
+    # 12 字节空文件，从未真正生效）。白名单里的 *.qm 保留无害，无需再改。
     # ZIP / 旧版本文件
     "*.zip",
     "qgis_agent_v*",
