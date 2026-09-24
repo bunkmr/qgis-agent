@@ -3,7 +3,7 @@ name=QGIS Agent
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
 description=LLM-powered intelligent assistant for QGIS. Natural language control of QGIS tools, plus an optional local MCP server so external AI agents (Claude Desktop, Cursor, etc.) can drive QGIS.
-version=2.4.1
+version=2.4.2
 author=bunkmr
 email=bunkr@qq.com
 about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It allows you to control QGIS through natural language conversations, including: viewing project info, adding/removing layers, executing Processing algorithms, running PyQGIS code, setting layer labels, rendering maps, and more.
@@ -49,6 +49,18 @@ deprecated=False
 hasProcessingProvider=no
 server=no
 changelog=
+    v2.4.2 更新内容：
+    【修复】本地模型报「模型错误 / 错误原因无法自动识别（unknown）」——本次报障的主场景。补上四条此前落到 unknown 的真实措辞：model 'x' not found、model is not loaded、the request exceeds the available context size (NNNN tokens)、Failed to parse chat template: this model does not support tools；新增「地址路径不对」与「服务端 5xx（可重试）」两个分类。
+    【修复】API Key 留空时报错无法归类。本地服务（llama.cpp / Ollama / LM Studio）通常「随便填」即可，但留空会让 OpenAI SDK 自己先抛 The api_key client option must be set；现在这条单独接住，明确说明填任意占位符（如 sk-local）即可但不能留空。
+    【修复】报错原文此前只写进「报告」页签的执行日志，对话里看不到任何线索。现在把服务端原文直接摊在对话的错误卡片上（自动抽 JSON message、补 HTTP 状态码、脱敏、截断），并提供「复制报错详情」「诊断连接」两个可点击入口。
+    【修复】tool 分类在 llama.cpp 场景下建议过于笼统，现直接给出 --jinja 启动参数与 GGUF chat template 检查项；rate_limit 补上 OpenAI 真实语序（You exceeded your current quota / billing hard limit）此前无法匹配。
+    【新增】「测试连接与诊断」取代原来只发一条纯文本的连通性测试：① 地址缺 /v1 时自动生成候选并逐个试连；② 拉取 /v1/models 列出服务端实际模型名；③ 模型名比对并指出差异；④ 读 llama.cpp /props 的 n_ctx 并与插件固定开销（8193 字符 ≈ 2560 token）比对；⑤ 最后再发一次带 tools 的请求。诊断模块不依赖 Qt，任何一步失败只追加说明、绝不抛异常，结果可一键复制。
+    【新增】明确「测试连接通过 ≠ 对话可用」：旧测试只发纯文本，真实对话走 bind_tools，因此模型不支持 function calling 时旧测试照样报「连接成功」而每次对话都失败——这正是「同一个模型在别处能用、在这里不行」的成因。新诊断显式补上了带 tools 的那一次请求。
+    【改进】顶部功能页签：文案压缩为 2-3 字（对话 / 历史 / 模型 / 工作流 / 报告 / 帮助），改为下划线式选中态并配逐页 tooltip，不拉伸、窄宽度自动退化为滚动按钮；实测 dock 最小宽度 360px 下六页签完整可见。
+    【改进】帮助页重做：抽成 help_content.py 纯函数，只用实测可用的富文本 CSS（表格宽度写成 width 属性、不用 var()/border-radius/flex），颜色按当前调色板注入；内容重写为「30 秒上手 / 页签都在做什么 / 能做什么 / 模型配置要点 / MCP 服务 / 常见问题 / 安全与隐私 / 内置工具 / 链接」，重点说明本地模型三条坑（Base URL 带 /v1、Key 填 sk-local、上下文开够 --ctx-size 8192）以及 --jinja。
+    【改进】错误卡片告警色按主题自适应（浅色 #C0392B / 深色 #FF7A70），此前深色主题下几乎看不出是红的。
+    【测试】新增 endpoint_diagnostics 单测 28 例（含 mock llama.cpp 端到端：正常 / 模型名不匹配 / 上下文过小 / 不支持 tools / 缺 /v1 / 不可达）与 help_content 单测 23 例（含富文本 CSS 禁区守卫）；单测 293 → 353 全绿；真机验收 QGIS3(Qt5) 与 QGIS4(Qt6) 各 137/137 通过。
+
     v2.4.1 更新内容：
     【改进】「对话」窗口视觉重做：消息改为气泡卡片（提问靠右、回复靠左，各带一条角色色条），回复中的代码块、表格与引用块在深色与浅色两种主题下都清晰可辨；思考过程折叠成一行「思考完成 · N 字」，可点击展开/收起、也可单独复制；空白状态下给出可点击的示例问题；输入区整理为「输入框 + 发送/停止按钮」，发送过程中只切换按钮，不再禁用整个输入区。
     【修复】对话历史区整块空白的严重问题。装配聊天区时用了 QLayout.replaceWidget()，它返回的布局项由 Python 侧持有，未接住就会被回收，而底层布局仍指向它——结果是新控件从未真正进入布局，表现就是"消息区什么都没有"。现改为「先摘出、再插入」的装配方式，并加入装配顺序自检（搜索条 < 聊天区 < 输入区 < 底部栏 < 状态条），顺序一旦错乱会在日志中明确报出。

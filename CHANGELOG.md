@@ -1,5 +1,35 @@
 # 更新日志
 
+## [2.4.2] - 2026-09-24
+
+### 修复
+- 🐛 **本地模型报「模型错误 / 错误原因无法自动识别（unknown）」**——本次用户报障的主场景。补上四条此前落到 `unknown` 的真实措辞：`model 'x' not found`、`model is not loaded`、`the request exceeds the available context size (NNNN tokens)`、`Failed to parse chat template: this model does not support tools`；新增 `endpoint`（地址路径不对）与 `server`（5xx，可重试）两个分类。用户原话「在别的地方这个模型能用、在这里不行」正是其中前两条的典型表现。
+- 🐛 **API Key 为空被归于 `unknown`**：本地服务（llama.cpp / Ollama / LM Studio）常见做法是 Key 随便填，但如果**留空**，OpenAI SDK 自身会先抛 `The api_key client option must be set either by passing api_key to the client`。现在这条排在通用鉴权规则之前单独接住，明确告知「填任意占位符（如 `sk-local`）即可，但不能留空」。
+- 🐛 **报错原文此前只写进「报告」页签的执行日志，用户在对话里看不到任何线索**。新增 `error_classifier.summarize_error()`：剥 ANSI → 优先抽 JSON 的 `message` 字段 → 压空白 → 补 `HTTP NNN · ` 前缀 → 脱敏（`sk-*` / `Bearer *`）→ 截断，把服务端原文**直接摊在对话里的错误卡片上**，并给出「复制报错详情」「诊断连接」两个可点击入口。
+- 🐛 **`tool` 分类的建议过于笼统**：此前只说「换个支持工具调用的模型」，现直接给出 llama.cpp 的 `--jinja` 启动参数与 GGUF chat template 检查项——本地场景下这才是真正的修复点。
+- 🐛 **`rate_limit` 漏掉 OpenAI 真实语序**：`You exceeded your current quota` / `quota reached|exceeded` / `billing hard limit` 此前无法匹配。
+
+### 新增
+- ✨ **「测试连接与诊断」（四项检查）**：把原来只发一条纯文本的连通性测试换成真正的诊断 ——
+  ① **地址规整**：缺 `/v1` 时自动生成候选地址并逐个试连（llama.cpp 两种路径都能通的，保留用户原值不动）；
+  ② **连通性 + 模型清单**：拉取服务端 `/v1/models`，列出它**实际**提供哪些模型名；
+  ③ **模型名比对**：不一致时直接指出「你填的是 X，服务端只有 Y」；
+  ④ **上下文容量**：读 llama.cpp `/props` 的 `n_ctx`，与本插件的固定开销（工具定义序列化后 **8193 字符 ≈ 2560 token**，每次请求都携带）比对；
+  ⑤ 最后**再发一次带 tools 的请求**——这一条才是关键。
+  新模块 `endpoint_diagnostics.py` 不依赖 Qt/qgis；任何一步失败只追加一行说明，**绝不抛异常**，结果在 `DiagnosisDialog` 中可一键复制。
+- ✨ **「测试连接通过 ≠ 对话可用」这一认知落地**：旧测试只发纯文本（`llm.invoke`），而真实对话走 `llm.bind_tools(TOOL_DEFINITIONS).invoke()`。因此**模型不支持 function calling 时，旧测试照样报「连接成功」，而每次对话都失败**——这正是「同一个模型在别处能用、在这里不行」的成因。新诊断显式补上了带 tools 的那一次请求。
+
+### 改进
+- 🎨 **顶部功能页签**：文案压缩为 2–3 字（对话 / 历史 / 模型 / 工作流 / 报告 / 帮助），改为下划线式选中态（真实控件，`border-radius` 可用），`setExpanding(False)` + 滚动按钮退化 + 逐页 tooltip；页签配色/内边距/选中态全部收归 `_apply_chat_style()` 单一来源。实测 dock 最小宽度 **360px 下六页签总宽 252px 完整可见，无需滚动**。
+- 🎨 **帮助页重做**：约 380 行内联 HTML 抽成 `help_content.py`（纯函数、可脱离 QGIS 单测），**只用实测可用的富文本 CSS**（表格宽度必须写成 `width="100%"` 属性而非 CSS；`var()` / `border-radius` / `display:flex` / `linear-gradient` / `nth-child` / `<details>` 一律不用——这些在 QTextDocument 里会被静默丢弃）；颜色按当前调色板注入。内容重写为「30 秒上手 / 页签都在做什么 / 能做什么 / 模型配置要点 / MCP 服务 / 常见问题 / 安全与隐私 / 内置工具 / 链接」，重点覆盖本地模型三条坑：Base URL 要带 `/v1`、Key 填 `sk-local`、上下文开够（`--ctx-size 8192`）以及 `--jinja`。打开完整文档的按钮移到正文下方，正文独占剩余空间。
+- 🎨 **主题感知告警色**：错误卡片此前固定用 `#C0392B`，深色主题下几乎看不出是红的；现按背景明暗自动切换 `#C0392B` / `#FF7A70`。
+
+### 测试
+- 🧪 新增 `tests/test_endpoint_diagnostics.py`（**28 例**）——含 stdlib `ThreadingHTTPServer` 搭的 mock llama.cpp，端到端覆盖：全绿 / 模型名不匹配 / 上下文过小 / 不支持 tools / 缺 `/v1` 变体 / 端口不可达。
+- 🧪 新增 `tests/test_help_content.py`（**23 例**）——含富文本 CSS 禁区守卫、表格宽度必须是属性、占位符与模板一一对应、章节无重复、内容准确性。
+- 🧪 `tests/test_error_classifier.py`：1 例 `expectedFailure` 转为正常守卫，新增 `TestSummarizeError`（7 例）与**规则顺序不变式**（具体规则必须排在通用规则之前，否则 `model 'x' not found` 会被裸 404 的 `endpoint` 规则抢走）。
+- 🧪 单测 293 → **353** 全绿（2 xfail + 9 skip）；真机验收 QGIS3(Qt5) 与 QGIS4(Qt6) 各 **137/137** 通过（新增「顶部页签 / 帮助页 / 错误卡片与锚点 / 主题告警色 / 本地模型诊断链路」五组断言）。
+
 ## [2.4.1] - 2026-09-23
 
 ### 对话窗口重做（UI）
