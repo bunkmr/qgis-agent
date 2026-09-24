@@ -806,17 +806,13 @@ class QGISAgent:
         response_type = "Agent"
 
         if self.live_conversation is not None:
-            # 先显示用户消息
-            font_color = self._set_font_color(self.dockwidget.txHistory.palette().color(QPalette.ColorRole.Base))
-            safe_message = html_module.escape(message)
-            user_html = f"""
-                <div style="margin:0;padding:0;line-height:1;text-align:right;color:#6baad1;">
-                    用户 {self._get_current_timestamp()}
-                </div>
-                <div style="margin:0;padding:0;line-height:1;text-align:right;color:{font_color};">
-                    {safe_message}
-                </div>
-            """
+            # 先显示用户消息。
+            # ⚠️ 必须与「重建历史」（dockwidget.updateConversation）共用同一个气泡
+            # 函数：两处各写一套 HTML 时，回答一到就会因为样式不同而肉眼可见地
+            # 跳变（纯文本 → 气泡卡片）。
+            user_html = self.dockwidget.user_bubble_html(
+                message, self._get_current_timestamp()
+            )
             self.dockwidget.txHistory.append(user_html)
 
             # 统一成对连接/断开，避免多次发送后信号重复触发与旧对象泄漏

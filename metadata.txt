@@ -3,7 +3,7 @@ name=QGIS Agent
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
 description=LLM-powered intelligent assistant for QGIS. Natural language control of QGIS tools, plus an optional local MCP server so external AI agents (Claude Desktop, Cursor, etc.) can drive QGIS.
-version=2.4.5
+version=2.4.6
 author=bunkmr
 email=bunkr@qq.com
 about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It allows you to control QGIS through natural language conversations, including: viewing project info, adding/removing layers, executing Processing algorithms, running PyQGIS code, setting layer labels, rendering maps, and more.
@@ -49,6 +49,11 @@ deprecated=False
 hasProcessingProvider=no
 server=no
 changelog=
+    v2.4.6 更新内容：
+    【重要修复】对话区只显示回答，看不到用户自己发出去的内容。真因是「写入约定」与「渲染约定」不一致，而且完全静默：本插件的一问一答**存在同一条 interaction 记录里**（typeMessage 恒为 return，requestText 与 responseText 同行），而重建对话历史的代码只在 typeMessage == "input" 时才渲染用户气泡 —— 那条分支永远不会成立（库里一条 input 记录都没有）。于是**每次重建历史都会把用户气泡丢掉**，而回答一到达就会重建一次，现象恰好就是「我发出去了，但只剩回答」。现在重建历史会像重建 LLM 上下文那样，把同一行的 requestText 一并渲染成用户气泡（processor 早就是这么做的，两处终于一致），并兼容「提问与回答各占一行」的旧形态数据，不会重复渲染。
+    【修复】用户消息在发送瞬间与回答到达后的样式不一致（前者是右对齐纯文本、后者是气泡卡片），回答一到就肉眼可见地跳变。现在两处共用同一个气泡生成函数 user_bubble_html，从发送那一刻起就是最终样式。
+    【测试】新增 6 例跨文件契约守卫（写进库的类型必须被渲染覆盖；用户气泡只能有一处生成函数）与 17 例真机行为守卫（含用真实数据库里那条报障会话做端到端渲染）。两套守卫都做了反向验证：删掉提问渲染、或把 return 写成 output，守卫会立刻变红并直接指出「写进库的 return 没有被渲染」。单测 415 → 421；真机双版本：历史渲染 17/17、真实会话端到端 4/4、对话 UI 138/138、消息持久化 45/45。
+
     v2.4.5 更新内容：
     【重要修复】把「复制客户端配置」给出的 JSON 粘进 Claude Desktop / Cursor 后连不上，甚至一启动就多出一个 QGIS 窗口。真因是配置里的 command 直接用了 sys.executable，而 macOS 上 QGIS 的 Python 嵌在 app 里，GUI 进程的 sys.executable 就是 QGIS 的 GUI 主程序（/Applications/QGIS.app/Contents/MacOS/QGIS）——它不是解释器，不读 stdin、不讲 JSON-RPC，被客户端当 stdio 服务拉起来只会再开一个 QGIS 界面然后握手超时。Windows 上 sys.executable 正好是 python.exe，所以这个坑只在 macOS 发作。现在配置生成会实际执行一次校验再落笔：把候选解释器真的跑一遍服务脚本的 --help，退出码为 0 才算通过（只看文件存在不够：macOS 上 QGIS.app/Contents/MacOS/python3.12 确实存在，但脱离 app 直接跑会报 Could not find platform independent libraries）。并优先选「在干净环境下就能启动」的解释器，因为客户端是在自己的环境里拉起 command 的；只在 QGIS 进程环境里能跑的解释器只作兜底且在界面上明确提示。候选一律先过「文件名像 python」这一关，绝不执行看起来不像解释器的可执行文件；一个都找不到时不回吐 sys.executable，而是退化成裸命令名 python3 / python。
     【修复】「测试连通性」按钮也会误启动一个 QGIS 窗口（同一根因：同样用 sys.executable 拉子进程跑 --check）。现在与客户端配置共用同一套解释器解析逻辑，并在自检结果里写明用的是哪个解释器。

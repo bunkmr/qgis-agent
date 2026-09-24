@@ -553,6 +553,18 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
             "body": body_html,
         }
 
+    def user_bubble_html(self, request_text, request_time):
+        """用户提问气泡（右对齐卡片）。
+
+        ⚠️ 即时发送与「重建历史」（updateConversation）**必须共用这一个函数**：
+        两处若各写一套 HTML，回答一到就会因为样式不同而出现肉眼可见的跳变
+        （用户消息先是右对齐纯文本、随后变成气泡卡片）。
+        """
+        safe_text = html_module.escape(str(request_text or ""))
+        # 富文本会把换行折叠成空格，所以显式转 <br>
+        safe_text = safe_text.replace("\n", "<br>")
+        return self._bubble_html("user", "你 · %s" % (request_time or ""), safe_text)
+
     def _tool_status_html(self, status_text):
         """工具调用状态：做成一条窄的状态条，而不是与消息同等分量的气泡。"""
         c = getattr(self, "_chat_colors", None) or chat_colors()
@@ -687,17 +699,32 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         interaction_history = conversation.fetch()
         self._apply_chat_style()
 
+        # ⚠️ 本插件的 interaction 是「一问一答一条记录」：写入时 typeMessage 恒为
+        # "return"，requestText 与 responseText **存于同一行**（见 processor.agent_chat）。
+        # 因此「只有 typeMessage == "input" 才渲染用户消息」是**死分支** —— 全部真实
+        # 记录都走 return，结果是**任何一次重建历史都会把用户气泡丢掉**，现场症状
+        # 正是「只看到回答，看不到我发出去的内容」（回答到达后会调本方法重建一次）。
+        # processor 重建 LLM 上下文时已按同一约定把 requestText 补了回去，这里必须一致。
+        # rendered_requests 仅用于兼容「提问与回答各占一行」（input + return）的旧形态
+        # 数据：那种数据里 return 行常常带着同一条提问，不能重复渲染。
+        rendered_requests = set()
+
         for interaction in interaction_history:
             msg_dict = pack(interaction, "interaction")
-            if msg_dict["typeMessage"] == "input":
-                safe_text = html_module.escape(msg_dict["requestText"] or "")
-                # 用户输入保留换行（富文本会把 \n 折叠成空格）
-                safe_text = safe_text.replace("\n", "<br>")
-                current_html += self._bubble_html(
-                    "user", "你 · %s" % msg_dict["requestTime"], safe_text
-                )
+            message_type = msg_dict["typeMessage"]
+            req_key = (msg_dict["requestText"], msg_dict["requestTime"])
 
-            if msg_dict["typeMessage"] == "return":
+            if message_type == "input":
+                current_html += self.user_bubble_html(
+                    msg_dict["requestText"], msg_dict["requestTime"]
+                )
+                rendered_requests.add(req_key)
+
+            if message_type == "return":
+                if msg_dict["requestText"] and req_key not in rendered_requests:
+                    current_html += self.user_bubble_html(
+                        msg_dict["requestText"], msg_dict["requestTime"]
+                    )
                 current_html += self._bubble_html(
                     "ai",
                     "QGIS Agent · %s" % msg_dict["responseTime"],
