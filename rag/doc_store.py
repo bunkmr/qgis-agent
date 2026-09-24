@@ -36,7 +36,21 @@ class DocStore:
             db_path = os.path.join(plugin_dir, "data", "pyqgis_api.db")
         self.db_path = db_path
         self._local = threading.local()
+        # FTS5 可用性在 _ensure_tables 里探测：QGIS 自带的 sqlite 常不带 FTS5
+        # （实测 macOS QGIS 的 sqlite 3.53.2 就没有），缺模块时必须降级为 LIKE
+        # 检索 —— 可选加速项绝不能成为主链路失败点。
+        self.fts_enabled = False
         self._ensure_tables()
+
+    @staticmethod
+    def _fts5_available(conn) -> bool:
+        """探测当前 SQLite 是否带 FTS5 模块。"""
+        try:
+            conn.execute("CREATE VIRTUAL TABLE temp._fts5_probe USING fts5(x)")
+            conn.execute("DROP TABLE temp._fts5_probe")
+            return True
+        except sqlite3.OperationalError:
+            return False
 
     # ── 线程安全连接 ──
 
@@ -85,15 +99,18 @@ class DocStore:
             )
         """)
 
-        # FTS5 全文索引（独立表，内容同步）
-        conn.execute("""
-            CREATE VIRTUAL TABLE IF NOT EXISTS pyqgis_api_fts USING fts5(
-                class_name, method_name, full_signature, description, example_code,
-                content='pyqgis_api_docs',
-                content_rowid='id',
-                tokenize='unicode61 remove_diacritics 1'
-            )
-        """)
+        # FTS5 全文索引（独立表，内容同步）—— 仅在 SQLite 带 FTS5 模块时创建。
+        # QGIS 打包的 sqlite 常缺此模块，此时跳过建表并降级，不让初始化崩溃。
+        self.fts_enabled = self._fts5_available(conn)
+        if self.fts_enabled:
+            conn.execute("""
+                CREATE VIRTUAL TABLE IF NOT EXISTS pyqgis_api_fts USING fts5(
+                    class_name, method_name, full_signature, description, example_code,
+                    content='pyqgis_api_docs',
+                    content_rowid='id',
+                    tokenize='unicode61 remove_diacritics 1'
+                )
+            """)
 
         # Cookbook 案例表
         conn.execute("""
@@ -113,14 +130,15 @@ class DocStore:
         """)
 
         # Cookbook FTS5
-        conn.execute("""
-            CREATE VIRTUAL TABLE IF NOT EXISTS cookbook_fts USING fts5(
-                task_summary, user_input, code_snippet,
-                content='cookbook_entries',
-                content_rowid='id',
-                tokenize='unicode61 remove_diacritics 1'
-            )
-        """)
+        if self.fts_enabled:
+            conn.execute("""
+                CREATE VIRTUAL TABLE IF NOT EXISTS cookbook_fts USING fts5(
+                    task_summary, user_input, code_snippet,
+                    content='cookbook_entries',
+                    content_rowid='id',
+                    tokenize='unicode61 remove_diacritics 1'
+                )
+            """)
 
         # tool_docs：Processing 算法参考目录（679 条，来自 tool_docs/*.toml）
         conn.execute("""
@@ -136,14 +154,20 @@ class DocStore:
             )
         """)
 
-        conn.execute("""
-            CREATE VIRTUAL TABLE IF NOT EXISTS tool_docs_fts USING fts5(
-                tool_id, tool_name, brief_description, full_description, parameters, code_example,
-                content='tool_docs',
-                content_rowid='id',
-                tokenize='unicode61 remove_diacritics 1'
+        if self.fts_enabled:
+            conn.execute("""
+                CREATE VIRTUAL TABLE IF NOT EXISTS tool_docs_fts USING fts5(
+                    tool_id, tool_name, brief_description, full_description, parameters, code_example,
+                    content='tool_docs',
+                    content_rowid='id',
+                    tokenize='unicode61 remove_diacritics 1'
+                )
+            """)
+        else:
+            logger.warning(
+                "当前 SQLite 缺少 FTS5 模块（QGIS 自带 sqlite 常见），"
+                "API 文档检索降级为 LIKE 模糊匹配：功能可用，但相关性排序与速度略差"
             )
-        """)
 
         conn.commit()
 
@@ -178,6 +202,11 @@ class DocStore:
                 deprecated=excluded.deprecated
         """, params)
         conn.commit()
+        if self.fts_enabled:
+            # 外部内容表（content='pyqgis_api_docs'）不会自动同步 FTS 索引，
+            # 单条写入后必须重建，否则 MATCH 查不到这条文档（既有 bug）。
+            conn.execute("INSERT INTO pyqgis_api_fts(pyqgis_api_fts) VALUES('rebuild')")
+            conn.commit()
         return conn.execute("SELECT last_insert_rowid()").fetchone()[0]
 
     def insert_batch(self, docs: list):
@@ -189,9 +218,10 @@ class DocStore:
             except Exception as _e:
                 logger.debug("ignored exception", exc_info=True)
         conn.commit()
-        # 重建 FTS5 索引
-        conn.execute("INSERT INTO pyqgis_api_fts(pyqgis_api_fts) VALUES('rebuild')")
-        conn.commit()
+        # 重建 FTS5 索引（无 FTS5 时跳过，主表数据本身已可被 LIKE 检索）
+        if self.fts_enabled:
+            conn.execute("INSERT INTO pyqgis_api_fts(pyqgis_api_fts) VALUES('rebuild')")
+            conn.commit()
 
     def get_api_count(self) -> int:
         """获取 API 文档总数"""
@@ -311,12 +341,13 @@ class DocStore:
                 logger.debug("ignored exception in loop", exc_info=True)
                 continue
         conn.commit()
-        # 重建 FTS5 索引
-        try:
-            conn.execute("INSERT INTO tool_docs_fts(tool_docs_fts) VALUES('rebuild')")
-            conn.commit()
-        except sqlite3.OperationalError:
-            pass
+        # 重建 FTS5 索引（无 FTS5 时跳过）
+        if self.fts_enabled:
+            try:
+                conn.execute("INSERT INTO tool_docs_fts(tool_docs_fts) VALUES('rebuild')")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
         return count
 
     def ensure_tool_docs(self, tool_docs_dir: str = None):
@@ -344,9 +375,9 @@ class DocStore:
         except sqlite3.OperationalError:
             pass
 
-        # FTS5 全文检索：清理 FTS 特殊字符（如冒号）
+        # FTS5 全文检索：清理 FTS 特殊字符（如冒号）；无 FTS5 时跳过（前面已做过精确匹配）
         safe = re.sub(r"[^0-9a-zA-Z一-鿿]+", " ", q).strip()
-        if safe:
+        if safe and self.fts_enabled:
             try:
                 rows = conn.execute("""
                     SELECT d.tool_id, d.tool_name, d.brief_description, d.full_description,
@@ -380,6 +411,9 @@ class DocStore:
             [{"class_name": ..., "method_name": ..., "full_signature": ..., "description": ..., ...}, ...]
         """
         conn = self.get_connection()
+        # 无 FTS5 时直接走 LIKE 回退（否则建虚表时已经崩了，到不了这里）
+        if not self.fts_enabled:
+            return self._fallback_like_search(query, top_k)
         # 将空格分隔的关键词转为 FTS5 OR 查询
         keywords = [k.strip() for k in query.split() if k.strip()]
         if not keywords:
@@ -484,6 +518,8 @@ class DocStore:
         结果按 quality_score 降序排列。
         """
         conn = self.get_connection()
+        if not self.fts_enabled:
+            return self._fallback_cookbook_like(query, top_k)
         keywords = [k.strip() for k in query.split() if k.strip()]
         if not keywords:
             return self._get_top_cookbook(top_k)
@@ -573,6 +609,7 @@ class DocStore:
         conn = self.get_connection()
         conn.execute("DELETE FROM pyqgis_api_docs")
         conn.execute("DELETE FROM cookbook_entries")
-        conn.execute("INSERT INTO pyqgis_api_fts(pyqgis_api_fts) VALUES('rebuild')")
-        conn.execute("INSERT INTO cookbook_fts(cookbook_fts) VALUES('rebuild')")
+        if self.fts_enabled:
+            conn.execute("INSERT INTO pyqgis_api_fts(pyqgis_api_fts) VALUES('rebuild')")
+            conn.execute("INSERT INTO cookbook_fts(cookbook_fts) VALUES('rebuild')")
         conn.commit()

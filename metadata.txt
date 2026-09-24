@@ -3,7 +3,7 @@ name=QGIS Agent
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
 description=LLM-powered intelligent assistant for QGIS. Natural language control of QGIS tools, plus an optional local MCP server so external AI agents (Claude Desktop, Cursor, etc.) can drive QGIS.
-version=2.4.8
+version=2.4.9
 author=bunkmr
 email=bunkr@qq.com
 about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It allows you to control QGIS through natural language conversations, including: viewing project info, adding/removing layers, executing Processing algorithms, running PyQGIS code, setting layer labels, rendering maps, and more.
@@ -49,6 +49,11 @@ deprecated=False
 hasProcessingProvider=no
 server=no
 changelog=
+    v2.4.9 更新内容：
+    【重要修复】searchpyqgisapi 工具连续报「API 文档检索失败: no such module: fts5」。真因是 QGIS 自带的 SQLite 没有编译 FTS5 全文检索模块（实测部分平台的 QGIS 就是这样），而文档库初始化时会无条件创建 FTS5 虚拟表，缺模块就直接让检索器崩溃 —— 这是环境缺组件，与调用参数无关，所以自动重试多少次都会以同样方式失败。现在初始化时先探测 FTS5 是否可用：可用则照常使用；不可用则跳过建索引、记一条警告日志，检索自动降级为 LIKE 模糊匹配，功能保持可用（相关性排序与速度略差）。API 文档、Cookbook、Processing 算法目录（679 条）三条检索路径全部完成对应降级，任何一处都不会再因缺 FTS5 抛错。
+    【修复】连带修了一个既有 bug：API 文档主表与 FTS 索引是「外部内容表」关系，单条写入从不重建索引，导致全文检索一直查不到新写入的文档。现在单条写入后同步重建索引。
+    【测试】新增 6 例降级守卫：模拟无 FTS5 环境下初始化不崩、写入后模糊检索可查回、Cookbook 与算法目录检索可用、清空索引不抛错；有 FTS5 的环境做对照验证全文检索命中。真机双版本（Qt5 + Qt6）验收：安装副本 50/50，降级链路（679 条算法目录入库、精确检索、写入后查回）双版本通过。
+
     v2.4.8 更新内容：
     【重要修复】插件仓库的安全扫描把上一版判为 Critical 并**阻断了版本发布**。Bandit 共报出 33 项，其中 5 项属于**不可跳过的 Critical**：execute_pyqgis 的 exec（B102 —— 此前的 nosec 注释写在**上一行**，而 bandit 只认**同一行**的注释，等于从未生效）、三处「变量名里含 token 字样」触发的 B105 误报（ENV_TOKEN 常量的值是环境变量**名字**本身；self._token 是空占位）、以及一处 B107（__init__ 的 token 默认参数）。现在 exec 的快照注释移到同一行并写明理由，三处 B105 逐条标注为误报，token 默认参数改为 None（与内部「token 或空串」的既有写法完全等价）。本地复扫：33 项降到 **0 项，Critical 为 0**。
     【重要修复】文件权限：包内 45 个 .py 带可执行位（工作区在同步卷上是 0755，打包时会原样写进 ZIP），触发插件仓库的 File Permissions 检查。打包脚本现在**显式设置 ZIP 内的权限位**（普通文件 0644），不再继承工作区的权限。

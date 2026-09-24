@@ -1,5 +1,29 @@
 # 更新日志
 
+## [2.4.9] - 2026-09-24
+
+### 修复（FTS5 缺失导致 API 检索全挂）
+- 🔴 **`searchpyqgisapi` 连续报 `API 文档检索失败: no such module: fts5`。**
+  真因：QGIS 自带的 SQLite **没有编译 FTS5 模块**（实测部分平台的 QGIS 如此，
+  sqlite 3.53.2 探测结果 `no such module: fts5`），而 `DocStore._ensure_tables()`
+  会**无条件** `CREATE VIRTUAL TABLE … USING fts5` —— 初始化即崩，三条检索路径
+  （API 文档 / Cookbook / tool_docs）全部不可用。这是**环境缺组件**，与调用参数
+  无关，所以自动重试 N 次都必然失败。
+- **修复**：初始化先探测（`CREATE VIRTUAL TABLE temp._fts5_probe` 试建）——
+  可用则照常；不可用则跳过全部 FTS 建表、记警告日志，检索降级为 **LIKE 模糊匹配**
+  （铁律 2：可选加速项不能成为主链路失败点）。`insert_batch` / `clear_all` /
+  `ingest_tool_docs` 里的 FTS rebuild 一并加守卫。
+- **连带修掉一个既有 bug**：`pyqgis_api_fts` 是外部内容表（`content=` 主表），
+  **不会自动同步索引**，而 `insert_api_doc` 单条写入从不 rebuild —— FTS5 正常的
+  环境里 MATCH 也查不到新写入的文档。现在单条写入后同步重建索引。
+
+### 测试
+- 新增 `tests/test_doc_store_fts_fallback.py` 6 例：无 FTS5 环境（patch 探测）
+  初始化不崩、写入后 LIKE 可查回、Cookbook 检索可用、`clear_all` 不抛错；
+  有 FTS5 环境做对照验证 MATCH 命中。单测 451 → 457。
+- 真机双版本（Qt5 + Qt6）验收：安装副本 50/50；降级链路实测（679 条算法目录
+  入库、tool_id 精确检索命中、写入 API 文档后 retriever 查回）双版本通过。
+
 ## [2.4.8] - 2026-09-24
 
 ### 修复（安全扫描阻断）
