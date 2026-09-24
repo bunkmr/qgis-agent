@@ -27,6 +27,7 @@ from .utils import (handle_none_conversation, pack, unpack, format_description,
                     create_markdown, chat_colors, is_dark_color)
 from .qgis_agent_dockwidget_base_ui import Ui_QGISAgentDockWidget
 from .thinking_display import ThinkingManager, create_thinking_block
+import contextlib
 
 logger = logging.getLogger(__name__)
 
@@ -894,10 +895,8 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
 
     def _set_status(self, text):
         """U18：写入底部状态条（轻量反馈，不弹窗）。"""
-        try:
+        with contextlib.suppress(Exception):
             self.statusLabel.setText(text)
-        except Exception:
-            pass
 
     def _format_elapsed(self):
         """U18：把 QElapsedTimer 耗时格式化为友好字符串。"""
@@ -911,63 +910,51 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
 
     def _update_empty_state(self):
         """D5：根据 txHistory 是否含内容，在「历史视图 / 空状态示例」间切换。"""
-        try:
+        with contextlib.suppress(Exception):
             has_content = bool(self.txHistory.toPlainText().strip())
             target = self.txHistory if has_content else self.emptyStateWidget
             if self.chatStack.currentWidget() is not target:
                 self.chatStack.setCurrentWidget(target)
-        except Exception:
-            pass
 
     def _show_search_bar(self):
         """U13：显示并聚焦搜索条。"""
-        try:
+        with contextlib.suppress(Exception):
             self.searchFrameWidget.setVisible(True)
             self.searchBar.setFocus()
             self.searchBar.selectAll()
-        except Exception:
-            pass
 
     def _hide_search_bar(self):
         """U13：隐藏搜索条并清除高亮。"""
-        try:
+        with contextlib.suppress(Exception):
             self.searchFrameWidget.setVisible(False)
             # 清空搜索高亮：把光标移回起点后做一次空查找
             cursor = self.txHistory.textCursor()
             cursor.setPosition(0)
             self.txHistory.setTextCursor(cursor)
-        except Exception:
-            pass
 
     def _on_search_text_changed(self, text):
         """U13：文本变化时从顶部重新定位第一个匹配并高亮。"""
-        try:
+        with contextlib.suppress(Exception):
             if not text:
                 return
             cursor = self.txHistory.textCursor()
             cursor.setPosition(0)
             self.txHistory.setTextCursor(cursor)
             self.txHistory.find(text)
-        except Exception:
-            pass
 
     def _on_search_next(self):
         """U13：定位下一个匹配（Enter 触发）。"""
-        try:
+        with contextlib.suppress(Exception):
             text = self.searchBar.text()
             if text:
                 self.txHistory.find(text)
-        except Exception:
-            pass
 
     def _on_search_prev(self):
         """U13：定位上一个匹配。"""
-        try:
+        with contextlib.suppress(Exception):
             text = self.searchBar.text()
             if text:
                 self.txHistory.find(text, QTextDocument.FindFlag.FindBackward)
-        except Exception:
-            pass
 
     def _get_last_assistant_text(self):
         """U13：返回最近一条 assistant 回复纯文本，取不到返回空串。"""
@@ -1000,11 +987,9 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
 
     def _on_example_clicked(self, text):
         """D5：示例指令填入输入框并聚焦，让用户可改后再发。"""
-        try:
+        with contextlib.suppress(Exception):
             self.ptMessage.setPlainText(text)
             self.ptMessage.setFocus()
-        except Exception:
-            pass
 
     def _message_input_text_height(self):
         """输入框内文本排版后的**像素高度**（已含折行）。
@@ -1212,14 +1197,12 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
 
     def _reset_recording_ui(self):
         """复位录制按钮与状态标签到「未录制」。"""
-        try:
+        with contextlib.suppress(Exception):
             self._is_recording = False
             self.btnRecordToggle.setText("● 开始录制")
             self.btnRecordToggle.setStyleSheet("")
             self.lblRecStatus.setText("状态: 未录制")
             self.lblRecStatus.setStyleSheet("color: #888; font-size: 11px;")
-        except Exception:
-            pass
 
     def _get_processor(self):
         """从当前对话引用取出 processor；取不到返回 None。"""
@@ -1230,11 +1213,9 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
 
     def _on_workflow_tab_shown(self, index):
         """切到工作流标签页时刷新列表。"""
-        try:
+        with contextlib.suppress(Exception):
             if index == self.twTabs.indexOf(self.tbWorkflow):
                 self._refresh_workflow_list()
-        except Exception:
-            pass
 
     def _refresh_workflow_list(self):
         """调用 processor.list_workflows() 填充下拉框；列表为空时禁用回放按钮。"""

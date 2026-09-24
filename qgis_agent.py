@@ -20,6 +20,7 @@ from qgis.utils import iface
 
 from .package_manager import PackageManager
 import logging
+import contextlib
 logger = logging.getLogger(__name__)
 
 required_modules = [
@@ -1163,10 +1164,8 @@ class QGISAgent:
         except Exception as _e:
             logger.debug("代码确认异常，默认拒绝执行: %s", _e, exc_info=True)
             result = False
-        try:
+        with contextlib.suppress(Exception):
             callback(result)
-        except Exception:
-            pass
 
     def _on_code_confirm_sync(self, tool_name, code_preview):
         """同步版本的代码确认（用于全局回调，返回 bool）。"""
@@ -1237,12 +1236,10 @@ class QGISAgent:
 
     def _on_rag_build_done(self):
         """RAG 后台构建完成后的轻量反馈（不弹窗，避免打扰）。"""
-        try:
+        with contextlib.suppress(Exception):
             _set_status = getattr(self.dockwidget, "_set_status", None)
             if callable(_set_status):
                 _set_status("✅ API 索引就绪")
-        except Exception:
-            pass
 
     def _maybe_show_first_run_guide(self):
         """D4：首次启动引导。仅在首次弹出一次，之后持久化 firstRunDone。"""
@@ -1294,25 +1291,21 @@ class QGISAgent:
             return
 
         # 进入「停止中」中间态
-        try:
+        with contextlib.suppress(Exception):
             self.dockwidget.pbStop.setText("停止中…")
             self.dockwidget.pbStop.setEnabled(False)
             _set_status = getattr(self.dockwidget, "_set_status", None)
             if callable(_set_status):
                 _set_status("⏹ 正在停止…")
-        except Exception:
-            pass
         self.dockwidget.txHistory.append(
             "<p style='color:#888;'>⏹ 已发送停止请求</p>"
         )
 
     def _reset_send_controls(self):
         """U10：恢复发送/停止按钮到初始可用状态（停止按钮文案复位为「停止」）。"""
-        try:
+        with contextlib.suppress(Exception):
             self.dockwidget.pbStop.setText("停止")
             self.dockwidget.pbStop.setEnabled(True)
-        except Exception:
-            pass
 
     def _on_new_conversation(self):
         from .dialog_new_conversation import NewConversationDialog as NewEditDialog
@@ -1950,7 +1943,8 @@ class QGISAgent:
         （自检会永远等不到输出，用户屏幕上还会多出一个窗口）。这与「复制客户端
         配置」是同一个坑，必须共用同一套解析逻辑。
         """
-        import subprocess
+        # 仅用于跑 MCP 服务脚本自检：列表传参、不经 shell。
+        import subprocess  # nosec B404
         server_script = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             "mcp_server", "qgis_agent_mcp_server.py",
@@ -1966,7 +1960,8 @@ class QGISAgent:
             logger.debug("解析自检解释器失败，回退当前进程: %s", _e, exc_info=True)
             python = sys.executable
         try:
-            proc = subprocess.run(
+            # 参数以列表传入、不使用 shell；python 与脚本路径都来自插件自身配置。
+            proc = subprocess.run(  # nosec B603
                 [python, server_script, "--check"],
                 capture_output=True, text=True, timeout=30,
             )

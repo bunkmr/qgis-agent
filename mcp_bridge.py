@@ -24,7 +24,8 @@ import os
 import re
 import shutil
 import socket
-import subprocess
+# 仅用于探测候选解释器：全部以列表传参、不经 shell，且 argv 来自白名单。
+import subprocess  # nosec B404
 import sys
 import threading
 
@@ -39,6 +40,7 @@ from .mcp_protocol import (
     read_session_file,
     write_session_file,
 )
+import contextlib
 
 # 并发连接上限：MCP 客户端通常只用 1 条，留出冗余即可，避免连接耗尽
 MAX_CONNECTIONS = 4
@@ -121,11 +123,9 @@ def _python_candidates(server_script=None, python_executable=None):
                 version, "python3", "python.exe", "bin/python.exe")
 
     prefixes = []
-    try:
+    with contextlib.suppress(Exception):
         from qgis.core import QgsApplication
         prefixes.append(QgsApplication.prefixPath())
-    except Exception:  # noqa: BLE001 —— 不在 QGIS 里运行时忽略
-        pass
     prefixes.append(getattr(sys, "base_prefix", "") or "")
     prefixes.append(getattr(sys, "prefix", "") or "")
     for prefix in prefixes:
@@ -135,10 +135,8 @@ def _python_candidates(server_script=None, python_executable=None):
             _add(os.path.join(prefix, rel))
 
     for name in ("python3", "python"):
-        try:
+        with contextlib.suppress(Exception):
             _add(shutil.which(name))
-        except Exception:  # noqa: BLE001
-            pass
 
     return candidates, server_script
 
@@ -154,7 +152,8 @@ def _clean_env():
 def _try_run(argv, env=None):
     """跑一次探测命令，退出码为 0 且没有崩在解释器初始化上才算通过。"""
     try:
-        proc = subprocess.run(
+        # 参数以列表传入、不使用 shell；argv 全部来自探测白名单，无注入面。
+        proc = subprocess.run(  # nosec B603
             argv, stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             timeout=PYTHON_PROBE_TIMEOUT, env=env,
@@ -294,14 +293,12 @@ def resolve_python_executable(server_script=None, python_executable=None):
 def _safe_qgis_info():
     """采集少量 QGIS 状态信息，失败时返回空字典。"""
     info = {}
-    try:
+    with contextlib.suppress(Exception):
         from qgis.core import Qgis, QgsProject
         info["qgis_version"] = Qgis.QGIS_VERSION
         project = QgsProject.instance()
         info["project_path"] = project.fileName() or ""
         info["layer_count"] = len(project.mapLayers())
-    except Exception:  # noqa: BLE001 - 状态信息缺失不影响服务
-        pass
     return info
 
 
@@ -333,10 +330,8 @@ class _BridgeServerThread(QThread):
             server.settimeout(CONN_TIMEOUT)
         except OSError as exc:
             self.bind_error = exc
-            try:
+            with contextlib.suppress(OSError):
                 server.close()
-            except OSError:
-                pass
             self._ready.set()
             return
 
@@ -353,10 +348,8 @@ class _BridgeServerThread(QThread):
                 break
             with self._conn_lock:
                 if self._conn_count >= MAX_CONNECTIONS:
-                    try:
+                    with contextlib.suppress(OSError):
                         conn.close()
-                    except OSError:
-                        pass
                     continue
                 self._conn_count += 1
             worker = threading.Thread(
@@ -364,10 +357,8 @@ class _BridgeServerThread(QThread):
             )
             worker.start()
 
-        try:
+        with contextlib.suppress(OSError):
             server.close()
-        except OSError:
-            pass
 
     def _release_connection(self):
         with self._conn_lock:
@@ -378,10 +369,8 @@ class _BridgeServerThread(QThread):
         """单行超限时回一条错误并（由调用方）断开，避免连接被无声关闭。"""
         payload = {"ok": False, "code": "bad_request",
                    "error": "单行请求超过 %d 字节上限，连接已关闭。" % MAX_LINE_BYTES}
-        try:
+        with contextlib.suppress(OSError):
             conn.sendall((json.dumps(payload, ensure_ascii=False) + "\n").encode("utf-8"))
-        except OSError:
-            pass
 
     def _dispatch(self, raw_line):
         """交给协议层处理；任何异常都转成结构化错误，绝不让工作线程崩掉。"""
@@ -437,30 +426,22 @@ class _BridgeServerThread(QThread):
                     return
 
                 # 首条请求处理完后放宽超时，允许长连接空闲（但有上限）
-                try:
+                with contextlib.suppress(OSError):
                     conn.settimeout(IDLE_TIMEOUT)
-                except OSError:
-                    pass
         finally:
-            try:
+            with contextlib.suppress(OSError):
                 conn.close()
-            except OSError:
-                pass
             self._release_connection()
 
     def stop(self):
         self._stop_flag.set()
-        try:
+        with contextlib.suppress(OSError):
             if self._server is not None:
                 self._server.close()
-        except OSError:
-            pass
         # 主动连一次自身，唤醒可能正阻塞在 accept 上的循环（部分平台 close 不解除阻塞）
-        try:
+        with contextlib.suppress(OSError):
             wake = socket.create_connection((self._host, self.actual_port or self._port), timeout=1)
             wake.close()
-        except OSError:
-            pass
 
     def wait_bind(self, timeout=10.0):
         self._ready.wait(timeout)
@@ -485,7 +466,9 @@ class MCPBridge(QObject):
         self._thread = None
         self._handler = None
         self._port = None
-        self._token = ""
+        # 空占位：真实令牌在服务启动时由设置 / 会话文件注入，这里不是凭据值。
+        # B105 是按变量名里的 token 字样匹配的，此处属误报。
+        self._token = ""  # nosec B105
         self._allow_dangerous = False
         # 最近一次生成客户端配置时对解释器做的替换说明（空串 = 无需替换）。
         # 设置页把它附在「复制客户端配置」的弹窗里，免得用户看到 command
@@ -619,10 +602,8 @@ class MCPBridge(QObject):
         if token is not None:
             self._token = token
             if self.is_running():
-                try:
+                with contextlib.suppress(Exception):
                     write_session_file(self._port, token, extra={"host": DEFAULT_HOST})
-                except Exception:  # noqa: BLE001
-                    pass
         if allow_dangerous is not None:
             self._allow_dangerous = bool(allow_dangerous)
 

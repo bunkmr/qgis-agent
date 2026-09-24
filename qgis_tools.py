@@ -5,6 +5,7 @@ QGIS 工具集 —— 融合自 qgis_mcp 的命令处理逻辑。
 Inspired by SpatialAnalysisAgent's SmartDebugger.
 """
 
+import contextlib
 import os
 import io
 import sys
@@ -632,8 +633,10 @@ def execute_pyqgis(code: str):
             # 受限内建：白名单，排除 open/getattr/eval/exec 等危险入口
             "__builtins__": safe_builtins,
         }
-        # nosec B102 - 非沙箱：代码在用户逐次确认后以 QGIS 进程权限运行，已做 AST 危险调用扫描 + 内建白名单
-        exec(code, namespace)
+        # execute_pyqgis 按设计要执行一段 PyQGIS 代码：仅在用户逐次确认后以
+        # QGIS 进程权限运行，且已做 AST 危险调用扫描 + 受限内建白名单 +
+        # 模块白名单（与 AST 层同源），无 shell / 文件系统逃逸面。
+        exec(code, namespace)  # nosec B102
 
         return {
             "executed": True,
@@ -1122,11 +1125,9 @@ def _enum_value(cls, enum_name: str, value_name: str):
     都取不到时返回 None（交由调用方回退）。
     """
     for holder_name in (enum_name, None):
-        try:
-            holder = cls if holder_name is None else getattr(cls, holder_name)
+        holder = cls if holder_name is None else getattr(cls, holder_name, None)
+        with contextlib.suppress(Exception):
             return getattr(holder, value_name)
-        except Exception:
-            continue
     return None
 
 
@@ -1225,7 +1226,8 @@ def _suggest_algorithm_ids(query: str, limit: int = 5) -> list:
         try:
             alg_id = alg.id()
             display = alg.displayName() if hasattr(alg, "displayName") else alg.name()
-        except Exception:
+        except Exception as e:  # noqa: BLE001 - 个别算法读不出来就跳过，不影响其它候选
+            logger.debug("跳过无法读取的算法: %s", e)
             continue
         if not alg_id:
             continue

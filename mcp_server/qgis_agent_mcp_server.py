@@ -35,7 +35,8 @@ SESSION_DIRNAME = ".qgis_agent"
 SESSION_FILENAME = "mcp_session.json"
 
 ENV_PORT = "QGIS_AGENT_MCP_PORT"
-ENV_TOKEN = "QGIS_AGENT_MCP_TOKEN"
+# 环境变量【名】，不是密钥值本身 —— B105 按变量名里的 token 字样匹配，属误报。
+ENV_TOKEN = "QGIS_AGENT_MCP_TOKEN"  # nosec B105
 ENV_SESSION_FILE = "QGIS_AGENT_MCP_SESSION_FILE"
 
 SERVER_NAME = "qgis-agent"

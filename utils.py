@@ -358,7 +358,7 @@ def create_markdown(markdown_text: str) -> str:
     def flush_table():
         if not table_buf:
             return
-        rows = [_split_row(l) for l in table_buf]
+        rows = [_split_row(line) for line in table_buf]
         table_buf.clear()
         if not rows:
             return

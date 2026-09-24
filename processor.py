@@ -277,7 +277,6 @@ class Processor(QObject):
     def _debug_history_path():
         """调试历史文件路径；拿不到插件目录时返回 None，交给 SmartDebugger 使用默认路径。"""
         try:
-            import os
             from qgis.core import QgsApplication
             return os.path.join(
                 QgsApplication.qgisSettingsDirPath(),
@@ -596,7 +595,6 @@ class Processor(QObject):
         system_prompt = AGENT_SYSTEM_PROMPT
         memory_content = ""
         try:
-            import os
             from qgis.core import QgsApplication
             memory_path = os.path.join(
                 QgsApplication.qgisSettingsDirPath(),

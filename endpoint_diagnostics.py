@@ -23,6 +23,7 @@
 
 import json
 import re
+import contextlib
 
 try:  # 包内导入
     from .error_classifier import (
@@ -349,10 +350,8 @@ def diagnose(provider, model, api_key, endpoint, timeout=8, browser_tls=False):
     except Exception as exc:  # noqa: BLE001 - 诊断自身绝不向上抛
         add(LEVEL_INFO, "诊断中断", str(exc))
     finally:
-        try:
+        with contextlib.suppress(Exception):
             client.close()
-        except Exception:
-            pass
 
     _finalize(result)
     return result

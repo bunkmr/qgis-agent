@@ -17,6 +17,7 @@
 或用环境变量 QGIS_AGENT_MCP_PORT / QGIS_AGENT_MCP_TOKEN 覆盖。
 """
 
+import contextlib
 import hmac
 import json
 import os
@@ -30,7 +31,8 @@ SESSION_DIRNAME = ".qgis_agent"
 SESSION_FILENAME = "mcp_session.json"
 
 ENV_PORT = "QGIS_AGENT_MCP_PORT"
-ENV_TOKEN = "QGIS_AGENT_MCP_TOKEN"
+# 环境变量【名】，不是密钥值本身 —— B105 按变量名里的 token 字样匹配，属误报。
+ENV_TOKEN = "QGIS_AGENT_MCP_TOKEN"  # nosec B105
 ENV_SESSION_FILE = "QGIS_AGENT_MCP_SESSION_FILE"
 
 # 单行请求上限，防止畸形/恶意超长输入吃满内存
@@ -60,12 +62,10 @@ def write_session_file(port, token, extra=None):
     """
     path = session_file_path()
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    try:
-        # 目录收紧到 0700：令牌文件本身已是 0600，但他人仍可列出目录名，
-        # 顺手把目录也收紧，多用户主机上更干净。
+    # 目录收紧到 0700：令牌文件本身已是 0600，但他人仍可列出目录名，
+    # 顺手把目录也收紧，多用户主机上更干净。
+    with contextlib.suppress(OSError):
         os.chmod(os.path.dirname(path), 0o700)
-    except OSError:
-        pass
     payload = {"protocol": PROTOCOL_VERSION, "port": int(port), "token": token}
     if extra:
         payload.update(extra)
@@ -74,28 +74,21 @@ def write_session_file(port, token, extra=None):
     def _write_to(target):
         with open(target, "w", encoding="utf-8") as fh:
             fh.write(data)
-        try:
+        # Windows 等平台可能不支持 posix 权限，忽略
+        with contextlib.suppress(OSError):
             os.chmod(target, 0o600)
-        except OSError:
-            # Windows 等平台可能不支持 posix 权限，忽略
-            pass
 
     tmp = path + ".tmp"
-    try:
+    # 先写临时文件再原子替换；replace 被拒（EPERM）时退化为直接覆盖写最终路径
+    with contextlib.suppress(OSError):
         _write_to(tmp)
-        try:
+        with contextlib.suppress(OSError):
             os.replace(tmp, path)
             return path
-        except OSError:
-            pass  # rename 被拒，走下面的退化路径
-    except OSError:
-        pass  # 连临时文件都写不了，直接尝试最终路径
 
     _write_to(path)
-    try:
+    with contextlib.suppress(OSError):
         os.remove(tmp)
-    except OSError:
-        pass
     return path
 
 
@@ -155,7 +148,7 @@ class MCPProtocolHandler(object):
     - info_provider:   无参可调用对象，返回附加状态信息（版本等）。
     """
 
-    def __init__(self, list_tools, call_tool, token="", dangerous_tools=(),
+    def __init__(self, list_tools, call_tool, token=None, dangerous_tools=(),
                  allow_dangerous=False, info_provider=None,
                  service_name="qgis-agent"):
         self._list_tools = list_tools
@@ -225,12 +218,11 @@ class MCPProtocolHandler(object):
             "allow_dangerous": self._allow_dangerous,
         }
         if callable(self._info_provider):
-            try:
+            # 状态信息失败不能影响 ping
+            with contextlib.suppress(Exception):
                 extra = self._info_provider()
                 if isinstance(extra, dict):
                     payload.update(extra)
-            except Exception:  # noqa: BLE001 - 状态信息失败不能影响 ping
-                pass
         return payload
 
     def _handle_call(self, params):

@@ -13,6 +13,7 @@ QGIS 插件 ZIP 格式要求：ZIP 根目录直接包含一个与插件同名的
 """
 
 import os
+import time
 import zipfile
 from datetime import datetime
 import logging
@@ -134,6 +135,38 @@ def get_version() -> str:
     raise RuntimeError(f"metadata.txt 中缺少 version 字段：{metadata_path}")
 
 
+# ZIP 内的 Unix 权限位：普通文件 0644，可执行脚本 0755。
+# 工作区文件常带 0755（尤其同步卷），zipfile.write() 会把该位原样带进包，
+# 触发插件仓库的「Python file has executable permission」检查 —— 所以显式归一化，
+# 不依赖工作区的文件权限。
+ZIP_MODE_DEFAULT = 0o644
+ZIP_MODE_EXECUTABLE = 0o755
+ZIP_EXECUTABLE_SUFFIXES = (".sh",)
+
+
+def zip_member_mode(zip_path: str) -> int:
+    """该成员在 ZIP 内应使用的 Unix 权限位。"""
+    if zip_path.endswith(ZIP_EXECUTABLE_SUFFIXES):
+        return ZIP_MODE_EXECUTABLE
+    return ZIP_MODE_DEFAULT
+
+
+def write_member(zipf, full_path: str, zip_path: str):
+    """写入一个成员并显式设置权限位（不继承工作区的 0755）。
+
+    手动构造 ZipInfo 而非直接交给 zip 写入：后者会从文件系统取 st_mode 写进
+    external_attr，工作区是 0755 时包内也成了 0755。
+    """
+    info = zipfile.ZipInfo(
+        zip_path, date_time=time.localtime(os.path.getmtime(full_path))[:6]
+    )
+    info.create_system = 3  # Unix；否则解压端不认 external_attr 里的权限位
+    info.compress_type = zipfile.ZIP_DEFLATED
+    info.external_attr = (zip_member_mode(zip_path) & 0xFFFF) << 16
+    with open(full_path, "rb") as fh:
+        zipf.writestr(info, fh.read())
+
+
 def build_plugin_zip():
     """构建插件 ZIP 包（QGIS 标准格式：顶层含插件名文件夹）"""
     version = get_version()
@@ -172,7 +205,7 @@ def build_plugin_zip():
             # ZIP 内路径：插件名/文件路径
             zip_path = f"{PLUGIN_NAME}/{filepath}"
             full_path = os.path.join(plugin_dir, filepath)
-            zipf.write(full_path, zip_path)
+            write_member(zipf, full_path, zip_path)
             print(f"  + {zip_path}")
 
     print("-" * 50)

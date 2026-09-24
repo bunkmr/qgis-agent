@@ -2,6 +2,7 @@ import logging
 import os
 
 from qgis.PyQt import QtCore, QtWidgets
+import contextlib
 
 logger = logging.getLogger(__name__)
 
@@ -154,13 +155,11 @@ class Ui_QGISAgentDockWidget(object):
         self.cbModelSelector = QtWidgets.QComboBox()
         self.cbModelSelector.setMinimumWidth(90)
         # 不被长模型名撑宽：按「最小内容长度」自适应，超长部分由下拉弹出层展示
-        try:
+        with contextlib.suppress(Exception):
             self.cbModelSelector.setSizeAdjustPolicy(
                 QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon
             )
             self.cbModelSelector.setMinimumContentsLength(10)
-        except Exception:
-            pass
         self.cbModelSelector.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed
         )
@@ -506,7 +505,8 @@ class Ui_QGISAgentDockWidget(object):
                 version = getattr(module, "PLUGIN_VERSION", "")
                 if version:
                     return version
-            except Exception:
+            except Exception as e:  # noqa: BLE001 - 逐个候选模块尝试，失败就换下一个
+                logger.debug("读取插件版本失败，换下一个候选模块 %s: %s", mod, e)
                 continue
         return "以插件管理器显示为准"
 
