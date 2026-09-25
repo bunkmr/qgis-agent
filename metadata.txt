@@ -3,7 +3,7 @@ name=QGIS Agent
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
 description=LLM-powered intelligent assistant for QGIS. Natural language control of QGIS tools, plus an optional local MCP server so external AI agents (Claude Desktop, Cursor, etc.) can drive QGIS.
-version=2.4.10
+version=2.4.11
 author=bunkmr
 email=bunkr@qq.com
 about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It allows you to control QGIS through natural language conversations, including: viewing project info, adding/removing layers, executing Processing algorithms, running PyQGIS code, setting layer labels, rendering maps, and more.
@@ -49,6 +49,9 @@ deprecated=False
 hasProcessingProvider=no
 server=no
 changelog=
+    v2.4.11 更新内容：
+    【改进】把「逐要素批量出图」补进助手的系统提示能力清单。上一版新增了该工具，但引导只写在工具说明里；助手建立「我有哪些能力」的认知主要看系统提示的能力清单，因此面对「对图层逐个要素出图」这类需求时，第一反应仍可能是自己手写 PyQGIS 打印布局代码，并因此踩到已被移除的旧 API。现在能力清单直接列出该工具（含标准图纸尺寸说明），并在重要规则里写明：这类需求直接用该工具，不要手写打印布局代码。另新增 3 例回归测试守住这两处引导文案。
+
     v2.4.10 更新内容：
     【重要修复】向插件提「对某个图层逐个要素出图，要指北针和比例尺」这类需求时，助手会回答「工具调用轮次已达上限，无法完成」。两个层面的原因都已修掉。其一，工具调用轮次上限原为 10 轮，对多步制图任务（探查图层 → 建布局 → 逐要素设定范围 → 导出）明显不够，助手常在几步探查加一次失败重试后就被强制收尾；现已放宽到 30 轮（单轮内仍可并行多个工具调用，不会失控）。其二，工具集里原本没有出图专用工具，助手只能手写 PyQGIS 打印布局代码，而它习惯写的 QgsLayoutItemNorthArrow 在当前 QGIS 版本里早已被移除，必然报错、反复重写，把轮次全部烧光。
     【新功能】新增「逐要素批量出图」工具：指定图层与输出目录，一次调用即把该图层每个要素单独出一张图，可自动配置指北针与比例尺，支持标准图纸尺寸（A0 至 A4、B0 至 B4，可选纵向或横向）。出图时会自动按要素范围缩放到合适视野并留出边距、按页面纵横比校正、置白底；比例尺按每个要素的实际地图比例尺逐个重算；图片默认以要素属性值命名（如「支局01.png」）。输出目录不存在会自动创建；若目标文件已存在，会先请求确认再覆盖，不会静默覆盖。单次默认最多导出 100 个要素（可调整），避免一次导出上千张卡住界面。

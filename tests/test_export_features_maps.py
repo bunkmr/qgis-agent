@@ -279,6 +279,30 @@ class TestAgentLoopBudget(unittest.TestCase):
             "被强制总结，用户看到「工具调用轮次已达上限，无法完成」" % rounds,
         )
 
+class TestSystemPromptGuidance(unittest.TestCase):
+    """系统提示是模型建立「我有哪些能力」认知的地方。
+
+    只靠工具描述还不够 —— 模型的第一反应常是「我有 execute_pyqgis，我自己写」。
+    因此能力清单必须列出逐要素出图，规则里必须明确禁止手写打印布局代码。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        src = _read("processor.py")
+        m = re.search(r'AGENT_SYSTEM_PROMPT = """(.*?)"""', src, re.S)
+        assert m is not None, "未找到 AGENT_SYSTEM_PROMPT"
+        cls.prompt = m.group(1)
+
+    def test_capability_list_mentions_tool(self):
+        self.assertIn("export_features_maps", self.prompt,
+                      "能力清单必须列出逐要素出图工具")
+        self.assertIn("逐个出图", self.prompt)
+
+    def test_rule_forbids_raw_layout_code(self):
+        self.assertIn("不要用 execute_pyqgis 手写", self.prompt,
+                      "规则里必须明确禁止手写打印布局代码（报障根因）")
+        self.assertIn("已被移除", self.prompt)
+
     def test_loop_uses_the_budget(self):
         src = _read("processor.py")
         self.assertIn("range(self.max_tool_rounds)", src,
