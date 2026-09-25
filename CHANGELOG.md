@@ -1,5 +1,55 @@
 # 更新日志
 
+## [2.4.10] - 2026-09-25
+
+### 修复（多步制图任务反复「无法完成」）
+- 🔴 **「对某图层逐个要素出图，配置指北针和比例尺」这类需求连续两次失败。**
+  两个独立原因：
+  1. **轮次上限过小**：`max_tool_rounds = 10`。多步制图任务（探查图层 →
+     建布局 → 逐要素设范围 → 导出 → 校验）远超 10 轮，模型常在「几步探查 +
+     一次失败重试」后就被强制总结，只能回一句「工具调用轮次已达上限，
+     无法完成」—— 任务本身并没有错。**已放宽到 30 轮**（单轮内仍可并行多个
+     `tool_call`，且每轮仍受失败重试上限与 180s 工具超时约束）。
+  2. **没有出图专用工具**：工具集里只有 `render_map`（渲染当前画布），
+     模型只能裸写 `execute_pyqgis` 拼打印布局，而它写下的
+     **`QgsLayoutItemNorthArrow` 在 QGIS 3.44 / 4.x 中已被移除**
+     （实测两版均不存在，只剩内部的 `QgsLayoutNorthArrowHandler`），
+     必然 `ImportError`/`AttributeError` → 重写 → 再报错 → 轮次烧光。
+- **新增工具 `export_features_maps`**：指定图层与输出目录，一次调用即把
+  该图层每个要素单独出一张 PNG —— 建临时打印布局 → 地图项铺满页面 →
+  逐要素把地图范围缩放到该要素（自动外扩留边、按页面纵横比校正、白底）→
+  导出。支持：
+  - **标准图纸尺寸** A0–A4 / B0–B4（`page_size="B0"`），可选纵向/横向，
+    像素尺寸由 `dpi` 反算，保证「图纸 1 mm 就是 1 mm」；
+  - **指北针**：`QgsLayoutItemPicture` + `setNorthMode(TrueNorth)` +
+    `setLinkedMap(地图项)`（QGIS 现行做法），SVG 跨平台定位
+    （macOS bundle / Windows OSGeo4W / Linux 资源目录），找不到时降级跳过
+    而不是报错；
+  - **比例尺**：`QgsLayoutItemScaleBar`，长度**在每个要素设定范围后重算**
+    —— 原先在设定范围前固定，导致图上只显示一个「0」；
+  - 文件默认以要素属性值命名（`name_field`），做了路径穿越/控制字符/
+    Windows 保留名净化；目录不存在自动创建；**覆盖前请求确认**；
+    `limit` 默认 100 防止一次导出上千张卡住主线程。
+- **`execute_pyqgis` 预置打印布局类**（`QgsPrintLayout` / `QgsLayoutItemMap` /
+  `QgsLayoutItemScaleBar` / `QgsLayoutExporter` 等），逐个 `getattr` 取用，
+  缺类只少一个名字、不会让整个工具不可用。**刻意不提供**
+  `QgsLayoutItemNorthArrow`。
+- **工具描述明确引导**：`export_features_maps` 的说明里写明「不要用
+  `execute_pyqgis` 手写打印布局代码」，从源头掐断这条错误路径。
+
+### 测试
+- 新增 `tests/test_export_features_maps.py` **24 例**守卫：文件名净化、
+  指北针 SVG 跨平台查找（含 API 返回非字符串时的容错）、源码中不得出现
+  已被移除的 API（AST 判定，注释/文档字符串允许提及）、比例尺必须在
+  `setExtent` 之后重算、工具注册与 schema、参数校验、轮次上限 ≥ 20。
+- **反向验证**：故意把轮次退回 10、故意注入 `QgsLayoutItemNorthArrow`
+  import，守卫均如实失败（避免「守卫抓不到 bug 的假绿」）。
+- 单测 457 → **481 例全绿**（9 skip + 2 xfail）。
+- 真机 QGIS 3.44.14 (Qt5) + 4.2.1 (Qt6) 双环境安装副本验收各 **50/50**；
+  `export_features_maps` 端到端实测：22 要素逐张导出 + 指北针 + 比例尺、
+  B0 横向实测输出 8350×5905 px、边界用例（图层不存在 / 相对路径 /
+  `limit` 截断 / 覆盖保护）全部符合预期。
+
 ## [2.4.9] - 2026-09-24
 
 ### 修复（FTS5 缺失导致 API 检索全挂）

@@ -215,7 +215,13 @@ class Processor(QObject):
             self.threadpool.setExpiryTimeout(0)
         except Exception as _e:
             logger.debug("ignored exception", exc_info=True)
-        self.max_tool_rounds = 10  # 最大工具调用轮次，防止死循环
+        # 最大工具调用轮次，防止死循环。
+        # v2.4.10：10 → 30。原值 10 轮对多步制图/批处理类任务（探查图层 → 建布局 →
+        # 逐要素配置范围 → 导出 → 校验）明显不够——模型往往在「几步探查 + 一次失败
+        # 重试」后就被强制总结，用户看到的是「工具调用轮次已达上限，无法完成」，
+        # 而任务本身并没有错。单轮内可并行多个 tool_call，故 30 轮足以覆盖长任务
+        # 又不会失控（每轮仍受 DEBUG_MAX_RETRIES 与 180s 工具超时约束）。
+        self.max_tool_rounds = 30
         self._cancelled = False  # 中断标志
         self._code_confirm_callback = None  # 代码执行确认回调
         # 标记"本 Processor 已被中断过、底层 http 客户端已关闭，不可再复用"。

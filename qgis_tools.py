@@ -551,6 +551,37 @@ def _scan_code_safety(code: str):
     return None
 
 
+def _layout_namespace_entries() -> dict:
+    """打印布局 / 出图相关的可选命名空间条目（缺类则跳过，不阻塞 execute_pyqgis）。
+
+    v2.4.10 新增：此前 execute_pyqgis 的命名空间里**没有任何布局类**，模型要写
+    「逐要素出图 / 加指北针比例尺」只能靠 import 猜，且极易写到已被移除的 API。
+    这里把现行可用的布局类预置进去，并显式**不**提供 ``QgsLayoutItemNorthArrow``
+    ——该类在 QGIS 3.44 / 4.x 中已不存在（实测两版均 AttributeError），
+    指北针的正确做法是 ``QgsLayoutItemPicture`` + ``setNorthMode(TrueNorth)``，
+    或者直接用 ``export_features_maps`` 工具。
+
+    逐个 getattr 取值再组字典，任何一类缺失都只是少一个名字，不会让整个
+    execute_pyqgis 变成不可用（可选能力不得成为主链路的失败点）。
+    """
+    try:
+        import qgis.core as _core
+    except ImportError:
+        return {}
+    wanted = (
+        "QgsPrintLayout", "QgsLayoutItem", "QgsLayoutItemMap",
+        "QgsLayoutItemPicture", "QgsLayoutItemScaleBar", "QgsLayoutItemLabel",
+        "QgsLayoutPoint", "QgsLayoutSize", "QgsLayoutExporter",
+        "QgsLayoutAtlas", "QgsLayoutNorthArrowHandler", "QgsRectangle",
+    )
+    out = {}
+    for name in wanted:
+        obj = getattr(_core, name, None)
+        if obj is not None:
+            out[name] = obj
+    return out
+
+
 def execute_pyqgis(code: str):
     """在 QGIS 环境中直接执行 PyQGIS 代码，并捕获输出"""
     # 执行前先做 AST 静态扫描：命中黑名单直接拒绝，不再进入确认流程
@@ -633,6 +664,9 @@ def execute_pyqgis(code: str):
             # 受限内建：白名单，排除 open/getattr/eval/exec 等危险入口
             "__builtins__": safe_builtins,
         }
+        # 打印布局 / 出图相关类（逐要素出图、图幅制作常用；缺类自动跳过，
+        # 不提供已被移除的 QgsLayoutItemNorthArrow，见 _layout_namespace_entries）
+        namespace.update(_layout_namespace_entries())
         # execute_pyqgis 按设计要执行一段 PyQGIS 代码：仅在用户逐次确认后以
         # QGIS 进程权限运行，且已做 AST 危险调用扫描 + 受限内建白名单 +
         # 模块白名单（与 AST 层同源），无 shell / 文件系统逃逸面。
@@ -881,6 +915,426 @@ def render_map(output_path: str, width: int = 800, height: int = 600):
             return {"error": f"保存图片失败: {output_path}"}
     except Exception as e:
         return {"error": f"渲染失败: {str(e)}"}
+
+
+# ──────────────────────────────────────────────
+# 逐要素出图（打印布局：指北针 + 比例尺）
+# ──────────────────────────────────────────────
+
+# 文件名禁用字符（Windows/Linux/macOS 并集）+ 控制字符
+_UNSAFE_FILENAME_RE = re.compile(r'[\\/:*?"<>|\x00-\x1f\x7f]+')
+# Windows 保留设备名，用作文件名会导致创建失败
+_RESERVED_FILENAMES = frozenset(
+    ["con", "prn", "aux", "nul"]
+    + ["com%d" % i for i in range(1, 10)]
+    + ["lpt%d" % i for i in range(1, 10)]
+)
+# 指北针 SVG 候选相对目录（覆盖 macOS bundle / Windows OSGeo4W / Linux 布局）
+_SVG_REL_DIRS = ("svg", "qgis/svg", "Resources/qgis/svg",
+                 "share/qgis/svg", "Resources/svg")
+# 标准图纸尺寸（毫米，纵向宽×高）——制图常见诉求如「按 B0 号图出图」
+_STANDARD_PAGE_SIZES = {
+    "A4": (210.0, 297.0), "A3": (297.0, 420.0), "A2": (420.0, 594.0),
+    "A1": (594.0, 841.0), "A0": (841.0, 1189.0),
+    "B4": (250.0, 353.0), "B3": (353.0, 500.0), "B2": (500.0, 707.0),
+    "B1": (707.0, 1000.0), "B0": (1000.0, 1414.0),
+}
+
+
+def _safe_filename(raw, max_len: int = 80) -> str:
+    """把任意要素属性值净化成安全的文件名主体（不含扩展名）。
+
+    要素属性属于不可信外部数据，可能含路径分隔符、控制字符或 Windows 保留名，
+    直接拼进路径会造成写到目录外或创建失败。
+    """
+    s = _UNSAFE_FILENAME_RE.sub("_", str(raw if raw is not None else ""))
+    s = re.sub(r"\s+", " ", s).strip()
+    s = s.strip(". ")          # '.' / '..' 与 Windows 尾部点号均非法
+    if not s:
+        s = "feature"
+    if s.lower() in _RESERVED_FILENAMES:
+        s = "_" + s
+    return s[:max_len]
+
+
+def _find_north_arrow_svg():
+    """定位 QGIS 自带的指北针 SVG，找不到返回 None（调用方降级，不报错）。
+
+    为什么不写死路径：QGIS 的资源目录在各平台差异极大 —— macOS bundle 在
+    ``<app>/Contents/Resources/qgis/svg/arrows/``（且无头模式下 ``prefixPath``
+    为空、``svgPaths()`` 会返回带重复 ``Contents/MacOS`` 段的无效路径），
+    Windows OSGeo4W 在 ``<prefix>/svg/arrows/``，Linux 在 ``/usr/share/qgis/svg/``。
+    这里把官方搜索路径、pkgDataPath 与「从各前缀逐级向上探测」三路合并。
+    """
+    cands = []
+    with contextlib.suppress(Exception):
+        for p in (QgsApplication.svgPaths() or []):
+            if isinstance(p, str) and p:
+                cands.append(p)
+    with contextlib.suppress(Exception):
+        pkg = QgsApplication.pkgDataPath()
+        if isinstance(pkg, str) and pkg:
+            cands.append(os.path.join(pkg, "svg"))
+    # 只接受真正的字符串：某些发行版/替身环境下这些 API 可能返回非字符串，
+    # 直接 os.path.abspath 会抛 TypeError。
+    roots = []
+    for r in (QgsApplication.prefixPath(),
+              os.environ.get("QGIS_PREFIX_PATH", ""),
+              os.environ.get("QGIS_APP", ""),
+              os.environ.get("QGIS_PLUGINPATH", "")):
+        if isinstance(r, str) and r.strip():
+            roots.append(r)
+    for root in roots:
+        try:
+            d = os.path.abspath(root)
+        except (TypeError, ValueError):
+            continue
+        for _ in range(6):          # 最多上溯 6 层（bundle 内需 3 层）
+            for rel in _SVG_REL_DIRS:
+                cands.append(os.path.join(d, rel))
+            parent = os.path.dirname(d)
+            if parent == d:
+                break
+            d = parent
+    for d in cands:
+        target = None
+        if os.path.isdir(os.path.join(d, "arrows")):
+            target = os.path.join(d, "arrows")
+        elif os.path.isdir(d):
+            target = d
+        if not target:
+            continue
+        try:
+            names = sorted(os.listdir(target))
+        except OSError:
+            continue
+        for fn in names:
+            low = fn.lower()
+            if low.startswith("northarrow") and low.endswith(".svg"):
+                return os.path.join(target, fn)
+    return None
+
+
+def export_features_maps(
+    layer: str = "",
+    output_dir: str = "",
+    name_field: str = "",
+    width_px: int = 1600,
+    height_px: int = 1200,
+    dpi: int = 150,
+    margin_percent: float = 10.0,
+    north_arrow: bool = True,
+    scale_bar: bool = True,
+    limit: int = 100,
+    page_size: str = "",
+    orientation: str = "portrait",
+):
+    """对指定图层的每个要素逐个出图，可配置指北针与比例尺。
+
+    为什么要有这个工具（v2.4.10）：这类「逐要素出图 + 指北针 + 比例尺」的需求
+    原先只能靠 execute_pyqgis 裸写 PyQGIS 实现，而模型极易写出过时 API ——
+    例如 ``QgsLayoutItemNorthArrow``，该类在 QGIS 3.44 / 4.x 中**已被移除**
+    （实测两版均不存在），于是必然报错，模型反复重写、白烧工具轮次直至上限，
+    最终任务失败。这里把整条链路固化成一次调用：建临时打印布局 → 地图项铺满
+    页面 → 指北针（QgsLayoutItemPicture + setNorthMode，QGIS 现行做法）→
+    比例尺（QgsLayoutItemScaleBar）→ 逐要素设范围并导出 PNG。
+
+    参数
+    ----
+    layer: 图层名称或 ID（矢量图层）
+    output_dir: 输出目录绝对路径，不存在会自动创建
+    name_field: 用于命名文件的字段名；留空或值为空时用要素 ID
+    width_px / height_px / dpi: 输出图片像素尺寸与分辨率（决定页面物理尺寸）
+    margin_percent: 要素范围外扩百分比，避免要素贴边（默认 10）
+    north_arrow / scale_bar: 是否添加指北针 / 比例尺
+    limit: 最多导出多少个要素（防一次导出上千张把主线程卡死）
+    page_size: 标准图纸尺寸（"A4"/"A3"/"B0" 等）；给了它则忽略宽高像素，
+        像素尺寸由 dpi 换算，保证「图纸 1 mm 就是 1 mm」
+    orientation: 图纸方向 portrait（纵向，默认）/ landscape（横向）
+
+    返回
+    ----
+    export/输出的文件清单、失败项、指北针与比例尺的实际状态
+    """
+    try:
+        from qgis.core import (
+            QgsPrintLayout, QgsLayoutItemMap, QgsLayoutItemPicture,
+            QgsLayoutItemScaleBar, QgsLayoutPoint, QgsLayoutSize,
+            QgsLayoutExporter, QgsUnitTypes, QgsRectangle,
+        )
+    except ImportError as e:
+        return {"error": f"当前 QGIS 缺少打印布局 API，无法逐要素出图: {e}"}
+
+    # ── 参数校验（一律夹到安全区间，避免非法值把主线程拖死）──
+    try:
+        width_px = max(200, min(int(width_px or 1600), 20000))
+        height_px = max(200, min(int(height_px or 1200), 20000))
+        dpi = max(36, min(int(dpi or 150), 600))
+        limit = max(1, min(int(limit or 100), 1000))
+        margin_percent = max(0.0, min(float(margin_percent or 0.0), 200.0))
+    except (TypeError, ValueError) as e:
+        return {"error": f"参数类型不合法: {e}"}
+
+    # ── 输出目录（先校验参数，再去找图层：参数错了不必等图层查找）──
+    output_dir = str(output_dir or "").strip()
+    if not output_dir:
+        return {"error": "必须提供 output_dir（输出目录的绝对路径）。"}
+    if not os.path.isabs(output_dir):
+        return {"error": f"output_dir 必须是绝对路径：{output_dir}"}
+    if not os.path.isdir(output_dir):
+        try:
+            os.makedirs(output_dir, exist_ok=True)
+        except OSError as e:
+            return {"error": f"无法创建输出目录 {output_dir}: {e}"}
+
+    # ── 定位图层 ──
+    project = QgsProject.instance()
+    target = None
+    if layer:
+        target = project.mapLayer(layer)
+        if target is None:
+            for lyr in project.mapLayers().values():
+                if lyr.name() == layer:
+                    target = lyr
+                    break
+    if target is None:
+        return {
+            "error": f"未找到图层: {layer}",
+            "available_layers": [lyr.name() for lyr in project.mapLayers().values()],
+        }
+    if target.type() != QgsMapLayer.LayerType.VectorLayer:
+        return {"error": f"图层「{target.name()}」不是矢量图层，无法逐要素出图。"}
+
+    # ── 收集要素与目标文件名 ──
+    total = target.featureCount()
+    plans = []
+    skipped = []
+    used_names = {}
+    try:
+        for feat in target.getFeatures():
+            if len(plans) >= limit:
+                break
+            raw = ""
+            if name_field:
+                try:
+                    raw = feat[name_field]
+                except Exception as e:
+                    logger.debug("读取字段 %s 失败（改用要素 ID）: %s", name_field, e)
+                    raw = ""
+            if raw is None or not str(raw).strip():
+                raw = "fid_%d" % feat.id()
+            stem = _safe_filename(raw)
+            n = used_names.get(stem, 0) + 1
+            used_names[stem] = n
+            if n > 1:
+                stem = "%s_%d" % (stem, n)
+            geom = feat.geometry()
+            if geom is None or geom.isEmpty():
+                skipped.append({"fid": feat.id(), "reason": "空几何"})
+                continue
+            plans.append({
+                "fid": feat.id(),
+                "stem": stem,
+                "rect": QgsRectangle(geom.boundingBox()),
+            })
+    except Exception as e:
+        return {"error": f"读取图层要素失败: {e}"}
+
+    if not plans:
+        return {
+            "error": f"图层「{target.name()}」没有可导出的要素（空几何或无要素）。",
+            "total_features": total,
+        }
+
+    # ── 覆盖确认（与 render_map 同策略：只在会覆盖已有文件时问一次）──
+    clash = [
+        os.path.join(output_dir, p["stem"] + ".png")
+        for p in plans
+        if os.path.exists(os.path.join(output_dir, p["stem"] + ".png"))
+    ]
+    if clash and not _skip_all_confirms:
+        if _code_confirm_callback is None:
+            return {"error": "确认通道未就绪，已拒绝覆盖已存在的文件。"}
+        preview = json.dumps(
+            {"output_dir": _sanitize_untrusted(output_dir, 300),
+             "覆盖数量": len(clash), "示例": clash[:5]},
+            ensure_ascii=False, indent=2,
+        )
+        try:
+            if not _request_confirmation("export_features_maps", f"将覆盖已存在的图片：\n{preview}"):
+                return {"error": "用户取消了 export_features_maps 操作。"}
+        except Exception as e:
+            logger.debug("export_features_maps 覆盖确认失败: %s", e, exc_info=True)
+            return {"error": "确认通道未就绪，已拒绝覆盖已存在的文件。"}
+
+    # ── 构建临时打印布局（不注册进 layoutManager，不污染用户工程）──
+    layout = QgsPrintLayout(project)
+    try:
+        layout.initializeDefaults()
+    except Exception as e:
+        logger.debug("布局初始化默认页面失败: %s", e, exc_info=True)
+    layout.setName("__qgis_agent_feature_export__")
+
+    # 图纸尺寸优先：给了 page_size（如 "B0"）就按标准图纸出图，像素尺寸由 dpi
+    # 反推，保证「图纸 1 mm 就是 1 mm」；未给则按 width_px/height_px + dpi 换算。
+    std = _STANDARD_PAGE_SIZES.get(str(page_size or "").strip().upper())
+    if std:
+        page_w_mm, page_h_mm = std
+        if str(orientation or "").strip().lower().startswith("land"):
+            page_w_mm, page_h_mm = page_h_mm, page_w_mm
+        width_px = max(200, min(int(round(page_w_mm / 25.4 * dpi)), 20000))
+        height_px = max(200, min(int(round(page_h_mm / 25.4 * dpi)), 20000))
+        if width_px >= 20000 or height_px >= 20000:
+            # 大图纸 + 高 dpi 会撞像素上限：收敛 dpi，避免导出把主线程卡死
+            dpi = max(36, min(
+                int(20000.0 / page_w_mm * 25.4),
+                int(20000.0 / page_h_mm * 25.4),
+            ))
+            width_px = int(round(page_w_mm / 25.4 * dpi))
+            height_px = int(round(page_h_mm / 25.4 * dpi))
+    else:
+        page_w_mm = max(20.0, float(width_px) / float(dpi) * 25.4)
+        page_h_mm = max(20.0, float(height_px) / float(dpi) * 25.4)
+    try:
+        layout.pageCollection().page(0).setPageSize(
+            QgsLayoutSize(page_w_mm, page_h_mm, QgsUnitTypes.LayoutMillimeters))
+    except Exception as e:
+        logger.debug("设置页面尺寸失败，沿用默认页面: %s", e, exc_info=True)
+
+    edge = min(page_w_mm, page_h_mm) * 0.02
+    map_w = page_w_mm - edge * 2
+    map_h = page_h_mm - edge * 2
+
+    map_item = QgsLayoutItemMap(layout)
+    with contextlib.suppress(Exception):
+        map_item.setBackgroundColor(QColor(255, 255, 255))
+    map_item.attemptMove(QgsLayoutPoint(edge, edge, QgsUnitTypes.LayoutMillimeters))
+    map_item.attemptResize(QgsLayoutSize(map_w, map_h, QgsUnitTypes.LayoutMillimeters))
+    layout.addLayoutItem(map_item)
+
+    # ── 指北针（QgsLayoutItemNorthArrow 已移除，改用 Picture + setNorthMode）──
+    north_note = ""
+    if north_arrow:
+        svg_path = _find_north_arrow_svg()
+        if not svg_path:
+            north_note = "未找到 QGIS 自带指北针 SVG，本次未添加"
+            logger.warning("未找到指北针 SVG，已跳过（不影响出图）")
+        else:
+            try:
+                pic = QgsLayoutItemPicture(layout)
+                pic.setPicturePath(svg_path)
+                # 枚举取自 QgsLayoutItemPicture 自身；用
+                # QgsLayoutNorthArrowHandler.NorthMode 会 TypeError。
+                if hasattr(pic, "setNorthMode"):
+                    pic.setNorthMode(QgsLayoutItemPicture.TrueNorth)
+                if hasattr(pic, "setLinkedMap"):
+                    pic.setLinkedMap(map_item)      # 跟地图旋转联动
+                side = min(page_w_mm, page_h_mm) * 0.08
+                pic.attemptMove(QgsLayoutPoint(
+                    page_w_mm - side - edge, edge, QgsUnitTypes.LayoutMillimeters))
+                pic.attemptResize(
+                    QgsLayoutSize(side, side, QgsUnitTypes.LayoutMillimeters))
+                layout.addLayoutItem(pic)
+                north_note = os.path.basename(svg_path)
+            except Exception as e:
+                logger.debug("添加指北针失败: %s", e, exc_info=True)
+                north_note = f"添加失败（已跳过）: {e}"
+
+    # ── 比例尺（长度必须在每个要素的地图范围确定后重算，这里只建不量）──
+    scale_note = ""
+    sb = None
+    if scale_bar:
+        try:
+            sb = QgsLayoutItemScaleBar(layout)
+            sb.setStyle("Single Box")
+            sb.setLinkedMap(map_item)
+            sb.attemptMove(QgsLayoutPoint(
+                edge + page_w_mm * 0.03,
+                page_h_mm - edge - page_h_mm * 0.07,
+                QgsUnitTypes.LayoutMillimeters))
+            layout.addLayoutItem(sb)
+            scale_note = "Single Box"
+        except Exception as e:
+            logger.debug("添加比例尺失败: %s", e, exc_info=True)
+            sb = None
+            scale_note = f"添加失败（已跳过）: {e}"
+
+    # ── 逐要素导出 ──
+    exporter = QgsLayoutExporter(layout)
+    settings = exporter.ImageExportSettings()
+    settings.dpi = dpi
+    ratio = (map_w / map_h) if map_h else 1.0
+    exported_files = []
+    failed = []
+    for p in plans:
+        rect = QgsRectangle(p["rect"])
+        if rect.width() <= 0 or rect.height() <= 0:
+            # 点要素 / 退化几何：给一个可用的最小范围
+            span = 0.002 if target.crs().isGeographic() else 50.0
+            ccx, ccy = rect.center().x(), rect.center().y()
+            rect = QgsRectangle(ccx - span, ccy - span, ccx + span, ccy + span)
+        pad = max(rect.width(), rect.height()) * (margin_percent / 100.0)
+        rect = QgsRectangle(rect.xMinimum() - pad, rect.yMinimum() - pad,
+                            rect.xMaximum() + pad, rect.yMaximum() + pad)
+        # 让出图范围与页面纵横比一致，避免要素被拉伸或裁切
+        w, h = rect.width(), rect.height()
+        ccx, ccy = rect.center().x(), rect.center().y()
+        if ratio > 0 and h > 0 and (w / h) < ratio:
+            half = h * ratio / 2.0
+            rect = QgsRectangle(ccx - half, rect.yMinimum(), ccx + half, rect.yMaximum())
+        elif ratio > 0 and w > 0:
+            half = w / ratio / 2.0
+            rect = QgsRectangle(rect.xMinimum(), ccy - half, rect.xMaximum(), ccy + half)
+
+        map_item.setExtent(rect)
+        with contextlib.suppress(Exception):
+            map_item.refresh()
+        # 比例尺长度依赖地图「当前」比例尺：必须在 setExtent 之后重算，
+        # 否则算出来是 0（图上只见一个「0」）。每个要素比例尺不同，逐个重算。
+        # PyQt6 下 referenceWidth 按 int 校验，传 float 会 TypeError。
+        if sb is not None:
+            try:
+                sb.applyDefaultSize(int(map_w * 0.3))
+            except TypeError:
+                with contextlib.suppress(Exception):
+                    sb.applyDefaultSize()
+            except Exception as e:
+                logger.debug("比例尺重算失败: %s", e, exc_info=True)
+        with contextlib.suppress(Exception):
+            layout.refresh()
+
+        out_path = os.path.join(output_dir, p["stem"] + ".png")
+        try:
+            res = exporter.exportToImage(out_path, settings)
+        except Exception as e:
+            res = e
+        if os.path.exists(out_path) and os.path.getsize(out_path) > 0:
+            exported_files.append(out_path)
+        else:
+            failed.append({"fid": p["fid"], "file": out_path, "result": str(res)})
+
+    result = {
+        "exported": len(exported_files),
+        "total_features": total,
+        "output_dir": output_dir,
+        "files": exported_files[:50],
+        "size_px": [width_px, height_px],
+        "dpi": dpi,
+        "north_arrow": north_note or "未启用",
+        "scale_bar": scale_note or "未启用",
+    }
+    if failed:
+        result["failed"] = failed[:10]
+        result["hint"] = "部分要素导出失败，多为要素范围过小或输出路径不可写。"
+    if skipped:
+        result["skipped"] = skipped[:10]
+    if len(plans) < total:
+        result["truncated"] = True
+        result["hint"] = (
+            f"图层共 {total} 个要素，本次按 limit={limit} 只导出了前 {len(plans)} 个；"
+            f"需要全部导出请提高 limit（会按批次占用主线程）。"
+        )
+    return result
 
 
 # ──────────────────────────────────────────────
@@ -2365,6 +2819,28 @@ TOOL_DEFINITIONS = [
         },
     },
     {
+        "name": "export_features_maps",
+        "description": "【逐要素批量出图】把某个矢量图层的每个要素逐个出成一张 PNG 图片，可自动配置指北针与比例尺，支持标准图纸尺寸（A0-A4 / B0-B4）。这是「对图层要素逐个出图 / 批量出图 / 按 B0 号图出图 / 制图输出」类需求的正确工具——不要用 execute_pyqgis 手写打印布局代码（QgsLayoutItemNorthArrow 等旧 API 在新版 QGIS 已被移除，手写必然失败）。工具内部会：建临时打印布局 → 地图项铺满页面 → 逐要素把地图范围缩放到该要素（自动外扩留边、按页面纵横比校正、白底）→ 比例尺按每个要素的比例尺重算 → 导出 PNG。一次调用即完成全部要素，输出目录不存在会自动创建。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "layer": {"type": "string", "description": "图层名称或 ID（必须是矢量图层）"},
+                "output_dir": {"type": "string", "description": "输出目录的绝对路径，不存在会自动创建"},
+                "name_field": {"type": "string", "description": "用于给图片命名的字段名（如“支局名称”）；留空或该字段为空时用要素 ID"},
+                "width_px": {"type": "integer", "description": "输出图片宽度像素，默认 1600"},
+                "height_px": {"type": "integer", "description": "输出图片高度像素，默认 1200"},
+                "dpi": {"type": "integer", "description": "输出分辨率，默认 150（决定页面物理尺寸）"},
+                "margin_percent": {"type": "number", "description": "要素范围外扩百分比，避免要素贴边，默认 10"},
+                "north_arrow": {"type": "boolean", "description": "是否添加指北针，默认 true"},
+                "scale_bar": {"type": "boolean", "description": "是否添加比例尺，默认 true"},
+                "limit": {"type": "integer", "description": "最多导出多少个要素，默认 100（防一次导出上千张卡住主线程）"},
+                "page_size": {"type": "string", "description": "标准图纸尺寸（可选）：A4/A3/A2/A1/A0/B4/B3/B2/B1/B0。用户说「按 B0 号图出图」时传 'B0'。给了它就忽略 width_px/height_px，像素尺寸由 dpi 自动换算"},
+                "orientation": {"type": "string", "description": "图纸方向：portrait（纵向，默认）或 landscape（横向）"},
+            },
+            "required": ["layer", "output_dir"],
+        },
+    },
+    {
         "name": "get_algorithm_parameters",
         "description": "查询 QGIS Processing 算法的真实参数定义（参数名、描述、类型、默认值、是否可选）。在调用 execute_processing 之前必须先调用本工具查询算法的真实参数名，不要凭记忆猜测参数；算法 id 不存在时会返回名字相近的候选算法 id，便于自我纠正。",
         "parameters": {
@@ -2452,6 +2928,7 @@ TOOL_MAP = {
     "save_project": save_project,
     "load_project": load_project,
     "render_map": render_map,
+    "export_features_maps": export_features_maps,
     "get_algorithm_parameters": get_algorithm_parameters,
     "get_layer_profile": get_layer_profile,
     "set_layer_renderer": set_layer_renderer,

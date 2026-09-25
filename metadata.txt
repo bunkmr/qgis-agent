@@ -3,7 +3,7 @@ name=QGIS Agent
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
 description=LLM-powered intelligent assistant for QGIS. Natural language control of QGIS tools, plus an optional local MCP server so external AI agents (Claude Desktop, Cursor, etc.) can drive QGIS.
-version=2.4.9
+version=2.4.10
 author=bunkmr
 email=bunkr@qq.com
 about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It allows you to control QGIS through natural language conversations, including: viewing project info, adding/removing layers, executing Processing algorithms, running PyQGIS code, setting layer labels, rendering maps, and more.
@@ -49,6 +49,13 @@ deprecated=False
 hasProcessingProvider=no
 server=no
 changelog=
+    v2.4.10 更新内容：
+    【重要修复】向插件提「对某个图层逐个要素出图，要指北针和比例尺」这类需求时，助手会回答「工具调用轮次已达上限，无法完成」。两个层面的原因都已修掉。其一，工具调用轮次上限原为 10 轮，对多步制图任务（探查图层 → 建布局 → 逐要素设定范围 → 导出）明显不够，助手常在几步探查加一次失败重试后就被强制收尾；现已放宽到 30 轮（单轮内仍可并行多个工具调用，不会失控）。其二，工具集里原本没有出图专用工具，助手只能手写 PyQGIS 打印布局代码，而它习惯写的 QgsLayoutItemNorthArrow 在当前 QGIS 版本里早已被移除，必然报错、反复重写，把轮次全部烧光。
+    【新功能】新增「逐要素批量出图」工具：指定图层与输出目录，一次调用即把该图层每个要素单独出一张图，可自动配置指北针与比例尺，支持标准图纸尺寸（A0 至 A4、B0 至 B4，可选纵向或横向）。出图时会自动按要素范围缩放到合适视野并留出边距、按页面纵横比校正、置白底；比例尺按每个要素的实际地图比例尺逐个重算；图片默认以要素属性值命名（如「支局01.png」）。输出目录不存在会自动创建；若目标文件已存在，会先请求确认再覆盖，不会静默覆盖。单次默认最多导出 100 个要素（可调整），避免一次导出上千张卡住界面。
+    【改进】受限执行环境里预置了打印布局相关类，减少因缺少导入而失败。
+    【修复】逐要素出图时比例尺曾显示为「0」，真因是比例尺长度依赖地图当前比例尺，而原先在设定要素范围之前就固定了；现在每个要素设定范围后重新计算。
+    【测试】新增 24 例回归守卫：文件名净化、跨平台定位指北针 SVG、源码中不得再出现已被移除的 API、工具注册与参数校验、轮次上限不得退回个位数；并做了反向验证（故意引入这两个问题，守卫确实会失败）。
+
     v2.4.9 更新内容：
     【重要修复】searchpyqgisapi 工具连续报「API 文档检索失败: no such module: fts5」。真因是 QGIS 自带的 SQLite 没有编译 FTS5 全文检索模块（实测部分平台的 QGIS 就是这样），而文档库初始化时会无条件创建 FTS5 虚拟表，缺模块就直接让检索器崩溃 —— 这是环境缺组件，与调用参数无关，所以自动重试多少次都会以同样方式失败。现在初始化时先探测 FTS5 是否可用：可用则照常使用；不可用则跳过建索引、记一条警告日志，检索自动降级为 LIKE 模糊匹配，功能保持可用（相关性排序与速度略差）。API 文档、Cookbook、Processing 算法目录（679 条）三条检索路径全部完成对应降级，任何一处都不会再因缺 FTS5 抛错。
     【修复】连带修了一个既有 bug：API 文档主表与 FTS 索引是「外部内容表」关系，单条写入从不重建索引，导致全文检索一直查不到新写入的文档。现在单条写入后同步重建索引。
