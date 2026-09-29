@@ -1,5 +1,81 @@
 # 更新日志
 
+## [2.4.12] - 2026-09-29
+
+### 修复（「导出成 CSV」必失败 + 「图层名大小写」匹配不上）
+
+两个真实用户反馈的问题，根因完全不同：一个是**能力供给缺失**，一个是**匹配规则过严**。
+
+#### 1. 「把统计的表升成 csv 格式数据保存到桌面」→ 连续 10 次被沙箱拒绝
+
+- 用户先让助手统计 `COM_S` 各层级面积（成功，14,992 / 1,462 / 129 / 16 要素），
+  紧接着说「帮我将统计的表升成csv格式数据保存到桌面」。
+- 助手的反应是去裸写 `execute_pyqgis` 里的 `import csv` + `open(...)` 代码。
+  受限执行环境**按安全设计**禁止导入 `csv`、禁止调用 `open`
+  （`_SAFE_MODULES` 不含 `csv`，`open` 在 `_UNSAFE_NAME_CALLS` 里），
+  于是连续 10 次全部被拒，最后只能回一句「当前环境无法自动完成文件导出操作，
+  需要手动在 QGIS 界面中完成」。
+- **沙箱的设计是对的，不能放松**。真正的问题是**工具供给缺失**：
+  「把表格存成文件」是高频需求，却没有任何专用工具承担它。
+  （铁律 9：高频复杂操作必须固化成专用工具，不能指望模型裸写代码。）
+- **新增工具 `export_table_to_csv`**，两种模式：
+  - **行数据模式**（`rows=`）：把上一步 `execute_pyqgis` / `get_layer_profile`
+    产出的统计结果（`list[dict]` 或 `list[list]`）直接落成 CSV ——
+    正好接住「把刚才统计的表导出来」这个场景；
+  - **图层模式**（`layer=`）：直接把某个图层的属性表导出成 CSV，
+    支持 `columns` 选列并排序、`limit` 限行、`only_selected` 只导选中要素。
+- 落盘细节：
+  - **UTF-8 带 BOM**（`utf-8-sig`）：Windows 上双击用 Excel 打开中文不乱码；
+  - **CSV 公式注入防护**：只有**字符串**单元格以 `= + - @` 开头时加前导 `'`，
+    数值（含 `-1.5`、`0`）原样不动；
+  - **路径安全**：默认写 `~/Desktop`（不存在退回 `~`），相对路径落桌面，
+    无扩展名自动补 `.csv`，非 `.csv` 拒绝，系统目录（`/etc`、`/System`、
+    `/usr/bin`、`/private/etc` 等）拒绝；
+  - **覆盖确认**：目标文件已存在时走 `_request_confirmation`，确认通道不可用
+    即拒绝 —— 绝不静默覆盖；
+  - **行数上限** `_MAX_CSV_ROWS = 1000000`，触顶返回 `truncated` + `hint`。
+- **同时修掉「拒因指错方向」**：沙箱拒绝提示原本只说「请改用 QGIS API」，
+  等于让助手继续往死路上撞。现在 `_sandbox_reject_hint()` 按拒因分类，
+  直接点名 `export_table_to_csv`（表格 / CSV）、`render_map` /
+  `export_features_maps`（图片），并在系统提示里写明「本环境写不了文件」。
+
+#### 2. 「刚才还能找到怎么现在找不到了？图层一直存在 是大写的」
+
+- 用户工程里的图层叫 `COM_S`，助手传 `com_s`（小写）去查，
+  报「未找到图层: com_s」，连试 4 次后放弃自动重试。
+- 真因：`qgis_tools.py` 里 **7 处涉及图层的工具各自做精确匹配**
+  （`project.mapLayer(x)` + `for lid, lyr in ...items(): if lyr.name() == x`），
+  全部**大小写敏感**；而错误信息既不提「区分大小写」、也不告诉你工程里
+  究竟有哪些图层 —— 助手没有纠正依据，只能反复试同一个错名字。
+  老写法 `QgsProject.instance().mapLayersByName(name)[0]` 还会在找不到时
+  返回空列表，紧跟的 `[0]` 直接抛 `IndexError`。
+- **统一到一个入口 `_find_layer()`**，匹配顺序：
+  ① ID 精确 → ② 名称精确 → ③ 名称去首尾空白 + `casefold()` 折叠 →
+  ④ 再去掉 `.shp` / `.gpkg` 之类扩展名重试。
+  7 个出口（`get_layer_features`、`remove_layer`、`zoom_to_layer`、
+  `set_layer_labeling`、`export_features_maps`、`get_layer_profile`、
+  `set_layer_renderer`、`reproject_layer`）全部改走该入口。
+- **统一错误体 `_layer_not_found_error()`**：
+  - `available_layers` **键恒定存在**（哪怕为空列表）—— 调用方与守卫按同一
+    形状读取，不必分支判断；有候选时附 `did_you_mean`（前 3 个最接近的名字）
+    与指引性 `hint`；
+  - 没有图层时给 `hint`：「当前工程里没有任何图层，请先用 add_vector_layer」。
+- **字段名同样容忍**：`_find_field_name()` 按「精确 → 忽略大小写 + 去空白」
+  两级匹配，并**返回真实字段名**赋回 —— 否则后续 `feature[字段名]` 仍会 KeyError。
+- **沙箱内新增 `find_layer()`**：PyQGIS 代码里直接 `layer = find_layer("com_s")`
+  即可，并同步改进系统提示，明确「**不要**用 `mapLayersByName(...)[0]`」。
+
+### 测试
+- 新增 `tests/test_layer_name_case_insensitive.py`（约 30 例）+
+  `tests/test_export_table_csv.py`（约 52 例）。
+- 守住「单一入口」：`re.findall(r"lyr\.name\(\)\s*==", src)` 恰 1 处、
+  构错误体恰 1 处，防止后续重构又把 7 份内联匹配加回来。
+- **反向验证**：6 组守卫（大小写退回敏感 / 错误体退回单行 / 沙箱退回
+  `mapLayersByName` / 拒因不点名工具 / 拿掉注入防护 / 工具未注册）逐个
+  复现缺陷，守卫**全部如实变红**，无假绿。
+- 单测 483 → **524 例全绿**（9 skipped / 2 xfailed / 240 subtests）；
+  真机 Qt5 / Qt6 双版本安装副本验收**各 26/26 全通过**。
+
 ## [2.4.11] - 2026-09-25
 
 ### 改进（把新工具的引导补进系统提示）

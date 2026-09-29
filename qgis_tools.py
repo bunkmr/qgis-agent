@@ -139,18 +139,10 @@ def get_qgis_info():
 
 def get_layer_features(layer_id_or_name: str, limit: int = 10):
     """获取矢量图层的要素数据（属性表 + 几何 WKT）"""
-    project = QgsProject.instance()
-
-    # 支持通过名称或 ID 查找图层
-    layer = project.mapLayer(layer_id_or_name)
+    # 支持通过名称或 ID 查找图层（名称匹配忽略大小写，见 _find_layer）
+    layer = _find_layer(layer_id_or_name)
     if not layer:
-        for lid, lyr in project.mapLayers().items():
-            if lyr.name() == layer_id_or_name:
-                layer = lyr
-                break
-
-    if not layer:
-        return {"error": f"未找到图层: {layer_id_or_name}"}
+        return _layer_not_found_error(layer_id_or_name)
     if layer.type() != QgsMapLayer.LayerType.VectorLayer:
         return {"error": f"图层 {layer.name()} 不是矢量图层"}
 
@@ -259,17 +251,9 @@ def add_raster_layer(path: str, name: str = None, provider: str = "gdal"):
 
 def remove_layer(layer_id_or_name: str):
     """从项目中移除图层"""
-    project = QgsProject.instance()
-
-    layer = project.mapLayer(layer_id_or_name)
+    layer = _find_layer(layer_id_or_name)
     if not layer:
-        for lid, lyr in project.mapLayers().items():
-            if lyr.name() == layer_id_or_name:
-                layer = lyr
-                break
-
-    if not layer:
-        return {"error": f"未找到图层: {layer_id_or_name}"}
+        return _layer_not_found_error(layer_id_or_name)
 
     removed_name = layer.name()
     removed_id = layer.id()
@@ -279,7 +263,7 @@ def remove_layer(layer_id_or_name: str):
     canvas.setRenderFlag(False)
 
     try:
-        project.removeMapLayer(removed_id)
+        QgsProject.instance().removeMapLayer(removed_id)
     finally:
         # 重新启用地图渲染
         canvas.setRenderFlag(True)
@@ -292,17 +276,9 @@ def remove_layer(layer_id_or_name: str):
 
 def zoom_to_layer(layer_id_or_name: str):
     """缩放到指定图层的范围"""
-    project = QgsProject.instance()
-
-    layer = project.mapLayer(layer_id_or_name)
+    layer = _find_layer(layer_id_or_name)
     if not layer:
-        for lid, lyr in project.mapLayers().items():
-            if lyr.name() == layer_id_or_name:
-                layer = lyr
-                break
-
-    if not layer:
-        return {"error": f"未找到图层: {layer_id_or_name}"}
+        return _layer_not_found_error(layer_id_or_name)
 
     # 优化：临时禁用地图渲染，缩放后再启用
     canvas = iface.mapCanvas()
@@ -582,6 +558,43 @@ def _layout_namespace_entries() -> dict:
     return out
 
 
+def _sandbox_lookup_layer(name):
+    """execute_pyqgis 命名空间里的 ``find_layer(name)``：找不到时抛带候选的错误。
+
+    背景：模型在 execute_pyqgis 里习惯写
+    ``QgsProject.instance().mapLayersByName("com_s")[0]`` —— 而 mapLayersByName
+    **大小写敏感**，找不到时返回空列表，紧跟着的 ``[0]`` 直接 IndexError，
+    报错信息里既没有真实图层名也没有「大小写」这个线索。
+    给它一个容忍大小写、失败时把候选图层名列出来的入口，比在提示词里反复叮嘱可靠。
+    """
+    layer = _find_layer(name)
+    if layer is not None:
+        return layer
+    info = _layer_not_found_error(name)
+    raise ValueError("%s；%s" % (info.get("error", ""), info.get("hint", "")))
+
+
+def _sandbox_reject_hint(reject_reason: str, code: str) -> str:
+    """把「被安全扫描拒绝」翻译成「下一步该调哪个工具」。
+
+    v2.4.12：原先无论被拒原因是什么，都只回一句「请改用 QGIS API 完成该操作」——
+    而模型当时想做的正是「写文件」，QGIS API 根本给不了，于是它反复重写、
+    连续 10 次撞同一堵墙，用户要的 CSV 始终没生成。
+    拒绝信息必须指向**真正能做成这件事的工具**（铁律 7：跨文件约定必须对齐）。
+    """
+    text = ("%s\n%s" % (reject_reason, code)).lower()
+    if "csv" in text or "excel" in text or "xlsx" in text:
+        return ("导出表格/CSV 请改用专用工具 export_table_to_csv：把算好的表格放进 rows "
+                "参数（如 rows=[{\"社区\": \"A\", \"面积km²\": 1.23}]），或传 layer 导出属性表；"
+                "受限环境按安全设计禁止 import csv / open()，在这里写文件必然失败。")
+    if "open" in text or "write" in text:
+        return ("写文件请改用专用工具：表格 → export_table_to_csv；图片 → render_map / "
+                "export_features_maps。受限环境按安全设计移除了 open()，这里永远写不出文件。")
+    return ("受限运行环境已移除 eval/exec/open/getattr 等内建：文件读写与系统调用不可用。"
+            "请改用 QGIS API 或既有工具（表格导出 export_table_to_csv、出图 render_map / "
+            "export_features_maps、统计结果直接 print 即可）完成该操作。")
+
+
 def execute_pyqgis(code: str):
     """在 QGIS 环境中直接执行 PyQGIS 代码，并捕获输出"""
     # 执行前先做 AST 静态扫描：命中黑名单直接拒绝，不再进入确认流程
@@ -590,7 +603,7 @@ def execute_pyqgis(code: str):
         return {
             "error": f"代码安全检查未通过：{reject_reason}",
             "executed": False,
-            "hint": "受限运行环境已移除 eval/exec/open/getattr 等内建，文件读写与系统调用受限，请改用 QGIS API 完成该操作。",
+            "hint": _sandbox_reject_hint(reject_reason, code),
         }
 
     stdout_capture = io.StringIO()
@@ -663,6 +676,9 @@ def execute_pyqgis(code: str):
             "QgsTextFormat": QgsTextFormat,
             # 受限内建：白名单，排除 open/getattr/eval/exec 等危险入口
             "__builtins__": safe_builtins,
+            # 容忍大小写的图层查找（见 _sandbox_lookup_layer）：
+            # 模型惯用的 mapLayersByName 大小写敏感且失败时只给空列表
+            "find_layer": _sandbox_lookup_layer,
         }
         # 打印布局 / 出图相关类（逐要素出图、图幅制作常用；缺类自动跳过，
         # 不提供已被移除的 QgsLayoutItemNorthArrow，见 _layout_namespace_entries）
@@ -767,23 +783,22 @@ def set_layer_labeling(
     """
     from qgis.PyQt.QtGui import QColor
 
-    project = QgsProject.instance()
-    layer = project.mapLayer(layer_id_or_name)
+    layer = _find_layer(layer_id_or_name)
     if not layer:
-        for lid, lyr in project.mapLayers().items():
-            if lyr.name() == layer_id_or_name:
-                layer = lyr
-                break
-
-    if not layer:
-        return {"error": f"未找到图层: {layer_id_or_name}"}
+        return _layer_not_found_error(layer_id_or_name)
     if layer.type() != QgsMapLayer.LayerType.VectorLayer:
         return {"error": f"图层 {layer.name()} 不是矢量图层，无法设置标注"}
 
-    # 检查字段是否存在
-    field_names = [f.name() for f in layer.fields()]
-    if field_name not in field_names:
-        return {"error": f"字段 '{field_name}' 不存在。可用字段: {field_names}"}
+    # 检查字段是否存在（字段名匹配同样忽略大小写，返回真实字段名）
+    real_field = _find_field_name(layer, field_name)
+    field_names = [_sanitize_untrusted(f.name(), 120) for f in layer.fields()]
+    if real_field is None:
+        return {
+            "error": f"字段 '{field_name}' 不存在。可用字段: {field_names}",
+            "hint": "字段名区分大小写，本工具已按忽略大小写查找仍未匹配；"
+                    "可先调用 get_layer_profile 查看真实字段名。",
+        }
+    field_name = real_field
 
     if not enabled:
         layer.setLabelsEnabled(False)
@@ -915,6 +930,261 @@ def render_map(output_path: str, width: int = 800, height: int = 600):
             return {"error": f"保存图片失败: {output_path}"}
     except Exception as e:
         return {"error": f"渲染失败: {str(e)}"}
+
+
+# ──────────────────────────────────────────────
+# 表格导出（CSV）
+# ──────────────────────────────────────────────
+
+# 禁止写入的目录前缀（macOS / Linux / Windows 并集）——写坏系统目录是真实的破坏面。
+# ⚠️ 不要收录 "/var"、"/private" 这类**上层目录**：macOS 的临时目录正好在
+# /var/folders/...（实体是 /private/var/folders/...），一刀切会把正常输出也拒掉
+# （v2.4.12 首版就踩了：自测里所有落 /var/folders 的导出全被打回）。
+# 只精确列敏感目录。
+_UNSAFE_OUTPUT_DIRS = (
+    "/bin", "/sbin", "/usr", "/etc", "/dev", "/boot", "/proc", "/sys",
+    "/system", "/library", "/private/etc", "/private/var/db", "/private/var/root",
+    "c:/windows", "c:/program files", "c:/program files (x86)", "c:/programdata",
+)
+# 单次导出行数硬上限（防一次把上千万行写爆内存/磁盘）
+_MAX_CSV_ROWS = 1000000
+# CSV 注入：字符串以这些字符开头时，Excel / LibreOffice 会当公式执行
+_CSV_INJECTION_PREFIXES = ("=", "+", "-", "@")
+
+
+def _desktop_dir() -> str:
+    """桌面目录；不存在时退回用户主目录（macOS / Windows 通用）"""
+    home = os.path.expanduser("~")
+    desktop = os.path.join(home, "Desktop")
+    return desktop if os.path.isdir(desktop) else home
+
+
+def _resolve_csv_path(output_path):
+    """把目标路径规整为可写的 CSV 绝对路径，返回 (path, error)。
+
+    规则：留空 → 桌面/表格_<时间戳>.csv；相对路径 → 落桌面（用户常说「存到桌面」）；
+    无扩展名 → 补 .csv；其它扩展名 → 明确拒绝（不要偷偷改名）；
+    落在系统目录 → 拒绝。
+    """
+    name = str(output_path or "").strip()
+    if not name:
+        import time
+        name = "表格_%s.csv" % time.strftime("%Y%m%d_%H%M%S")
+    name = os.path.expanduser(name)
+    if not os.path.isabs(name):
+        name = os.path.join(_desktop_dir(), name)
+    name = os.path.abspath(name)
+
+    _root, ext = os.path.splitext(name)
+    if not ext:
+        name = name + ".csv"
+    elif ext.lower() != ".csv":
+        return None, ("目前只支持导出 .csv，请修改扩展名（收到: %s）"
+                      % _sanitize_untrusted(ext, 20))
+
+    normalized = name.replace("\\", "/").lower()
+    for bad in _UNSAFE_OUTPUT_DIRS:
+        if normalized == bad or normalized.startswith(bad + "/"):
+            return None, ("拒绝写入系统目录 %s：请换到桌面或工程目录。"
+                          % _sanitize_untrusted(bad, 60))
+
+    parent = os.path.dirname(name)
+    if parent and not os.path.isdir(parent):
+        try:
+            os.makedirs(parent, exist_ok=True)
+        except OSError as e:
+            return None, "无法创建输出目录 %s: %s" % (_sanitize_untrusted(parent, 300), e)
+    return name, None
+
+
+def _csv_cell(value):
+    """把任意值转成 CSV 单元格内容。
+
+    数值原样写出（负号是正常数据）；文本走不可信数据净化，并对以 = + - @ 开头的
+    字符串加前导单引号 —— 否则 Excel / LibreOffice 会把 ``=cmd|...`` 之类当公式执行
+    （属性值来自外部数据源，属不可信输入）。
+    """
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "TRUE" if value else "FALSE"
+    if isinstance(value, (int, float)):
+        return value
+    text = _sanitize_untrusted(value, 4000)
+    if text[:1] in _CSV_INJECTION_PREFIXES:
+        return "'" + text
+    return text
+
+
+def _rows_to_matrix(rows, columns=None):
+    """把 rows 规整成 (header, matrix)，返回 (header, matrix, error)。
+
+    支持 list[dict]（表头取键的并集，保持首次出现顺序）与 list[list]
+    （首行全为字符串时视为表头，否则自动生成 列1..列N）。
+    """
+    if not isinstance(rows, (list, tuple)) or not rows:
+        return None, None, "rows 必须是非空数组。"
+    first = rows[0]
+
+    if isinstance(first, dict):
+        header = [str(c) for c in columns] if columns else []
+        if not header:
+            for row in rows:
+                if isinstance(row, dict):
+                    for key in row.keys():
+                        key = str(key)
+                        if key not in header:
+                            header.append(key)
+        matrix = []
+        for row in rows:
+            row = row if isinstance(row, dict) else {}
+            matrix.append([_csv_cell(row.get(col)) for col in header])
+        return header, matrix, None
+
+    if columns:
+        header = [str(c) for c in columns]
+        body = list(rows)
+    elif all(isinstance(cell, str) for cell in first):
+        header = [str(c) for c in first]
+        body = list(rows[1:])
+    else:
+        header = ["列%d" % (i + 1) for i in range(len(first))]
+        body = list(rows)
+
+    matrix = []
+    for row in body:
+        if isinstance(row, dict):
+            row = [row.get(col) for col in header]
+        elif not isinstance(row, (list, tuple)):
+            row = [row]
+        matrix.append([_csv_cell(cell) for cell in row])
+    return header, matrix, None
+
+
+def export_table_to_csv(rows=None, layer=None, output_path=None, columns=None,
+                        limit=0, only_selected=False):
+    """把一份表格导出为 CSV 文件。
+
+    ⚠️ 这是「把统计结果 / 属性表存成 CSV」的**唯一正确入口**：execute_pyqgis 的
+    受限环境按安全设计**禁止导入 csv、禁止调用 open()**（现场：模型写
+    ``import csv`` + ``open()`` 被安全扫描连续拒绝 10 次，用户要的 CSV 一直没生成，
+    最后只能建议用户自己手动导出）。高频操作必须固化成工具，而不是指望模型在沙箱里
+    裸写文件 IO。
+
+    两种用法：
+      1) rows：直接传算好的表格（统计结果最常用）——
+         ``rows=[{"社区": "A", "面积km²": 1.23}, ...]`` 或
+         ``rows=[["社区", "面积km²"], ["A", 1.23]]``（首行全为字符串时当表头）
+      2) layer：导出某图层的属性表 —— ``layer="COM_S"``（名称忽略大小写），
+         ``columns`` 可选指定字段（字段名同样忽略大小写），
+         ``only_selected`` 只导选中要素。
+
+    编码固定 utf-8-sig（带 BOM）：Windows 版 Excel 双击打开中文不乱码。
+    返回写入的行数、列名与最终绝对路径（相对路径会被落到桌面）。
+    """
+    if rows is None and layer is None:
+        return {
+            "error": "必须提供 rows（表格数据）或 layer（图层名）之一。",
+            "hint": "统计结果用 rows 传表格；导出属性表用 layer='图层名'。",
+        }
+
+    path, path_error = _resolve_csv_path(output_path)
+    if path is None:
+        return {"error": path_error}
+
+    if os.path.exists(path) and not _skip_all_confirms:
+        try:
+            preview = json.dumps(
+                {
+                    "output_path": _sanitize_untrusted(path, 300),
+                    "rows": len(rows) if isinstance(rows, (list, tuple)) else None,
+                    "layer": _sanitize_untrusted(layer or "", 120),
+                },
+                ensure_ascii=False, indent=2,
+            )
+            if not _request_confirmation("export_table_to_csv",
+                                         f"将覆盖已存在的文件：\n{preview}"):
+                return {"error": "用户取消了 export_table_to_csv 操作。"}
+        except Exception as e:
+            logger.debug("export_table_to_csv 覆盖确认失败: %s", e, exc_info=True)
+            return {"error": "确认通道未就绪，已拒绝覆盖已存在的文件。"}
+
+    capped = _MAX_CSV_ROWS
+    if limit:
+        try:
+            capped = min(_MAX_CSV_ROWS, max(1, int(limit)))
+        except (TypeError, ValueError):
+            capped = _MAX_CSV_ROWS
+
+    if rows is not None:
+        header, matrix, err = _rows_to_matrix(rows, columns)
+        if err:
+            return {"error": err}
+        matrix = matrix[:capped]
+    else:
+        target = _find_layer(layer)
+        if target is None:
+            return _layer_not_found_error(layer)
+        if target.type() != QgsMapLayer.LayerType.VectorLayer:
+            return {"error": f"图层 {target.name()} 不是矢量图层，无法导出属性表。"}
+
+        field_names = [f.name() for f in target.fields()]
+        if columns:
+            header = []
+            for col in columns:
+                real = _find_field_name(target, col)
+                if real is None:
+                    return {
+                        "error": "字段 '%s' 不存在。可用字段: %s"
+                                 % (_sanitize_untrusted(col, 120),
+                                    [_sanitize_untrusted(n, 120) for n in field_names]),
+                        "hint": "字段名区分大小写，本工具已按忽略大小写查找仍未匹配。",
+                    }
+                header.append(real)
+        else:
+            header = list(field_names)
+
+        matrix = []
+        try:
+            features = target.selectedFeatures() if only_selected else target.getFeatures()
+            for feature in features:
+                if len(matrix) >= capped:
+                    break
+                row = []
+                for field in header:
+                    try:
+                        row.append(_csv_cell(feature.attribute(field)))
+                    except Exception:
+                        row.append(_csv_cell(feature[field]))
+                matrix.append(row)
+        except Exception as e:
+            logger.debug("读取图层要素失败: %s", e, exc_info=True)
+            return {"error": f"读取图层要素失败: {e}"}
+
+    try:
+        import csv
+        with open(path, "w", encoding="utf-8-sig", newline="") as fh:
+            writer = csv.writer(fh)
+            writer.writerow(header)
+            writer.writerows(matrix)
+        size = os.path.getsize(path)
+    except Exception as e:
+        logger.debug("写入 CSV 失败: %s", e, exc_info=True)
+        return {"error": f"写入 CSV 失败: {e}", "path": path}
+
+    result = {
+        "path": path,
+        "rows": len(matrix),
+        "columns": header,
+        "bytes": size,
+        "encoding": "utf-8-sig",
+        "message": "已导出 %d 行到 %s（UTF-8 带 BOM，Windows Excel 双击即可正常显示中文）。"
+                   % (len(matrix), path),
+    }
+    if len(matrix) >= capped:
+        result["truncated"] = True
+        result["hint"] = "已达本次导出行数上限 %d，可能仍有剩余数据未写入。" % capped
+    return result
 
 
 # ──────────────────────────────────────────────
@@ -1087,21 +1357,11 @@ def export_features_maps(
         except OSError as e:
             return {"error": f"无法创建输出目录 {output_dir}: {e}"}
 
-    # ── 定位图层 ──
+    # ── 定位图层（名称匹配忽略大小写）──
     project = QgsProject.instance()
-    target = None
-    if layer:
-        target = project.mapLayer(layer)
-        if target is None:
-            for lyr in project.mapLayers().values():
-                if lyr.name() == layer:
-                    target = lyr
-                    break
+    target = _find_layer(layer) if layer else None
     if target is None:
-        return {
-            "error": f"未找到图层: {layer}",
-            "available_layers": [lyr.name() for lyr in project.mapLayers().values()],
-        }
+        return _layer_not_found_error(layer)
     if target.type() != QgsMapLayer.LayerType.VectorLayer:
         return {"error": f"图层「{target.name()}」不是矢量图层，无法逐要素出图。"}
 
@@ -1561,14 +1821,139 @@ def load_memory() -> dict:
 # ──────────────────────────────────────────────
 
 def _find_layer(layer_id_or_name: str):
-    """按 ID 或名称查找图层，找不到时返回 None"""
+    """按 ID 或名称查找图层，找不到时返回 None。
+
+    ⚠️ 名称匹配**必须大小写不敏感**（v2.4.12 修复）。现场故障：工程里的图层叫
+    ``COM_S``，模型把用户口述的图层名写成小写的 ``com_s`` 去查，精确匹配落空 →
+    工具回「未找到图层: com_s」→ 模型判断成「图层不存在」，连续 4 次失败后放弃；
+    而用户看到的是「刚才还能找到怎么现在找不到了？图层一直存在，是大写的」。
+
+    匹配顺序：ID 精确 → 名称精确 → 名称（去首尾空白 + casefold 折叠）→
+    再去掉 ``.shp`` / ``.gpkg`` 之类的扩展名重试（模型常把数据源文件名当图层名）。
+    """
+    if layer_id_or_name is None:
+        return None
+    key = str(layer_id_or_name).strip()
+    if not key:
+        return None
+
     project = QgsProject.instance()
-    layer = project.mapLayer(layer_id_or_name)
+    layer = project.mapLayer(key)
     if layer:
         return layer
-    for _lid, lyr in project.mapLayers().items():
-        if lyr.name() == layer_id_or_name:
+
+    layers = list(project.mapLayers().values())
+    for lyr in layers:
+        if lyr.name() == key:
             return lyr
+
+    folded = key.casefold()
+    for lyr in layers:
+        if lyr.name().strip().casefold() == folded:
+            return lyr
+
+    if "." in folded:
+        stem = folded.rsplit(".", 1)[0]
+        if stem:
+            for lyr in layers:
+                if lyr.name().strip().casefold() == stem:
+                    return lyr
+    return None
+
+
+def _closest_layer_names(layer_id_or_name, names, limit: int = 3) -> list:
+    """从工程内真实图层名里挑出与输入最接近的几个（用于自我纠正提示）。
+
+    排序依据：忽略大小写后完全相等 → 互相包含 → difflib 相似度 ≥ 0.5。
+    只做提示，不改变匹配结果（匹配由 _find_layer 决定）。
+    """
+    key = str(layer_id_or_name or "").strip().casefold()
+    if not key:
+        return []
+    same, contains, scored = [], [], []
+    for name in names:
+        folded = str(name).strip().casefold()
+        if not folded:
+            continue
+        if folded == key:
+            same.append(name)
+        elif key in folded or folded in key:
+            contains.append(name)
+        else:
+            try:
+                ratio = difflib.SequenceMatcher(None, key, folded).ratio()
+            except Exception:
+                ratio = 0.0
+            if ratio >= 0.5:
+                scored.append((ratio, name))
+    scored.sort(key=lambda item: -item[0])
+    out = []
+    for name in same + contains + [n for _r, n in scored]:
+        if name not in out:
+            out.append(name)
+        if len(out) >= limit:
+            break
+    return out
+
+
+def _layer_not_found_error(layer_id_or_name) -> dict:
+    """统一的「未找到图层」返回体：附上工程内真实图层名与最接近的候选。
+
+    v2.4.12：原先 7 处出口各自只回一句「未找到图层: X」，模型既不知道自己写错了
+    大小写，也看不到正确的名字，只能再摸一轮 get_qgis_info —— 用户看到的就是
+    一连串「未找到图层」的失败（铁律 7：同一份约定必须在所有出口保持一致）。
+    """
+    out = {"error": "未找到图层: %s" % _sanitize_untrusted(layer_id_or_name, 120)}
+    try:
+        names = [_sanitize_untrusted(lyr.name(), 120)
+                 for lyr in QgsProject.instance().mapLayers().values()]
+    except Exception as e:
+        logger.debug("枚举图层名失败（已忽略）: %s", e, exc_info=True)
+        names = []
+
+    # 键恒定存在（哪怕为空列表）：调用方/守卫按同一形状读取，不必分支判断
+    out["available_layers"] = names[:50]
+
+    if not names:
+        out["hint"] = "当前工程里没有任何图层，请先用 add_vector_layer 添加数据。"
+        return out
+
+    near = _closest_layer_names(layer_id_or_name, names)
+    if near:
+        out["did_you_mean"] = near
+        out["hint"] = ("图层名区分大小写，本工具已按「忽略大小写」查找仍未匹配。"
+                       "是否想用：%s？" % "、".join(near))
+    else:
+        out["hint"] = "可先调用 get_qgis_info 查看当前工程中的图层名称与 id。"
+    return out
+
+
+def _find_field_name(layer, field_name) -> str:
+    """在图层字段里找真实字段名，找不到返回 None。
+
+    与 _find_layer 同一个坑的另一半：shapefile/gpkg 的字段名常是 ``NAME`` /
+    ``AREA_KM2`` 这种大写，而模型按用户口述写成小写去比对，精确匹配就会落空
+    → 报「字段不存在」。这里做「精确 → 忽略大小写 + 去首尾空白」两级匹配，
+    返回**真实字段名**（后续用真实名去取属性，不要再拿输入值）。
+    """
+    if field_name is None:
+        return None
+    key = str(field_name).strip()
+    if not key:
+        return None
+    names = []
+    try:
+        names = [f.name() for f in layer.fields()]
+    except Exception as e:
+        logger.debug("读取字段列表失败: %s", e, exc_info=True)
+        return None
+    for name in names:
+        if name == key:
+            return name
+    folded = key.casefold()
+    for name in names:
+        if name.strip().casefold() == folded:
+            return name
     return None
 
 
@@ -1905,10 +2290,9 @@ def get_layer_profile(layer_id: str = None) -> dict:
         if layer_id:
             layer = _find_layer(layer_id)
             if not layer:
-                return {
-                    "error": f"未找到图层: {layer_id}",
-                    "hint": "可先调用 get_qgis_info 查看当前工程中的图层名称与 id。",
-                }
+                # v2.4.12：原先只回一句「未找到图层」，模型既不知道大小写不匹配，
+                # 也看不到真实图层名 → 只能再摸一轮，用户看到连续失败。
+                return _layer_not_found_error(layer_id)
             return _truncate_result({"layer": _build_layer_profile(layer)})
 
         layers = list(project.mapLayers().values())
@@ -2249,17 +2633,20 @@ def set_layer_renderer(
 
     layer = _find_layer(layer_id)
     if not layer:
-        return {"error": f"未找到图层: {layer_id}"}
+        return _layer_not_found_error(layer_id)
     if layer.type() != QgsMapLayer.LayerType.VectorLayer:
         return {"error": f"图层 {layer.name()} 不是矢量图层，无法设置渲染"}
 
     if rtype != "single":
+        real_field = _find_field_name(layer, field)
         field_names = [f.name() for f in layer.fields()]
-        if field not in field_names:
+        if real_field is None:
             return {
                 "error": f"字段 '{field}' 不存在。可用字段: {[_sanitize_untrusted(n, 120) for n in field_names]}",
-                "hint": "可先调用 get_layer_profile 查看真实字段名。",
+                "hint": "字段名区分大小写，本工具已按忽略大小写查找仍未匹配；"
+                        "可先调用 get_layer_profile 查看真实字段名。",
             }
+        field = real_field
 
     try:
         classes = max(1, min(int(classes or 5), 100))
@@ -2473,7 +2860,7 @@ def reproject_layer(
     """
     layer = _find_layer(layer_id)
     if not layer:
-        return {"error": f"未找到图层: {layer_id}"}
+        return _layer_not_found_error(layer_id)
     if layer.type() != QgsMapLayer.LayerType.VectorLayer:
         return {
             "error": f"图层 {layer.name()} 不是矢量图层，暂不支持重投影",
@@ -2806,6 +3193,31 @@ TOOL_DEFINITIONS = [
         },
     },
     {
+        "name": "export_table_to_csv",
+        "description": "【导出表格为 CSV】把统计结果或图层属性表保存成 CSV 文件（Windows Excel 可直接打开，中文不乱码）。这是「把结果存成 CSV / Excel / 表格文件」「导出属性表」「保存到桌面」这类需求的正确工具——不要用 execute_pyqgis 写 import csv / open()，受限环境会直接拒绝（禁止导入 csv 模块、禁止调用 open），只会白白失败。两种用法：① rows：直接传算好的表格，如 [{\"社区\":\"A\",\"面积km²\":1.23}, ...]，或 [ [\"社区\",\"面积km²\"], [\"A\",1.23] ]（首行全为字符串时当表头）；② layer：传图层名导出属性表，可用 columns 指定字段、only_selected 只导选中要素。output_path 留空则自动存到桌面；相对路径也会落到桌面。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "rows": {
+                    "type": "array",
+                    "description": "要导出的表格数据：对象数组（推荐，键即表头）或二维数组（首行全为字符串时当表头）",
+                },
+                "layer": {"type": "string", "description": "要导出属性表的图层名称或 ID（名称忽略大小写）"},
+                "columns": {
+                    "type": "array",
+                    "description": "指定列/字段及其顺序：rows 模式为对象键名，layer 模式为字段名（同样忽略大小写）",
+                },
+                "output_path": {
+                    "type": "string",
+                    "description": "输出 CSV 的路径，留空则存到桌面；相对路径按桌面处理；必须是 .csv",
+                },
+                "limit": {"type": "integer", "description": "最多导出多少行，默认 0 表示全部"},
+                "only_selected": {"type": "boolean", "description": "layer 模式下是否只导出选中要素，默认 false"},
+            },
+            "required": [],
+        },
+    },
+    {
         "name": "render_map",
         "description": "将当前地图画布渲染为PNG图片文件",
         "parameters": {
@@ -2928,6 +3340,7 @@ TOOL_MAP = {
     "save_project": save_project,
     "load_project": load_project,
     "render_map": render_map,
+    "export_table_to_csv": export_table_to_csv,
     "export_features_maps": export_features_maps,
     "get_algorithm_parameters": get_algorithm_parameters,
     "get_layer_profile": get_layer_profile,
