@@ -1665,6 +1665,13 @@ class QGISAgent:
 
         self.cbMcpAutostart = QCheckBox("随插件启动时自动运行 MCP 服务")
         self.cbMcpAutostart.setChecked(bool(settings.value("mcp/autostart", False)))
+        self.cbMcpAutostart.setToolTip(
+            "只影响「下次 QGIS 启动插件时要不要自动拉起服务」，改动立即写入设置，"
+            "不会当场启动或停止服务。"
+        )
+        # 勾/取消都要落盘 —— 之前只有点「启动/停止服务」时才顺手持久化，
+        # 单独勾一下再关设置页，设置就丢了。
+        self.cbMcpAutostart.toggled.connect(self._on_mcp_autostart_toggled)
         outer.addWidget(self.cbMcpAutostart)
 
         row_port = QHBoxLayout()
@@ -1675,7 +1682,12 @@ class QGISAgent:
             self.spMcpPort.setValue(int(settings.value("mcp/port", default_port)))
         except (TypeError, ValueError):
             self.spMcpPort.setValue(default_port)
-        self.spMcpPort.setToolTip("默认 9876。若被占用可换一个端口，改完需重新启动服务。")
+        self.spMcpPort.setToolTip(
+            "默认 9876。若被占用可换一个端口。\n"
+            "⚠️ 监听端口无法热切换：改动会被保存，但要在「停止服务 → 启动服务」之后才生效，"
+            "当前连接不受影响。"
+        )
+        self.spMcpPort.valueChanged.connect(self._on_mcp_port_changed)
         row_port.addWidget(self.spMcpPort)
         self.btnMcpToggle = QPushButton("启动服务")
         self.btnMcpToggle.clicked.connect(self._on_mcp_toggle)
@@ -1689,7 +1701,8 @@ class QGISAgent:
         # 需要核对时点右侧「显示」临时展开。
         self.leMcpToken.setEchoMode(QLineEdit.EchoMode.Password)
         self.leMcpToken.setToolTip(
-            "外部客户端必须携带该令牌才能调用工具。修改后需重新启动服务。\n"
+            "外部客户端必须携带该令牌才能调用工具。\n"
+            "编辑完（焦点离开输入框）会立即生效并写回设置，服务无需重启。\n"
             "默认以星号隐藏，避免截图/录屏时泄露；要核对时点右侧「显示」展开。\n"
             "取完整令牌请用「复制令牌」按钮，不要手抄屏幕上的片段。"
         )
@@ -1698,9 +1711,11 @@ class QGISAgent:
             token = self._new_mcp_token()
             settings.setValue("mcp/token", token)
         self.leMcpToken.setText(token)
-        # setText 会把光标放到末尾，QLineEdit 随之滚动到尾部 —— 屏幕上只剩后半截令牌，
-        # 用户手抄极易抄错（实测踩过：显示的是 64 位令牌的最后 34 位）。这里回到头部。
+        self._mcp_token_last_applied = token
+        # 光标回到开头（setText 会把视口滚到尾部，屏幕上只剩后半截令牌）。
         self.leMcpToken.setCursorPosition(0)
+        # editingFinished：只在"编辑完并离开焦点/回车"时触发，避免每敲一个字符就改令牌。
+        self.leMcpToken.editingFinished.connect(self._on_mcp_token_edited)
         row_token.addWidget(self.leMcpToken)
         self.btnMcpTokenReveal = QPushButton("显示")
         self.btnMcpTokenReveal.setCheckable(True)
@@ -1726,8 +1741,14 @@ class QGISAgent:
             "默认关闭：这些工具既不会出现在外部 Agent 的工具清单里，直接调用也会被拒绝。\n"
             "开启后外部 Agent 可以请求它们，但每次执行仍会在 QGIS 界面上弹出确认框，由你本人点击确认。\n"
             "「运行技能」之所以归入此类，是因为技能会执行用户技能目录下的 Python 代码。\n"
-            "注意：若你同时打开了插件底部的「跳过代码执行确认」，外部 Agent 的这些操作也将不再弹窗。"
+            "注意：若你同时打开了插件底部的「跳过代码执行确认」，外部 Agent 的这些操作也将不再弹窗。\n"
+            "改动立即生效（服务运行中也会当场刷新工具清单与权限），无需重启服务。"
         )
+        # ⚠️ 这里必须有 toggled 连接：此前 allow_dangerous 只在 bridge.start() 那一刻
+        # 读一次，勾上开关却什么都不发生 —— 表现为「测试连接里暴露危险工具仍是 false」，
+        # 用户唯一的出路是手动「停止服务 → 启动服务」。apply_settings 早就写好支持
+        # 热更新，却只在「重新生成令牌」那一处被调用过。
+        self.cbMcpDangerous.toggled.connect(self._on_mcp_dangerous_toggled)
         outer.addWidget(self.cbMcpDangerous)
 
         self.lblMcpStatus = QLabel("状态：未运行")
@@ -1779,12 +1800,18 @@ class QGISAgent:
             bridge = MCPBridge.get()
             running = bridge.is_running()
             if running:
+                # 显示服务**实际生效**的值，而不是复选框的样子：
+                # 两者在热更新尚未落地时会不一致，用复选框的值会掩盖问题。
+                dangerous_now = bridge.allow_dangerous
                 self.lblMcpStatus.setText(
                     "状态：运行中 · 监听 127.0.0.1:%d · 工具 %d 个（含危险工具：%s）"
                     % (bridge.port or 0,
                        len(self._mcp_visible_tool_names()),
-                       "是" if self.cbMcpDangerous.isChecked() else "否")
+                       "是" if dangerous_now else "否")
                 )
+                if dangerous_now != self.cbMcpDangerous.isChecked():
+                    self.lblMcpStatus.setText(
+                        self.lblMcpStatus.text() + "（与服务当前设置不一致）")
                 self.btnMcpToggle.setText("停止服务")
             else:
                 self.lblMcpStatus.setText("状态：未运行")
@@ -1796,8 +1823,13 @@ class QGISAgent:
         try:
             from .mcp_bridge import MCPBridge
             from .qgis_tools import TOOL_DEFINITIONS
+            bridge = MCPBridge.get()
             dangerous = MCPBridge._dangerous_tool_names()
-            if self.cbMcpDangerous.isChecked():
+            # 运行中取服务实际生效的开关，未运行取复选框的值 ——
+            # 这个方法的语义是"外部 Agent 现在能看到几个工具"，必须与实际一致。
+            allowed = (bridge.allow_dangerous if bridge.is_running()
+                       else self.cbMcpDangerous.isChecked())
+            if allowed:
                 return [t.get("name") for t in TOOL_DEFINITIONS]
             return [t.get("name") for t in TOOL_DEFINITIONS
                     if t.get("name") not in dangerous]
@@ -1810,6 +1842,98 @@ class QGISAgent:
         settings.setValue("mcp/port", int(self.spMcpPort.value()))
         settings.setValue("mcp/token", self.leMcpToken.text().strip())
         settings.setValue("mcp/allow_dangerous", self.cbMcpDangerous.isChecked())
+
+    # ── 设置热更新：改完立即生效，不必"停止服务 → 启动服务" ──
+    def _mcp_status_note(self, text):
+        """把一行提示写到 dock 底部状态栏（拿不到就静默忽略）。"""
+        _set_status = getattr(self.dockwidget, "_set_status", None)
+        if callable(_set_status):
+            _set_status(text)
+
+    def _apply_mcp_live(self, token=None, allow_dangerous=None):
+        """把设置页的改动推给正在运行的桥接服务。
+
+        服务未运行时 `apply_settings` 只更新内存属性、不报错，所以这里
+        无需判断运行状态；异常一律吞掉：热更新失败绝不能影响设置页可用性
+        （下次启动服务时仍会从设置重新读入，只是"当次不生效"）。
+        """
+        try:
+            from .mcp_bridge import MCPBridge
+            MCPBridge.get().apply_settings(token=token, allow_dangerous=allow_dangerous)
+        except Exception as _e:  # noqa: BLE001
+            logger.debug("热更新 MCP 设置失败: %s", _e, exc_info=True)
+
+    def _on_mcp_dangerous_toggled(self, checked):
+        """危险工具开关：勾上/取消立刻生效（服务运行中当场刷新工具清单与权限）。"""
+        self._persist_mcp_settings()
+        self._apply_mcp_live(allow_dangerous=bool(checked))
+        self._refresh_mcp_status()
+        from .mcp_bridge import MCPBridge
+        if MCPBridge.get().is_running():
+            self._mcp_status_note(
+                "MCP 危险工具已%s（立即生效）：外部 Agent %s"
+                % ("开启" if checked else "关闭",
+                   "现在能看到并调用 execute_pyqgis 等特权工具" if checked
+                   else "的工具清单已收回特权工具")
+            )
+        else:
+            self._mcp_status_note(
+                "MCP 危险工具设置已保存（服务未运行，下次启动时生效）")
+
+    def _on_mcp_token_edited(self):
+        """令牌编辑完成：写回设置并热更新服务。
+
+        空令牌一律不落地 —— 服务端把空令牌当作"拒绝一切请求"，
+        真写下去会让运行中的服务当场瘫痪（所有调用返回未授权）。
+        此时恢复上一次生效值，并明确告知用户。
+        """
+        token = self.leMcpToken.text().strip()
+        last = getattr(self, "_mcp_token_last_applied", "")
+        if not token:
+            if last:
+                QMessageBox.warning(
+                    self.dockwidget, "令牌不能为空",
+                    "访问令牌留空会让所有外部请求被拒绝（服务强制要求令牌）。\n"
+                    "已恢复为上一个有效令牌。"
+                )
+            self.leMcpToken.setText(last)
+            self.leMcpToken.setCursorPosition(0)
+            return
+        if token == last:
+            return  # 没变，别白白刷一遍会话文件
+        self.leMcpToken.setText(token)
+        self.leMcpToken.setCursorPosition(0)
+        self._mcp_token_last_applied = token
+        settings = self._mcp_settings()
+        settings.setValue("mcp/token", token)
+        self._apply_mcp_live(token=token)
+        from .mcp_bridge import MCPBridge
+        if MCPBridge.get().is_running():
+            self._mcp_status_note("MCP 访问令牌已更新（立即生效，请同步到客户端配置）")
+        else:
+            self._mcp_status_note("MCP 访问令牌已保存（服务未运行）")
+
+    def _on_mcp_autostart_toggled(self, checked):
+        """自动启动开关：只落盘，不碰运行中的服务（语义就是"下次启动时才用"）。"""
+        settings = self._mcp_settings()
+        settings.setValue("mcp/autostart", bool(checked))
+        self._mcp_status_note(
+            "已设置：QGIS 启动时%s自动运行 MCP 服务"
+            % ("会" if checked else "不会"))
+
+    def _on_mcp_port_changed(self, value):
+        """端口改动：能落盘，但监听端口无法热切换 —— 必须停启服务才生效。"""
+        settings = self._mcp_settings()
+        settings.setValue("mcp/port", int(value))
+        try:
+            from .mcp_bridge import MCPBridge
+            bridge = MCPBridge.get()
+            if bridge.is_running() and bridge.port and int(bridge.port) != int(value):
+                self._mcp_status_note(
+                    "端口已保存为 %d，但当前仍监听 %d —— 端口需「停止服务 → 启动服务」后生效"
+                    % (int(value), int(bridge.port)))
+        except Exception as _e:  # noqa: BLE001
+            logger.debug("检查 MCP 端口变更失败: %s", _e, exc_info=True)
 
     def _on_mcp_toggle(self):
         from .mcp_bridge import MCPBridge
@@ -1827,6 +1951,8 @@ class QGISAgent:
         if not token:
             token = self._new_mcp_token()
             self.leMcpToken.setText(token)
+            self.leMcpToken.setCursorPosition(0)
+        self._mcp_token_last_applied = token
         self._persist_mcp_settings()
         ok, message = bridge.start(
             port=int(self.spMcpPort.value()),
@@ -1854,6 +1980,8 @@ class QGISAgent:
                 return
             token = self.leMcpToken.text().strip() or self._new_mcp_token()
             self.leMcpToken.setText(token)
+            self.leMcpToken.setCursorPosition(0)
+            self._mcp_token_last_applied = token
             self._persist_mcp_settings()
             ok, message = bridge.start(
                 port=int(self.spMcpPort.value()),
@@ -1869,18 +1997,16 @@ class QGISAgent:
     def _on_mcp_regenerate_token(self):
         token = self._new_mcp_token()
         self.leMcpToken.setText(token)
+        self.leMcpToken.setCursorPosition(0)
+        self._mcp_token_last_applied = token
         settings = self._mcp_settings()
         settings.setValue("mcp/token", token)
-        try:
-            from .mcp_bridge import MCPBridge
-            bridge = MCPBridge.get()
-            if bridge.is_running():
-                bridge.apply_settings(token=token)
-        except Exception as _e:
-            logger.debug("热更新 MCP 令牌失败: %s", _e, exc_info=True)
+        # 复用同一条热更新通道，别再自己写一份 try/except（这里原来只在服务运行时才热更新）。
+        self._apply_mcp_live(token=token)
+        self._refresh_mcp_status()
         QMessageBox.information(
             self.dockwidget, "令牌已更新",
-            "已生成新的访问令牌，并写回插件设置。\n"
+            "已生成新的访问令牌，并立即生效（服务运行中无需重启）。\n"
             "请把新令牌同步到 MCP 客户端配置（点「复制客户端配置」即可拿到）。"
         )
 

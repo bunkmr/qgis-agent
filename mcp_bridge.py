@@ -494,6 +494,19 @@ class MCPBridge(QObject):
     def token(self):
         return self._token
 
+    @property
+    def allow_dangerous(self):
+        """服务**当前实际生效**的危险工具开关。
+
+        设置页要显示的是"服务真实在用什么"，不是"复选框现在勾成什么样"：
+        两者在热更新落地前会不一致（这正是"勾了但测试连接仍显示 false"的成因）。
+        运行时以 handler 的实时值为准。
+        """
+        handler = self._handler
+        if handler is not None:
+            return bool(getattr(handler, "_allow_dangerous", self._allow_dangerous))
+        return bool(self._allow_dangerous)
+
     def status_text(self):
         if self.is_running():
             return "运行中 · 127.0.0.1:%d" % self._port

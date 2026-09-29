@@ -379,6 +379,19 @@ _UNSAFE_MODULES = {
     "signal", "multiprocessing", "threading", "concurrent", "asyncio",
     "ctypes", "gc", "inspect", "types", "typing_extensions",
 }
+# ⚠️ 宿主运行时窄口（v2.4.13）—— **只给 QGIS/PyQt 内部**放行，不是给用户代码的。
+# 有些 C++ 层在**调用期**才惰性 import 个别模块，而且这个 import 命中的是
+# 【当前帧的 __builtins__】—— 也就是本沙箱这份受限字典。最典型的是
+# QgsProject.mapLayersByName()：PyQt/sip 在进程内**首次**调用它时做一次 `import gc`，
+# 被上面的 _UNSAFE_MODULES 拒掉后，异常在 C 层被吞成
+# 「<built-in method mapLayersByName ...> returned a result with an exception set」，
+# 完全指不到根因；而且 cold 必失败 / warm 必成功，极难自查（Qt5/Qt6 均实测复现）。
+#
+# 这里**故意不动 _SAFE_MODULES**：用户代码写 `import gc` 仍会被 _scan_code_safety
+# 的 Import 分支拒掉，`__builtins__['__import__']('gc')` 也被 dunder 名字检查堵死。
+# 这两者缺一不可 —— gc.get_objects() 能直接枚举出 os 模块对象，**不需要任何 dunder
+# 就能逃逸**，所以 gc 绝不能进用户可导入的白名单。
+_HOST_RUNTIME_MODULES = frozenset({"gc"})
 # 允许导入的常用安全模块
 _SAFE_MODULES = {
     "math", "json", "datetime", "re", "collections", "itertools", "functools",
@@ -461,7 +474,10 @@ def _make_safe_import():
         if level and level > 0:
             raise ImportError("禁止相对导入，请使用绝对模块路径")
         root = (name or "").split(".")[0]
-        if not _is_module_allowed(root):
+        # _HOST_RUNTIME_MODULES 是给宿主（QGIS/PyQt 的 C++ 层）在**调用期**惰性
+        # 导入用的窄口 —— 例如 mapLayersByName 首次调用时 PyQt 会 import gc。
+        # 用户代码**写不出**这些 import：AST 层照拒（见 _scan_code_safety）。
+        if not _is_module_allowed(root) and root not in _HOST_RUNTIME_MODULES:
             raise ImportError(
                 f"禁止导入模块 '{name}'，该模块可触达系统/进程/网络")
         return real_import(name, globals, locals, fromlist, level)
@@ -524,6 +540,16 @@ def _scan_code_safety(code: str):
             # __class__ / __globals__ / __subclasses__ 等可绕过运行限制
             if node.attr.startswith("__"):
                 return f"禁止访问双下划线属性 '{node.attr}'，该用法可绕过运行限制"
+        elif isinstance(node, ast.Name):
+            # ⚠️ v2.4.13 补的洞：**名字**也要查 dunder。
+            # 之前只查 Call(func=...) 与 Attribute，于是
+            # ``__builtins__['__import__']('gc')`` 能整条绕过扫描 ——
+            # 下标取值不是 Call(func=Attribute)，_called_name 拿到空串，
+            # 所以 '__import__' 没被 _UNSAFE_NAME_CALLS 命中，
+            # 而 '__builtins__' 这个名字当时没有任何一道检查在看。
+            # 宿主的运行时窄口一旦开在这样的缺口旁边，等于把 gc 从「堵死」变成「可绕」。
+            if node.id.startswith("__"):
+                return f"禁止访问双下划线名字 '{node.id}'，该用法可绕过运行限制"
     return None
 
 
@@ -1185,6 +1211,352 @@ def export_table_to_csv(rows=None, layer=None, output_path=None, columns=None,
         result["truncated"] = True
         result["hint"] = "已达本次导出行数上限 %d，可能仍有剩余数据未写入。" % capped
     return result
+
+
+# ──────────────────────────────────────────────
+# 面积统计（按正确投影 / 中央经线）
+# ──────────────────────────────────────────────
+
+# CGCS2000 3 度带官方 EPSG 基准：4542 = 中央经线 99°E，每 3 度 +1
+# （99→4542、102→4543、105→4544、114→4547…；实测 4542 的描述确为
+#  "CGCS2000 / 3-degree Gauss-Kruger CM 99E"）
+_ZONE_EPSG_BASE_CM = 99
+_ZONE_EPSG_BASE = 4542
+# 单级汇总最多回吐多少组（只影响回给模型的 JSON；CSV 落盘不受此限）
+_MAX_AREA_GROUPS = 200
+
+
+def _zone_crs_for_central_meridian(cm):
+    """按中央经线取 CGCS2000 3 度带 CRS，返回 (crs, error)。
+
+    ⚠️ **绝对不要**用 ``QgsCoordinateReferenceSystem("+proj=...")`` 直接构造：
+    那样拿到的是**无效 CRS**（``isValid()`` 为 False）却**不抛任何异常**，
+    ``QgsGeometry.transform()`` 会静默跳过 → 面积仍是平方度 → 除以 1e6 后
+    四舍五入成 ``0.0``。全程零报错，是最难自查的一类坑（v2.4.13 实测踩到）。
+    必须走 ``fromEpsgId`` / ``fromProj``，并且**显式校验 isValid()**。
+    """
+    epsg = None
+    try:
+        epsg = _ZONE_EPSG_BASE + int(round((cm - _ZONE_EPSG_BASE_CM) / 3.0))
+        crs = QgsCoordinateReferenceSystem.fromEpsgId(epsg)
+        if not crs.isValid():
+            crs = QgsCoordinateReferenceSystem.fromProj(
+                "+proj=tmerc +lat_0=0 +lon_0=%d +k=1 +x_0=500000 +y_0=0 "
+                "+ellps=GRS80 +units=m +no_defs" % cm)
+    except Exception as e:  # noqa: BLE001
+        return None, "构造中央经线 %d°E 的投影坐标系失败: %s" % (cm, e)
+    if not crs.isValid():
+        return None, ("无法为中央经线 %d°E 构造有效的投影坐标系"
+                      "（EPSG:%s 与 proj 串均无效）；已中止，避免算出 0 面积。"
+                      % (cm, epsg))
+    return crs, None
+
+
+def _as_field_list(value):
+    """把 group_by / carry_fields 规整成非空字段名列表。"""
+    if value is None:
+        return []
+    if isinstance(value, str):
+        items = [value]
+    elif isinstance(value, (list, tuple)):
+        items = list(value)
+    else:
+        items = [value]
+    return [str(v).strip() for v in items if str(v).strip()]
+
+
+def _write_area_csvs(output_dir, layer, group_fields, carry, stores,
+                     want_zone, want_ell, totals):
+    """把面积统计写成 CSV（UTF-8 带 BOM）。返回文件清单（含出错项）。"""
+    root = os.path.abspath(os.path.expanduser(str(output_dir or _desktop_dir())))
+    normalized = root.replace("\\", "/").lower()
+    for bad in _UNSAFE_OUTPUT_DIRS:
+        if normalized == bad or normalized.startswith(bad + "/"):
+            return [{"error": "拒绝写入系统目录 %s：请换到桌面或工程目录。"
+                              % _sanitize_untrusted(bad, 60)}]
+    try:
+        os.makedirs(root, exist_ok=True)
+    except OSError as e:
+        return [{"error": "无法创建输出目录 %s: %s"
+                          % (_sanitize_untrusted(root, 300), e)}]
+
+    stem = _UNSAFE_FILENAME_RE.sub("_", str(layer.name()) or "layer")
+    written = []
+
+    def _dump(fname, header, rows):
+        path = os.path.join(root, fname)
+        try:
+            import csv
+            with open(path, "w", encoding="utf-8-sig", newline="") as fh:
+                writer = csv.writer(fh)
+                writer.writerow(header)
+                writer.writerows(rows)
+            written.append({"path": path, "rows": len(rows),
+                            "bytes": os.path.getsize(path)})
+        except Exception as e:  # noqa: BLE001
+            written.append({"path": path, "error": str(e)})
+
+    def _area_of(rec):
+        return rec["area"] if want_zone else rec["ell"]
+
+    for field in group_fields:
+        header = list(carry) + [field]
+        if want_zone:
+            header.append("面积_km2")
+        if want_ell:
+            header.append("椭球面积_km2")
+        header.append("要素数")
+        rows = []
+        for key, rec in sorted(stores[field].items(), key=lambda kv: -_area_of(kv[1])):
+            row = [rec["carry"].get(c, "") for c in carry] + [key]
+            if want_zone:
+                row.append(round(rec["area"] / 1e6, 4))
+            if want_ell:
+                row.append(round(rec["ell"] / 1e6, 4))
+            row.append(rec["n"])
+            rows.append(row)
+        _dump("%s_面积_%s.csv" % (stem, field), header, rows)
+
+    header = ["图层", "坐标系", "要素数"]
+    row = [str(layer.name()), totals.get("crs", ""), totals.get("features_used", 0)]
+    if want_zone:
+        header.append("总面积_km2")
+        row.append(totals.get("zone"))
+    if want_ell:
+        header.append("椭球总面积_km2")
+        row.append(totals.get("ell"))
+    _dump("%s_面积_汇总.csv" % stem, header, [row])
+    return written
+
+
+def compute_area_stats(layer_id_or_name=None, group_by=None, carry_fields=None,
+                       output_dir=None, method="both", limit=0):
+    """【面积统计】按正确的投影 / 中央经线统计矢量**面**图层的面积，可按字段分级汇总。
+
+    这是「统计某图层的面积」「按区县 / 乡镇 / 村分级汇总面积」这类需求的**唯一正确
+    入口**——不要再用 execute_pyqgis 手写 PyQGIS。手写极易踩两个坑：① 直接拿地理
+    坐标系（如 EPSG:4490）算面积，得到的是**平方度**，毫无意义；② 用
+    ``QgsCoordinateReferenceSystem("+proj=...")`` 构造投影坐标系，拿到的是
+    **无效 CRS 且不报错**，``transform()`` 静默跳过 → 面积全是 0。
+
+    两种口径同时给出，便于互相校验：
+
+    - ``zone``：逐要素按**质心经度**取 3 度带（中央经线 ``CM = 3*round(lon/3)``，
+      CGCS2000，走官方 EPSG 4542/4543/4544…），把几何变换到该带后取**投影平面**面积。
+      这就是「按分度带投影与中央经线算面积」的标准做法。
+    - ``ellipsoid``：``QgsDistanceArea`` + GRS80 椭球算**大地测量面积**，与投影无关，
+      可作基准。两者差异通常 <0.03%（投影在中央经线之外的尺度畸变）。
+
+    参数：
+    - layer_id_or_name：图层名或 ID（名称匹配忽略大小写，见 _find_layer）
+    - group_by：可选，字段名 或 字段名列表。传了就对每个字段各出一张分级汇总表
+      （例如 ["COU_NAME", "CITY_NAME"] 同时出区县 / 地市州两级）
+    - carry_fields：可选，附加到每行的字段（取该组第一条要素的值），便于带上编码
+    - output_dir：可选，给了就把每级汇总写成 CSV（UTF-8 带 BOM，Excel 双击不乱码）
+    - method：zone / ellipsoid / both（默认 both）
+    - limit：每级最多回吐多少组（0 = 默认上限），CSV 不受此限
+    """
+    try:
+        target = _find_layer(layer_id_or_name)
+        if target is None:
+            return _layer_not_found_error(layer_id_or_name)
+        if target.type() != QgsMapLayer.LayerType.VectorLayer:
+            return {"error": "图层 %s 不是矢量图层，无法统计面积。"
+                             % _sanitize_untrusted(target.name(), 120)}
+
+        geom_name = _geometry_type_name(target)
+        if geom_name != "Polygon":
+            return {
+                "error": "图层 %s 不是面图层（当前几何类型：%s），无法统计面积。"
+                         % (_sanitize_untrusted(target.name(), 120), geom_name),
+                "hint": "本工具只处理 Polygon / MultiPolygon。其它几何类型请改用 "
+                        "get_layer_profile 的字段统计，或用 execute_pyqgis 手写。",
+            }
+
+        mode = str(method or "both").strip().lower()
+        if mode not in ("zone", "ellipsoid", "both"):
+            return {"error": "method 只能是 zone / ellipsoid / both（收到: %s）。"
+                             % _sanitize_untrusted(mode, 20),
+                    "hint": "默认 both，会同时给出 3 度带投影面积与椭球面积，便于校验。"}
+        want_zone = mode in ("zone", "both")
+        want_ell = mode in ("ellipsoid", "both")
+
+        field_names = [_sanitize_untrusted(f.name(), 120) for f in target.fields()]
+
+        def _resolve(requested, what):
+            real = _find_field_name(target, requested)
+            if real is None:
+                return None, {
+                    "error": "未找到%s '%s'。" % (what, _sanitize_untrusted(requested, 120)),
+                    "available_fields": field_names,
+                    "hint": "字段名区分大小写，本工具已按忽略大小写查找仍未匹配。",
+                }
+            return real, None
+
+        group_fields = []
+        for raw in _as_field_list(group_by):
+            real, err = _resolve(raw, "字段")
+            if err:
+                return err
+            if real not in group_fields:
+                group_fields.append(real)
+
+        carry = []
+        for raw in _as_field_list(carry_fields):
+            real, err = _resolve(raw, "附加字段")
+            if err:
+                return err
+            if real not in carry and real not in group_fields:
+                carry.append(real)
+
+        from qgis.core import (QgsDistanceArea, QgsCoordinateTransform,
+                               QgsGeometry as _QGeom)
+
+        project = QgsProject.instance()
+        tc = project.transformContext()
+        src_crs = target.crs()
+
+        dist = None
+        if want_ell:
+            dist = QgsDistanceArea()
+            dist.setSourceCrs(src_crs, tc)
+            try:
+                dist.setEllipsoid("GRS80")
+            except Exception:  # noqa: BLE001
+                dist.setEllipsoid("WGS84")
+
+        cache = {}
+        zone_counts = {}
+        zone_crs_used = {}
+        stores = {}
+        for f in group_fields:
+            stores[f] = {}
+        total_zone = 0.0
+        total_ell = 0.0
+        used = 0
+        skipped = 0
+
+        for feat in target.getFeatures():
+            geom = feat.geometry()
+            if geom is None or geom.isEmpty():
+                skipped += 1
+                continue
+            a_zone = 0.0
+            a_ell = 0.0
+            if want_zone:
+                cm = int(round(float(geom.centroid().asPoint().x()) / 3.0)) * 3
+                ent = cache.get(cm)
+                if ent is None:
+                    crs, err = _zone_crs_for_central_meridian(cm)
+                    if err:
+                        return {"error": err, "central_meridian": cm}
+                    ent = (QgsCoordinateTransform(src_crs, crs, tc), crs)
+                    cache[cm] = ent
+                tr, crs = ent
+                zk = "CM%dE" % cm
+                zone_counts[zk] = zone_counts.get(zk, 0) + 1
+                zone_crs_used[zk] = crs.authid() or crs.description()
+                moved = _QGeom(geom)
+                moved.transform(tr)
+                a_zone = moved.area()
+                total_zone += a_zone
+            if want_ell:
+                a_ell = dist.measureArea(geom)
+                total_ell += a_ell
+            used += 1
+
+            for f in group_fields:
+                try:
+                    value = feat[f]
+                except Exception:  # noqa: BLE001
+                    value = None
+                key = "" if value is None else str(value)
+                rec = stores[f].get(key)
+                if rec is None:
+                    rec = {"area": 0.0, "ell": 0.0, "n": 0, "carry": {}}
+                    for cf in carry:
+                        try:
+                            rec["carry"][cf] = _csv_cell(feat[cf])
+                        except Exception:  # noqa: BLE001
+                            rec["carry"][cf] = ""
+                    stores[f][key] = rec
+                rec["area"] += a_zone
+                rec["ell"] += a_ell
+                rec["n"] += 1
+
+        cap = _MAX_AREA_GROUPS
+        try:
+            if limit:
+                cap = max(1, min(_MAX_AREA_GROUPS, int(limit)))
+        except (TypeError, ValueError):
+            cap = _MAX_AREA_GROUPS
+
+        result = {
+            "layer": _sanitize_untrusted(target.name(), 120),
+            "layer_id": target.id(),
+            "crs": src_crs.authid() or src_crs.description(),
+            "geometry_type": geom_name,
+            "features_used": used,
+            "features_skipped": skipped,
+            "unit": "km²",
+            "method": {
+                "zone": "3 度带高斯-克吕格投影，逐要素质心经度取带"
+                        "（中央经线 CM = 3*round(lon/3)）",
+                "ellipsoid": "椭球大地测量（QgsDistanceArea + GRS80），与投影无关",
+                "both": "同时给出 3 度带投影面积与椭球面积，两者可互相校验",
+            }[mode],
+        }
+        if want_zone:
+            result["zone_feature_counts"] = zone_counts
+            result["zone_crs_used"] = zone_crs_used
+            result["total_km2_zone"] = round(total_zone / 1e6, 4)
+        if want_ell:
+            result["total_km2_ellipsoid"] = round(total_ell / 1e6, 4)
+        if want_zone and want_ell and total_ell:
+            result["difference_pct"] = round(
+                (total_zone - total_ell) / total_ell * 100.0, 6)
+            result["difference_km2"] = round((total_zone - total_ell) / 1e6, 4)
+
+        if group_fields:
+            groups = []
+            for f in group_fields:
+                rows = []
+                for key, rec in sorted(stores[f].items(),
+                                       key=lambda kv: -(kv[1]["area"] if want_zone
+                                                        else kv[1]["ell"])):
+                    item = {f: _sanitize_untrusted(key, 200)}
+                    for cf in carry:
+                        item[cf] = rec["carry"].get(cf, "")
+                    if want_zone:
+                        item["area_km2"] = round(rec["area"] / 1e6, 4)
+                    if want_ell:
+                        item["area_km2_ellipsoid"] = round(rec["ell"] / 1e6, 4)
+                    item["feature_count"] = rec["n"]
+                    rows.append(item)
+                entry = {"field": f, "group_count": len(rows), "items": rows[:cap]}
+                if len(rows) > cap:
+                    entry["truncated"] = True
+                    entry["hint"] = ("仅返回前 %d 组（已按面积降序）；完整结果请传 "
+                                     "output_dir 落 CSV。" % cap)
+                groups.append(entry)
+            result["groups"] = groups
+        elif not output_dir:
+            result["hint"] = ("未按字段分组。若要按区县 / 乡镇等分级汇总，请传 "
+                              "group_by=[\"字段名\", ...]；要落 CSV 请传 output_dir。")
+
+        if used == 0:
+            result["hint"] = "图层里没有任何有效面要素，未产生统计数据。"
+
+        if output_dir:
+            result["csv_files"] = _write_area_csvs(
+                output_dir, target, group_fields, carry, stores,
+                want_zone, want_ell,
+                {"crs": result["crs"], "features_used": used,
+                 "zone": round(total_zone / 1e6, 4), "ell": round(total_ell / 1e6, 4)})
+        return result
+    except Exception as e:  # noqa: BLE001
+        logger.debug("compute_area_stats 失败: %s", e, exc_info=True)
+        return {"error": "统计面积失败: %s" % e}
 
 
 # ──────────────────────────────────────────────
@@ -3218,6 +3590,28 @@ TOOL_DEFINITIONS = [
         },
     },
     {
+        "name": "compute_area_stats",
+        "description": "【面积统计】按正确的投影 / 中央经线统计矢量**面**图层的面积，并可按字段分级汇总。这是「统计某图层的面积」「按社区 / 街道乡镇 / 区县 / 地市州汇总面积」「算面积」这类需求的唯一正确入口——**不要**用 execute_pyqgis 手写 PyQGIS：手写要么直接拿地理坐标系把面积算成平方度，要么用 QgsCoordinateReferenceSystem(\"+proj=...\") 造出无效 CRS 却不报错，最后得到一张全是 0 的表。两种口径同时给出便于互校：① zone=逐要素按**质心经度**取 3 度带（中央经线 CM=3*round(lon/3)，CGCS2000，官方 EPSG 4542/4543/4544…）的投影平面面积；② ellipsoid=QgsDistanceArea + GRS80 椭球的**大地测量**面积（与投影无关，可作基准）。group_by 传字段名或字段名列表即可逐级汇总；output_dir 传目录则把每级汇总写成 UTF-8 带 BOM 的 CSV。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "layer_id_or_name": {"type": "string", "description": "要统计的矢量面图层名称或 ID（名称忽略大小写）"},
+                "group_by": {
+                    "type": "array",
+                    "description": "按哪些字段分级汇总（字段名，忽略大小写）。例如 [\"NAME\",\"STR_NAME\",\"COU_NAME\",\"CITY_NAME\"] 一次出社区 / 街道乡镇 / 区县 / 地市州四级；留空则只回整体统计",
+                },
+                "carry_fields": {
+                    "type": "array",
+                    "description": "附加到每行的字段（取该组第一条要素的值），便于带上编码 / 上级名，如 [\"CODE\"]",
+                },
+                "output_dir": {"type": "string", "description": "落 CSV 的目录（如桌面路径）。留空则不落盘"},
+                "method": {"type": "string", "description": "zone（3 度带投影）/ ellipsoid（椭球）/ both（默认，两者都给）"},
+                "limit": {"type": "integer", "description": "每级最多回吐多少组，默认 0（用内置上限）；CSV 落盘不受此限"},
+            },
+            "required": ["layer_id_or_name"],
+        },
+    },
+    {
         "name": "render_map",
         "description": "将当前地图画布渲染为PNG图片文件",
         "parameters": {
@@ -3341,6 +3735,7 @@ TOOL_MAP = {
     "load_project": load_project,
     "render_map": render_map,
     "export_table_to_csv": export_table_to_csv,
+    "compute_area_stats": compute_area_stats,
     "export_features_maps": export_features_maps,
     "get_algorithm_parameters": get_algorithm_parameters,
     "get_layer_profile": get_layer_profile,

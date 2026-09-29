@@ -3,14 +3,14 @@ name=QGIS Agent
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
 description=LLM-powered intelligent assistant for QGIS. Natural language control of QGIS tools, plus an optional local MCP server so external AI agents (Claude Desktop, Cursor, etc.) can drive QGIS.
-version=2.4.12
+version=2.4.13
 author=bunkmr
 email=bunkr@qq.com
 about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It allows you to control QGIS through natural language conversations, including: viewing project info, adding/removing layers, executing Processing algorithms, running PyQGIS code, setting layer labels, rendering maps, and more.
 
     Features:
     - Natural language interface for QGIS operations
-    - 20 built-in QGIS tools driven by natural language (PyQGIS / Processing)
+    - 23 built-in QGIS tools driven by natural language (PyQGIS / Processing)
     - Bundled reference catalog: 679 Processing algorithm/tool entries, one TOML per algorithm (tool_docs/)
     - RAG-enhanced API documentation retrieval
     - Cookbook self-evolution mechanism
@@ -49,6 +49,14 @@ deprecated=False
 hasProcessingProvider=no
 server=no
 changelog=
+    v2.4.13 更新内容：
+    【重要修复】MCP「允许外部 Agent 调用特权工具」开关勾了不生效。用户勾选后，在「测试连接」里看到的仍是「暴露危险工具：false」。真因是这个复选框从未连接任何处理函数，开关值只在服务启动那一刻被读一次；而为此早就写好、专门支持热更新的接口，此前只在「重新生成令牌」那一处被调用过，等于放在那里没人用。现在勾选或取消**立即生效**（服务运行中会当场刷新工具清单与权限），不必再靠「停止服务 → 启动服务」；令牌编辑同样即时生效；状态标签改为显示服务**实际生效**的值，不再显示复选框的样子（后者会把「下发失败」伪装成「保存失败」，把排查引向错误方向）。端口是唯一例外：监听端口无法热切换，改动会被保存，并在状态栏明确提示需要停启服务才生效。同时补上空令牌防呆——令牌留空会让服务端拒绝一切请求，现在会被拦下并恢复上一个有效值。
+    【新功能】新增面积统计工具（compute_area_stats）：按**正确的分度带投影与中央经线**统计矢量**面**图层面积，并可按字段分级汇总。这是「统计某图层面积」「按社区 / 街道乡镇 / 区县 / 地市州分级汇总面积」这类需求的唯一正确入口——不要再用 execute_pyqgis 手写。逐要素按**质心经度**取 CGCS2000 三度带（中央经线 = 3 倍四舍五入(lon/3)，走官方 EPSG 4542 / 4543 / 4544…），把几何变换到该带后取**投影平面**面积；同时给出 QgsDistanceArea + GRS80 **椭球**面积作基准，两者差异正常小于万分之三，可互相校验。支持多级字段汇总、附加编码等字段、每级按面积降序、并可直接落 CSV（UTF-8 带 BOM，Excel 双击不乱码）。实测某省 COM_S 图层：投影 383293.5529 平方公里，椭球 383218.9322 平方公里，偏差千分之零点二，与插件内统计完全一致。
+    【重要修复】算出「0 面积」却全程不报错的隐性坑。用 QgsCoordinateReferenceSystem 加 proj 字符串直接构造，得到的是**无效坐标系**（有效性校验为假），而它**不抛任何异常**；随后几何变换被**静默跳过**，面积仍是「平方度」，除以一百万再四舍五入恰好得到 0.0。整条链路零报错，工具还会兴高采烈地回一个 0。新工具已改为走官方 EPSG 并**显式校验坐标系有效性**，取不到就中止并说明原因，绝不放行去算 0。
+    【重要修复】修掉一个**只在冷启动时发作**、极难自查的受限环境缺陷（对应 GitHub issue #1）。助手在 execute_pyqgis 里调用 mapLayersByName 时，进程内**首次**调用必然失败，只报一句完全指不到根因的话；同一段代码**再跑一次（warm）就成功**。真因是 PyQt 在首次调用该方法时做了一次惰性导入，而这次导入命中的正是受限执行环境自己的内建白名单，被安全模块清单拒掉后，异常在底层被吞成上面那句话。现在为宿主运行时开了一个**仅限内部使用**的窄口（只含该模块），并在校验层补上「双下划线名字」检查，堵死一条此前能整条绕过扫描的写法（用内建字典下标取用导入函数）。**两层缺一不可**：单独放宽任何一层都等于给用户代码开门。
+    【改进】助手的能力清单与重要规则补充面积统计工具（手写必踩「平方度」与「无效坐标系静默得 0」两个坑），并说明受限环境为什么写不了文件；拒因提示直接点名该用哪个工具。
+    【测试】新增 86 例回归守卫：面积统计 35 例（分带规则与官方 EPSG 映射、无效坐标系必须中止、双口径互校、分级汇总排序、CSV 落盘与 BOM、错误体与注册）、受限环境窄口与双下划线加固 16 例、MCP 设置热更新 35 例。全部含**反向验证**：把每处修复逐个关掉，守卫都如实变红。其中一条专门用「伪造一份把窄口写进共用判据的源码」来校验守卫自身的灵敏度，避免出现「守卫抓不到 bug」的假绿。单测 524 例增至 610 例全绿；真机 Qt5 与 Qt6 双版本各 36 项热更新验收全通过（勾选后不重启服务即刻生效、令牌热切换、空令牌防呆、端口不可热切换的反向确认）。
+
     v2.4.12 更新内容：
     【重要修复】「把统计结果导出成 CSV」这类需求原来必然失败。助手会去写 import csv / open(...) 的 PyQGIS 代码，而受限执行环境按安全设计禁用了这两者（这是对的，不能放松），于是连续十来次被拒，最后只能建议用户自己去图形界面手动导出。现在新增专用工具 export_table_to_csv：既可以把上一步的统计结果（行数据）直接落成 CSV，也可以直接把某个图层的属性表导出成 CSV；输出为 UTF-8 带 BOM，Windows 上双击用 Excel 打开中文不乱码；对以 = + - @ 开头的文本单元格自动加前导单引号，防止表格公式注入；默认保存到桌面，也接受自定义路径（系统目录会被拒绝）；目标文件已存在时会先确认再覆盖，绝不静默覆盖；默认最多导出 100 万行，超出会截断并在返回结果里标注。同时把受限环境的拒绝提示改为直接点名该工具，避免助手再往死路上撞。
     【重要修复】图层名大小写不匹配会导致「找不到图层」。用户工程里的图层叫 COM_S，助手传 com_s 去查，原先 7 个涉及图层的工具各自做精确匹配，全部失败；而且错误信息既不提大小写、也不告诉你工程里到底有哪些图层，助手只能反复试同一个错名字，连续失败 4 次后放弃。现在所有图层查找统一到一个入口：先按 ID、再按图层名，最后按去掉首尾空白并忽略大小写的名字匹配，还支持自动去掉 .shp / .gpkg 这类扩展名后缀。找不到时的返回体里必定带上当前工程的全部图层名（available_layers），并在可能时给出「是否想用」的候选（did_you_mean）和一句指引，助手据此一次就能改对。字段名查找同样改为忽略大小写，并会返回真实字段名。

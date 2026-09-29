@@ -1,5 +1,81 @@
 # 更新日志
 
+## [2.4.13] - 2026-09-29
+
+### 修复 / 新增（MCP 设置热更新 + 面积统计工具 + 沙箱冷启动缺陷）
+
+本轮由两件事驱动：① 用户按 MCP 配置要求插件**统计 COM_S 各社区 / 街道乡镇 /
+区县 / 地市州的面积**（必须用正确的分度带投影与中央经线），跑通之后再做优化；
+② 用户报障「**我已经勾了，但是在测试连接里面显示的暴露危险工具还是 false**」。
+
+#### 1. MCP 危险工具开关勾了不生效
+
+- `cbMcpDangerous` **没有任何 `toggled` 连接**，`allow_dangerous` 只在
+  `bridge.start()` 那一刻被读一次。
+- 而 `MCPBridge.apply_settings(token, allow_dangerous)` 这个**专为热更新写好**的
+  接口，全仓库只在 `_on_mcp_regenerate_token()`（重新生成令牌）里被调用过 ——
+  等于放在那儿没人用。
+- 净效果：勾选后一切照旧，用户唯一的出路是手动「停止服务 → 启动服务」。
+- 现在：
+  - `cbMcpDangerous.toggled` → `_on_mcp_dangerous_toggled()`：
+    落盘 + `_apply_mcp_live(allow_dangerous=...)` + 刷新状态标签；
+  - `leMcpToken.editingFinished` → `_on_mcp_token_edited()`：令牌改动同样即时生效；
+  - `cbMcpAutostart.toggled` / `spMcpPort.valueChanged` → 只落盘，语义就是
+    「下次启动时才用」；
+  - **端口是唯一例外**：监听端口无法热切换，改动会保存并在状态栏明确提示
+    「端口需「停止服务 → 启动服务」后生效」；
+  - **空令牌防呆**：令牌留空会让服务端拒绝一切请求（`check_token` 对空令牌返回
+    False），现在会被拦下、恢复上一个有效值并明确告知；
+  - 状态标签改为显示 **`bridge.allow_dangerous`（服务实际生效的值）**，
+    而不是复选框的样子 —— 后者会把「下发失败」伪装成「保存失败」。
+  - `MCPBridge.allow_dangerous` 新增为属性：运行时以 handler 的实时值为准。
+
+#### 2. 新增工具 `compute_area_stats`：「面积统计」终于有了正确入口
+
+用户要的是「按正确分度带投影和中央经线」算面积。原先没有专用工具，模型只能裸写
+PyQGIS，于是踩到本仓库最刁钻的一个坑。
+
+- **分带取带规则**：逐要素按**质心经度** `CM = 3 * round(lon / 3)`。
+- **CRS 走官方 EPSG**：CGCS2000 3 度带 `EPSG:4542 + (CM-99)/3`
+  （CM 99E→4542、102E→4543、105E→4544），取不到再退 `fromProj`。
+- **双口径互校**：`zone`（3 度带投影平面面积）与 `ellipsoid`
+  （`QgsDistanceArea` + GRS80 大地测量面积，与投影无关）同时给出，
+  差异正常 < 0.03%。
+- 支持 `group_by`（多字段 = 多级汇总）、`carry_fields`（带上编码等）、
+  每级按面积降序、`limit` 上限，`output_dir` 给定即落 CSV（UTF-8 带 BOM）。
+
+#### 3. 「算出来是 0 却不报错」的隐性坑
+
+```
+QgsCoordinateReferenceSystem("+proj=tmerc +lat_0=0 +lon_0=99 ...")
+  → isValid() == False（**不抛任何异常**）
+  → QgsGeometry.transform(tr) **静默跳过**
+  → 面积仍是「平方度」→ 除以 1e6 四舍五入 → 0.0
+```
+
+全程零报错。修法：一律 `fromEpsgId` / `fromProj`，并且**显式校验 `isValid()`**，
+两头都无效就中止并说明原因，绝不放行去算 0。
+（已升级为项目铁律 11：凡「API 返回 0/空但不报错」，先验 `isValid()`。）
+
+#### 4. 沙箱冷启动缺陷（GitHub issue #1 的真拦路虎）
+
+- 现象：`QgsProject.instance().mapLayersByName(...)` 在 `execute_pyqgis` 里
+  **进程内首次**调用必失败，只报
+  `<built-in method mapLayersByName ...> returned a result with an exception set`；
+  **同一脚本再跑一次就成功**（cold 必失败 / warm 必成功，Qt5 + Qt6 均复现）。
+- 真因：PyQt/sip 在首次调用该方法时做了一次惰性 `import gc`，而它命中的是
+  **当前帧的 `__builtins__`** —— 正是沙箱这份受限字典；`gc` 在 `_UNSAFE_MODULES`
+  里 → ImportError → 异常在 C 层被吞成上面那句话。
+- 修法（两层，缺一不可）：
+  1. 执行层新增 `_HOST_RUNTIME_MODULES = frozenset({"gc"})` **宿主窄口**，
+     **绝不允许渗进 `_is_module_allowed`**（共用判据）——
+     `gc.get_objects()` 能直接枚举出 `os` 模块对象、**不需要任何 dunder** 就能逃逸；
+  2. AST 层补上**裸名 dunder** 检查：`__builtins__['__import__']('gc')` 原先能
+     整条绕过扫描（下标取值不是 `Call(func=Attribute)`，`_called_name` 拿到空串，
+     `__builtins__` 这个名字当时没有任何一道检查在看）。
+
+---
+
 ## [2.4.12] - 2026-09-29
 
 ### 修复（「导出成 CSV」必失败 + 「图层名大小写」匹配不上）

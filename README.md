@@ -19,7 +19,7 @@ QGIS Agent 是 QGIS 的 AI 原生插件——用自然语言直接操控 QGIS，
 
 | 状态 | 含义 | 涉及功能 |
 |------|------|----------|
-| ✅ **可用** | 已接入主对话链路，当前版本真实可用 | 自然语言操控、**20 个**内置工具、RAG 检索、tool_docs（679 条）、Cookbook、SmartDebugger、Query Tuning、多模型、代码审查（确认弹窗）、技能系统（`run_skill`）、工作流录制回放、主动澄清、任务图 |
+| ✅ **可用** | 已接入主对话链路，当前版本真实可用 | 自然语言操控、**23 个**内置工具、RAG 检索、tool_docs（679 条）、Cookbook、SmartDebugger、Query Tuning、多模型、代码审查（确认弹窗）、技能系统（`run_skill`）、工作流录制回放、主动澄清、任务图 |
 | ⚠️ **安全注意** | 可用但非完整沙箱 | `execute_pyqgis`：AST 静态扫描 + 内建白名单 + 用户确认，但仍在 QGIS 进程内执行，请勿把不可信提示当绝对隔离 |
 
 > 状态判定依据：代码是否被主对话链路引用，而非模块是否存在。工具清单以 `qgis_tools.TOOL_MAP` / `TOOL_DEFINITIONS` 为唯一真源。
@@ -226,6 +226,9 @@ cp -r qgis_agent/ ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/
 | `execute_pyqgis` | 执行任意 PyQGIS 代码 | 🐍 高级操作 |
 | `search_pyqgis_api` | 检索 PyQGIS API 文档 | 📚 RAG |
 | `render_map` | 渲染地图截图 | 📸 输出 |
+| `export_features_maps` | 对图层每个要素逐个出图（可配指北针与比例尺） | 📸 输出 |
+| `export_table_to_csv` | 把统计结果或属性表导出成 CSV（UTF-8 带 BOM） | 📸 输出 |
+| `compute_area_stats` | 按分度带投影 / 中央经线统计面积，可分级汇总（双口径互校） | ⚙️ 空间分析 |
 | `save_project` | 保存 QGIS 项目 | 💾 项目 |
 | `load_project` | 加载 QGIS 项目 | 💾 项目 |
 | `save_memory` | 保存长期记忆 | 🧠 记忆 |
@@ -236,7 +239,7 @@ cp -r qgis_agent/ ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/
 | `reproject_layer` | 图层投影转换 | ⚙️ 空间分析 |
 | `run_skill` | 加载并运行内置/用户技能 | 🔌 技能 |
 
-> 共 **20** 个内置工具，与代码中 `qgis_tools.TOOL_DEFINITIONS` / `TOOL_MAP` 保持一致。
+> 共 **23** 个内置工具，与代码中 `qgis_tools.TOOL_DEFINITIONS` / `TOOL_MAP` 保持一致。
 
 ## 📚 RAG 文档覆盖
 
