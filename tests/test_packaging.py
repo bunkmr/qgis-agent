@@ -5,10 +5,13 @@
 这里改成"以 metadata.txt 为唯一真源"的一致性校验，版本号升级无需改测试。
 """
 
+import ast
 import builtins
+import glob
 import os
 import re
 import unittest
+import xml.etree.ElementTree as ET
 from unittest import mock
 
 try:  # 既支持以包方式导入（qgis_agent.tests.test_x）
@@ -360,6 +363,162 @@ class TestMetadataIsParserSafe(unittest.TestCase):
         self.assertEqual(len(versions), len(set(versions)), "changelog 有重复的版本标题")
         self.assertEqual(versions[0], read_metadata_version(),
                          "changelog 首段必须是当前版本")
+
+
+class TestI18nPackaging(unittest.TestCase):
+    """i18n 资源必须真正进包，且 .qm 必须是真的（防回归）。
+
+    历史坑（2026-09-24）：包里那个 .qm 是 **12 字节空文件**，从未生效，
+    但没有任何测试发现 —— `*.qm` 一直在白名单里，"文件在包里"这件事
+    看起来永远成立。所以这里断言的不只是"在不在"，而是**大小、magic、
+    条数、两语言成对**，以及"源串条数够多"。
+    """
+
+    I18N_DIR = os.path.join(PROJECT_ROOT, "i18n")
+    QM_MAGIC = b"\x3c\xb8\x64\x18"     # Qt 5.15+ 的 .qm 魔数
+    MIN_QM_BYTES = 1024                # 12 字节空文件的教训
+    MIN_ENTRIES = 150                  # 只导出到几条时立刻报错
+
+    @classmethod
+    def setUpClass(cls):
+        cls.bp = support.import_mod("build_plugin")
+        cls.i18n_init = os.path.join(cls.I18N_DIR, "__init__.py")
+        with open(cls.i18n_init, encoding="utf-8") as fh:
+            cls._init_tree = ast.parse(fh.read())
+        # 语言清单与 context 都从源码 AST 里取 —— 本模块刻意**不** import
+        # 插件主模块（那样要装一堆 Qt 替身），保持"纯文本校验"的定位。
+        cls.codes = cls._assign_value("_LANGUAGES")
+        cls.codes = [item.elts[0].value for item in cls.codes.elts]
+        cls.context = cls._assign_value("TRANSLATION_CONTEXT").value
+
+    @classmethod
+    def _assign_value(cls, name):
+        for node in cls._init_tree.body:
+            if isinstance(node, ast.Assign) and any(
+                    isinstance(t, ast.Name) and t.id == name for t in node.targets):
+                return node.value
+        raise AssertionError("i18n/__init__.py 里找不到 %s" % name)
+
+    def ts_path(self, code):
+        return os.path.join(self.I18N_DIR, "qgis_agent_%s.ts" % code)
+
+    def qm_path(self, code):
+        return os.path.join(self.I18N_DIR, "qgis_agent_%s.qm" % code)
+
+    # ── 打包白名单 ──
+    def test_i18n_files_are_packed(self):
+        for rel in ["i18n/__init__.py", "i18n/en.json"] + \
+                   ["i18n/qgis_agent_%s.%s" % (c, ext)
+                    for c in self.codes for ext in ("ts", "qm")]:
+            self.assertTrue(self.bp.should_include(rel),
+                            "i18n 资源必须进包，但被排除了：%s" % rel)
+
+    def test_build_tooling_is_not_packed(self):
+        for rel in ("build_translations.py", "build_plugin.py",
+                    "tests/test_i18n.py", "i18n/__pycache__/__init__.pyc"):
+            self.assertFalse(self.bp.should_include(rel),
+                             "开发期文件不该进发布包：%s" % rel)
+
+    # ── 成对与命名（QGIS 按 <插件名>_<locale>.qm 自动装载，名字错了就永远不生效）──
+    def test_languages_are_paired_and_correctly_named(self):
+        plugin_name = self.bp.PLUGIN_NAME
+        self.assertEqual(plugin_name, "qgis_agent")
+        for code in self.codes:
+            for path in (self.ts_path(code), self.qm_path(code)):
+                self.assertTrue(os.path.isfile(path), "缺少 %s" % path)
+            base = os.path.basename(self.qm_path(code))
+            self.assertEqual(base, "%s_%s.qm" % (plugin_name, code),
+                             "文件名不符合 QGIS 自动装载约定")
+
+    def test_no_orphan_translation_files(self):
+        """目录里不能有多余的 .ts/.qm（表里没有的语言 = 永远不会被装载）。"""
+        allowed = {"qgis_agent_%s.%s" % (c, e) for c in self.codes for e in ("ts", "qm")}
+        found = {os.path.basename(p)
+                 for p in glob.glob(os.path.join(self.I18N_DIR, "*.ts"))
+                 + glob.glob(os.path.join(self.I18N_DIR, "*.qm"))}
+        self.assertEqual(found, allowed, "存在孤儿翻译文件：%s" % sorted(found - allowed))
+
+    # ── .qm 必须是真的 ──
+    def test_qm_files_are_real_not_empty(self):
+        for code in self.codes:
+            with open(self.qm_path(code), "rb") as fh:
+                blob = fh.read()
+            self.assertGreater(len(blob), self.MIN_QM_BYTES,
+                               "%s.qm 只有 %d 字节 —— 疑似空壳（历史上就是 12 字节）"
+                               % (code, len(blob)))
+            self.assertEqual(blob[:4], self.QM_MAGIC,
+                             "%s.qm 魔数不对，Qt 会静默拒绝装载" % code)
+
+    def test_qm_files_are_distinct(self):
+        """两种语言的 .qm 不能是同一份拷贝。"""
+        blobs = {}
+        for code in self.codes:
+            with open(self.qm_path(code), "rb") as fh:
+                blobs[code] = fh.read()
+        self.assertGreaterEqual(len(set(blobs.values())), 2,
+                                "所有语言的 .qm 内容相同 —— 多半是复制错了")
+
+    # ── .ts 必须完整且不含未完成条目 ──
+    @staticmethod
+    def _local(tag):
+        """取标签的局部名 —— lupdate 产出的 .ts **不带 xmlns**（`<TS version="2.1">`），
+        但别人手工加过命名空间时也得能解析，所以一律按局部名匹配。"""
+        return tag.rsplit("}", 1)[-1]
+
+    def _entries(self, code):
+        root = ET.parse(self.ts_path(code)).getroot()
+        out = set()
+        for ctx in root.iter():
+            if self._local(ctx.tag) != "context":
+                continue
+            name = None
+            messages = []
+            for child in ctx:
+                local = self._local(child.tag)
+                if local == "name":
+                    name = child.text
+                elif local == "message":
+                    messages.append(child)
+            for msg in messages:
+                for child in msg:
+                    if self._local(child.tag) == "source":
+                        out.add((name, child.text))
+                        break
+        return out
+
+    def test_ts_files_are_wellformed_and_complete(self):
+        sizes = {}
+        for code in self.codes:
+            entries = self._entries(code)      # 解析失败会直接抛错
+            sizes[code] = len(entries)
+            self.assertGreater(len(entries), self.MIN_ENTRIES,
+                               "%s.ts 只导出到 %d 条，疑似提取链路断了"
+                               % (code, len(entries)))
+        self.assertEqual(len(set(sizes.values())), 1,
+                         "各语言 .ts 条数不一致：%s" % sizes)
+
+    def test_ts_key_sets_are_identical(self):
+        sets = {c: self._entries(c) for c in self.codes}
+        ref = sets[self.codes[0]]
+        for code, got in sets.items():
+            self.assertEqual(got, ref,
+                             "%s 与 %s 的条目集合不一致：仅前者 %s / 仅后者 %s"
+                             % (code, self.codes[0],
+                                sorted(got - ref)[:5], sorted(ref - got)[:5]))
+
+    def test_ts_has_no_unfinished_or_vanished(self):
+        """包里的 .ts 不得带 unfinished/vanished —— 等于把没翻的串发出去。"""
+        for code in self.codes:
+            with open(self.ts_path(code), encoding="utf-8") as fh:
+                body = fh.read()
+            self.assertNotIn('type="unfinished"', body, "%s.ts 有未翻译条目" % code)
+            self.assertNotIn('type="vanished"', body, "%s.ts 有过期条目" % code)
+
+    def test_ts_context_matches_runtime_context(self):
+        for code in self.codes:
+            self.assertEqual({n for n, _ in self._entries(code)}, {self.context},
+                             "%s.ts 的 context 与 TRANSLATION_CONTEXT 不一致 "
+                             "（translate() 会查不到）" % code)
 
 
 if __name__ == "__main__":

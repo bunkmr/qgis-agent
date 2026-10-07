@@ -25,7 +25,7 @@ PLUGIN_NAME = "qgis_agent"
 
 # 允许打包的文件扩展名（白名单）
 INCLUDE_PATTERNS = [
-    "*.py", "*.json", "*.png", "*.svg", "*.ui", "*.qrc", "*.qm",
+    "*.py", "*.json", "*.png", "*.svg", "*.ui", "*.qrc", "*.qm", "*.ts",
     "*.md", "*.txt", "*.toml", "*.html", "*.ico", "*.cfg", "*.ini",
 ]
 
@@ -54,9 +54,10 @@ EXCLUDE_PATTERNS = [
     "tests",  # 测试文件
     "scripts",  # 脚本文件
     "help",  # 帮助文档源（rst/Makefile）
-    # i18n 目录已移除（2026-09-24）：插件 UI 本就是中文原生，唯一一条菜单翻译
-    # 直接硬编码进 qgis_agent.py，不再维护 .ts/.qm/lrelease 链路（原 .qm 是
-    # 12 字节空文件，从未真正生效）。白名单里的 *.qm 保留无害，无需再改。
+    # i18n/ 目录**必须进包**（v2.4.14 起）：.qm 是主路径，.ts 是零依赖退路
+    # （.qm 缺失/损坏/与 Qt 版本不兼容时插件自动直读 .ts）。两个都带上最稳。
+    # 注意别把 i18n 加进下面的排除列表 —— 那是 2026-09-24 移除旧 i18n 时的遗留
+    # 说明，当时 .qm 是 12 字节空文件，从未真正生效；现在是完整链路。
     # ZIP / 旧版本文件
     "*.zip",
     "qgis_agent_v*",
@@ -65,6 +66,7 @@ EXCLUDE_PATTERNS = [
     "install_to_qgis.ps1",
     "install_v2.py",
     "build_plugin.py",
+    "build_translations.py",  # 翻译提取/编译工具（开发期用，与 import_tool_docs.py 同类）
     "test_official_docs.py",
     # 开发期文档（不随插件发布）
     "TEST_INSTRUCTIONS.md",

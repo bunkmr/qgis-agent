@@ -1,8 +1,12 @@
 from typing import Tuple
 
 from qgis.PyQt import QtWidgets
+from qgis.PyQt.QtCore import QCoreApplication
 
 from .dialog_new_conversation_ui import Ui_NewConversationDialog
+
+#: 界面文案翻译入口（写法与 base_ui 一致，pylupdate 只认这种字面量形式）。
+_translate = QCoreApplication.translate
 
 
 class NewConversationDialog(QtWidgets.QDialog, Ui_NewConversationDialog):
@@ -19,9 +23,11 @@ class NewConversationDialog(QtWidgets.QDialog, Ui_NewConversationDialog):
         # 显示当前模型信息
         if llm_id:
             name, endpoint, _ = self.dataloader.fetch_llm_info(llm_id)
-            self.lblModelInfo.setText(f"当前模型: {name}  ({endpoint})" if endpoint else f"当前模型: {name}")
+            self.lblModelInfo.setText(
+                _translate("QGISAgent", "当前模型: %s  (%s)") % (name, endpoint)
+                if endpoint else _translate("QGISAgent", "当前模型: %s") % name)
         else:
-            self.lblModelInfo.setText("当前模型: 未选择（请在底部模型选择器中选取）")
+            self.lblModelInfo.setText(_translate("QGISAgent", "当前模型: 未选择（请在底部模型选择器中选取）"))
 
         self.pbOkay.clicked.connect(self._handle_okay)
         self.pbCancel.clicked.connect(self.close)

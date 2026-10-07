@@ -35,6 +35,7 @@ class ProcessorHarness:
         self.tool_calls = []
         self._saved_modules = {}
         self._saved_attrs = {}
+        self._lang_restore = None
 
     def _stub(self, name, **attrs):
         self._saved_modules[name] = sys.modules.get(name)
@@ -81,10 +82,18 @@ class ProcessorHarness:
                    # 否则 `from .llm_providers import ...` 会直接 ImportError。
                    resolve_browser_tls=lambda requested=False: (bool(requested), ""))
 
+        # 钉住界面语言，否则用例结果取决于 i18n 的兜底语言（桩环境的
+        # QgsApplication.locale() 是 MagicMock，注定解析不出中/英）。
+        # 这些用例的文案断言是按中文写的历史基线，故钉 zh_CN；英文维度另有用例。
+        self._lang_restore = support.pin_language("zh_CN")
+
         sys.modules.pop(PROCESSOR_MODULE, None)
         return importlib.import_module(PROCESSOR_MODULE)
 
     def close(self):
+        if self._lang_restore is not None:
+            self._lang_restore()
+            self._lang_restore = None
         for (parent, child), value in self._saved_attrs.items():
             if value is _MISSING:
                 try:
@@ -257,8 +266,12 @@ class TestHistoryReconstruction(ProcessorTestCase):
         proc.agent_chat("当前问题")
 
         self.assertEqual(loader.select_interaction_calls, [self.CONVERSATION_ID])
+        # ⚠️ 比对 agent_system_prompt() 而不是裸常量 AGENT_SYSTEM_PROMPT：
+        #    后者还留着语言占位符，拿它比对等于**默许占位符被送进模型**。
+        self.assertNotIn(module._LANG_TOKEN, llm.contents_of(0)[0][1],
+                         "语言占位符不得泄进系统提示词")
         self.assertEqual(llm.contents_of(0), [
-            ("SystemMessage", module.AGENT_SYSTEM_PROMPT),
+            ("SystemMessage", module.agent_system_prompt()),
             ("HumanMessage", "第一个问题"),
             ("HumanMessage", "第二个问题"),
             ("AIMessage", "第二个回答"),
@@ -274,8 +287,10 @@ class TestHistoryReconstruction(ProcessorTestCase):
         _h, module, proc, _loader = self.new_processor(llm, dataloader=BrokenLoader())
         text, _wf = proc.agent_chat("问题")
         self.assertEqual(text, "仍然可以回答")
+        self.assertNotIn(module._LANG_TOKEN, llm.contents_of(0)[0][1],
+                         "语言占位符不得泄进系统提示词")
         self.assertEqual(llm.contents_of(0), [
-            ("SystemMessage", module.AGENT_SYSTEM_PROMPT),
+            ("SystemMessage", module.agent_system_prompt()),
             ("HumanMessage", "问题"),
         ])
 
@@ -505,6 +520,110 @@ class TestRagBranchDegrades(ProcessorTestCase):
         _h, _m, proc, _l = self.new_processor(llm)
         text, _wf = proc.agent_chat("问题")
         self.assertEqual(text, "完成")
+
+
+class TestAssistantReplyLanguage(ProcessorTestCase):
+    """助手侧文案 / 系统提示词随界面语言切换（#117）。
+
+    ⚠️ 这一组**必须**先 support.pin_language —— 语言是 processor 从 i18n 现取的，
+    不钉住就只能测到兜底语言，测不到"切换语言真的换文案"。
+    """
+
+    def _pin(self, code):
+        """钉住语言并在用例结束时还原（⚠️ 不要写成 pin_language(code)()，
+        那是"钉完立刻还原"，等于没钉）。"""
+        self.addCleanup(support.pin_language(code))
+
+    def test_system_prompt_has_no_placeholder_in_either_language(self):
+        llm = fakes.FakeToolCallingLLM(["直接回答"])
+        _h, module, proc, _l = self.new_processor(llm)
+        for code in ("zh_CN", "en"):
+            self._pin(code)
+            text = module.agent_system_prompt()
+            self.assertNotIn(module._LANG_TOKEN, text,
+                             "占位符泄进提示词了（%s）" % code)
+            self.assertGreater(len(text), 3000, "提示词被截断（%s）" % code)
+
+    def test_system_prompt_keeps_hard_constraints_in_english(self):
+        """英文下只换"回复语言"这一条，其余硬约束必须原样保留。"""
+        llm = fakes.FakeToolCallingLLM(["直接回答"])
+        _h, module, proc, _l = self.new_processor(llm)
+        self._pin("en")
+        text = module.agent_system_prompt()
+        self.assertIn("Always reply to the user in **English**", text)
+        self.assertNotIn("- 始终用中文回复用户", text)
+        # 挖掉规则行之后必须与中文版逐字相同 —— 证明"只换了一条"
+        zh = module.AGENT_SYSTEM_PROMPT.replace(
+            module._LANG_TOKEN, module._ASSISTANT_TEXT["zh_CN"]["reply_rule"])
+        self.assertEqual(text.replace(module._ASSISTANT_TEXT["en"]["reply_rule"], ""),
+                         zh.replace(module._ASSISTANT_TEXT["zh_CN"]["reply_rule"], ""))
+
+    def test_system_message_sent_to_llm_is_english_when_locale_is_en(self):
+        llm = fakes.FakeToolCallingLLM(["直接回答"])
+        _h, module, proc, _l = self.new_processor(llm)
+        self._pin("en")
+        proc.agent_chat("问题")
+        system_text = llm.contents_of(0)[0][1]
+        self.assertNotIn(module._LANG_TOKEN, system_text)
+        self.assertIn("Always reply to the user in **English**", system_text)
+
+    def test_cancelled_message_follows_language(self):
+        llm = fakes.FakeToolCallingLLM(["不会用到"])
+        _h, module, proc, _l = self.new_processor(llm)
+
+        proc._cancelled = True
+        self._pin("zh_CN")
+        zh_text, _wf = proc.agent_chat("问题")
+
+        proc._cancelled = True
+        self._pin("en")
+        en_text, _wf = proc.agent_chat("问题")
+
+        self.assertEqual(zh_text, module._ASSISTANT_TEXT["zh_CN"]["interrupted"])
+        self.assertEqual(en_text, module._ASSISTANT_TEXT["en"]["interrupted"])
+        self.assertNotEqual(zh_text, en_text, "中断文案没有随语言切换")
+
+    def test_forced_summary_prompt_follows_language(self):
+        """轮次耗尽时的强制总结要求必须随语言切换，且四条硬要求不缩水。"""
+
+        def run(lang):
+            llm = fakes.FakeToolCallingLLM([
+                fakes.FakeHttpResponse.with_tool("get_qgis_info", {}),
+                fakes.FakeHttpResponse.with_tool("get_qgis_info", {}),
+                fakes.FakeHttpResponse.with_tool("get_qgis_info", {}),
+                "总结完毕",
+            ])
+            _h, _module, proc, _l = self.new_processor(llm, {"get_qgis_info": {}})
+            proc.max_tool_rounds = 3
+            self._pin(lang)
+            proc.agent_chat("一直查")
+            last_human = [m for m in llm.calls[-1]
+                          if type(m).__name__ == "HumanMessage"][-1]
+            return last_human.content
+
+        zh = run("zh_CN")
+        en = run("en")
+        self.assertNotEqual(zh, en, "强制总结要求没有随语言切换")
+        self.assertIn("轮次已达上限", zh)
+        self.assertIn("round limit has been reached", en)
+        for prompt in (zh, en):
+            for idx in ("1)", "2)", "3)", "4)"):
+                self.assertIn(idx, prompt, "四条硬要求缺了 %s" % idx)
+            self.assertIn("✅", prompt, "缺失「禁止把尝试写成完成」的约束")
+
+    def test_missing_key_raises_keyerror(self):
+        llm = fakes.FakeToolCallingLLM(["直接回答"])
+        _h, module, proc, _l = self.new_processor(llm)
+        with self.assertRaises(KeyError):
+            module._assistant_text("__no_such_key__")
+
+    def test_unknown_locale_falls_back_to_chinese(self):
+        """locale 取不到 / 不认识时回退中文，绝不能返回 None 让提示词变空。"""
+        llm = fakes.FakeToolCallingLLM(["直接回答"])
+        _h, module, proc, _l = self.new_processor(llm)
+        self._pin("de_DE")
+        self.assertEqual(module._assistant_text("interrupted"),
+                         module._ASSISTANT_TEXT["zh_CN"]["interrupted"])
 
 
 if __name__ == "__main__":

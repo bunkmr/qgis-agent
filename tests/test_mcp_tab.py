@@ -31,6 +31,30 @@ PLUGIN = os.path.join(ROOT, "qgis_agent.py")
 
 EXPECTED_TABS = ["对话", "历史", "模型", "MCP", "工作流", "报告", "帮助"]
 
+
+def _literal_text(node):
+    """从 AST 节点里取出**源码原文**，取不到返回 None。
+
+    支持两种形态（v2.4.14 起界面文案走 i18n，第一种才是常态）：
+      - ``_translate("QGISAgent", "文案")`` / ``translate(...)`` / ``tr(...)``
+      - 裸字符串字面量（隐性拼接的相邻字面量会被 ast 合并成一个 Constant）
+
+    ⚠️ 取的是**第一个字符串参数**，也就是 .ts 里的 ``<source>`` —— 不是译文。
+    这正是这些结构测试想要的：结构对不上时不该因为"当前语言是英文"而飘。
+    """
+    if isinstance(node, ast.Constant):
+        return node.value if isinstance(node.value, str) else None
+    if isinstance(node, ast.Call):
+        name = node.func.id if isinstance(node.func, ast.Name) else None
+        if name in ("_translate", "translate"):
+            # _translate("ctx", "文案") —— 第一个字符串参数是 **context**，
+            # 取它会把所有页签名都解析成 "QGISAgent"（实测踩过）。
+            return _literal_text(node.args[1]) if len(node.args) > 1 else None
+        if name == "tr":
+            # tr("文案") —— 没有 context 参数
+            return _literal_text(node.args[0]) if node.args else None
+    return None
+
 # 旧路径文案：MCP 曾经挂在「模型」页底部。CHANGELOG 是历史记录，不参与扫描。
 STALE_PATH_TEXT = "模型配置 → MCP 服务"
 SCAN_FILES = [
@@ -75,7 +99,13 @@ class TestTabRegistration(unittest.TestCase):
         self.tree = _parse(BASE_UI)
 
     def _tabs(self):
-        """按源码顺序取出 (容器属性名, 页签文案)"""
+        """按源码顺序取出 (容器属性名, 页签文案)。
+
+        ⚠️ 页签文案自从 v2.4.14 起走国际化，源码里的形态是
+        ``addTab(self.tbX, _translate("QGISAgent", "对话"))`` —— 不再是裸字符串。
+        因此这里必须"拆开翻译调用取原文"，否则会直接
+        ``AttributeError: 'Call' object has no attribute 'value'``。
+        """
         found = []
         for node in ast.walk(self.tree):
             if not isinstance(node, ast.Call):
@@ -87,9 +117,19 @@ class TestTabRegistration(unittest.TestCase):
                 continue
             if _decorated_attr_name(func.value) != "twTabs":
                 continue
-            label = node.args[1].value if len(node.args) > 1 else None
+            label = _literal_text(node.args[1]) if len(node.args) > 1 else None
             found.append((node.args[0].attr, label))
         return found
+
+    def test_every_tab_label_is_extractable(self):
+        """每个页签名都必须能解析出字面量。
+
+        这条是本文件其余断言的前提：若将来有人把页签名换成变量，上面三个测试会
+        以"文案变成 None"的形式失败，报错信息完全指不到根因。
+        """
+        for obj, label in self._tabs():
+            with self.subTest(tab=obj):
+                self.assertIsInstance(label, str, "%s 的页签名解析不出字面量" % obj)
 
     def test_tab_order(self):
         tabs = self._tabs()

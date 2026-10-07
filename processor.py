@@ -50,6 +50,135 @@ def shutdown_all_processors():
         except Exception as _e:
             logger.debug("ignored exception", exc_info=True)
 
+# ── 助手回复语言（与界面语言同源） ──
+#
+# 为什么**不**整份翻译系统提示词：
+# 下面这段提示词里腌着一批用真实故障换来的硬约束（禁止虚报、面积必须走投影/
+# 椭球、宁可调专用工具也别手写 PyQGIS、引用图层名不要猜大小写……）。这些约束
+# 一旦分叉成中英两份，就会出现"修好了一份、另一份还是旧的"这类**静默**退化 ——
+# 英文用户拿着缺了新约束的提示词，却看不到任何报错。因此：**提示词只有一份
+# （中文）**，按语言现变的只有"回复语言"这一条。
+#
+# 语言取值与界面语言**同源**（``i18n.preferred_language()``），不另设开关：
+# 界面是英文却让助手用中文回话，是最不该出现的错配。
+_LANG_TOKEN = "<<<REPLY_LANGUAGE_RULE>>>"
+
+#: 助手侧文案表 —— 这里放的是**会直接进入回复流、被用户读到**的串。
+#: 它们本质上是"回复"而不是内部日志，所以必须跟着回复语言走。
+#: 表中只列"回复语言"相关的几条；工具描述与错误分类等仍以中文为准。
+_ASSISTANT_TEXT = {
+    "zh_CN": {
+        "reply_rule": "- 始终用中文回复用户",
+        "force_summary": (
+            "工具调用轮次已达上限。请基于以上工具执行结果，用中文**如实总结**"
+            "（不要美化、不要凑成果）：\n"
+            "1) 哪些步骤真正成功了 —— 必须有工具返回的**具体数据**为证；"
+            "「准备」「计划」「尝试」「将要」都不算完成，禁止写成 ✅；\n"
+            "2) 哪些步骤失败了，失败原因是什么；\n"
+            "3) 若用户要的最终结果（数值/图层/文件）尚未取得，**必须直接说明没有取得**，"
+            "不得用「待计算」等占位词顶替答案，也不得编造任何数值；\n"
+            "4) 给出下一步可执行的具体建议。"
+        ),
+        "summary_failed": "已达到最大工具调用轮次，操作已完成但无法生成总结。",
+        "interrupted": "⏹ 用户中断了操作。",
+        "general_chat": "你是一个QGIS地理信息系统助手。请用中文回答：{input}",
+    },
+    "en": {
+        # 整条按语言现选，而不是只替换一个词 —— 只换词的话英文下会变成
+        # 「始终用English回复用户」这种半中半英，模型容易只改语气不改措辞，
+        # 用户看到的仍是中文汇报。
+        "reply_rule": (
+            "- Always reply to the user in **English** — including progress reports,\n"
+            "  error explanations and confirmation requests. Keep code, commands,\n"
+            "  API names, field names and file paths as-is; never translate them.\n"
+            "  (The prompt below is written in Chinese: it remains the authoritative\n"
+            "  description of your tools and rules — follow it, but answer in English.)"
+        ),
+        # ⚠️ 英文版必须**同样**带上四条要求与"禁止美化"的硬约束：这段是轮次耗尽时
+        #    最后一次塑造用户所见措辞的机会，少了任何一条都会退回到「通篇 ✅」。
+        "force_summary": (
+            "The tool-call round limit has been reached. Based on the tool results "
+            "above, summarise **truthfully** (do not polish, do not pad):\n"
+            "1) which steps really succeeded — you must have concrete data returned "
+            "by a tool to claim that; \"prepared\", \"planned\", \"attempted\" and "
+            "\"about to\" are NOT completion and must never be reported as ✅;\n"
+            "2) which steps failed, and why;\n"
+            "3) if the user's final result (a number, layer or file) was not "
+            "obtained, **say plainly that it was not obtained** — no placeholder "
+            "words such as \"to be calculated\", and never invent numbers;\n"
+            "4) give concrete, actionable next steps."
+        ),
+        "summary_failed": ("The maximum number of tool-call rounds was reached; "
+                           "the operations ended but no summary could be generated."),
+        "interrupted": "⏹ The user interrupted the operation.",
+        "general_chat": "You are a QGIS assistant. Answer in English: {input}",
+    },
+}
+
+
+#: 执行日志 / 思考过程面板里的包装文案 —— 用户同样会读到，所以也随语言变。
+#: ⚠️ 只翻了"包装"，没翻工具返回体本身：那些是工具的输出（中文），本轮不在范围内。
+_PROGRESS_TEXT = {
+    "zh_CN": {
+        "thinking_steps": "\n🧩 任务图已分解出 %d 个步骤\n",
+        "thinking_tuning": "[Query Tuning] 优化查询: %s...\n",
+        "thinking_thinking": "[思考中...]\n",
+        "thinking_rag": "📚 RAG 检索到相关 API / 算法文档\n",
+        "thinking_result": "📋 结果:\n%s\n",
+        "thinking_diagnosis": "🩺 诊断建议:\n%s\n",
+        "log_run_pyqgis": "▶ 执行 PyQGIS 代码...",
+        "log_run_processing": "▶ 执行 Processing 算法: %s",
+        "log_tool_exception": "❌ %s 执行异常: %s",
+        "log_tool_failed": "❌ %s 执行失败: %s",
+        "log_no_debugger": "⚠️ SmartDebugger 不可用，未生成诊断建议",
+        "log_debug_retry": "🩺 已生成错误诊断，交给模型改写重试（第 %d/%d 次）",
+        "workflow_summary": "任务执行完成，共 %d 个步骤",
+        "log_task_done": "✅ 任务完成: %d 成功, %d 失败",
+    },
+    "en": {
+        "thinking_steps": "\n🧩 Task graph decomposed into %d step(s)\n",
+        "thinking_tuning": "[Query Tuning] refined query: %s...\n",
+        "thinking_thinking": "[Thinking...]\n",
+        "thinking_rag": "📚 RAG found relevant API / algorithm docs\n",
+        "thinking_result": "📋 Result:\n%s\n",
+        "thinking_diagnosis": "🩺 Diagnosis:\n%s\n",
+        "log_run_pyqgis": "▶ Running PyQGIS code...",
+        "log_run_processing": "▶ Running Processing algorithm: %s",
+        "log_tool_exception": "❌ %s raised an exception: %s",
+        "log_tool_failed": "❌ %s failed: %s",
+        "log_no_debugger": "⚠️ SmartDebugger unavailable; no diagnosis produced",
+        "log_debug_retry": "🩺 Diagnosis ready; asking the model to rewrite and retry (%d/%d)",
+        "workflow_summary": "Task finished, %d step(s) in total",
+        "log_task_done": "✅ Task complete: %d succeeded, %d failed",
+    },
+}
+
+#: 查表顺序：先核心表，再进度表。
+_TEXT_TABLES = (_ASSISTANT_TEXT, _PROGRESS_TEXT)
+
+
+def _assistant_text(key):
+    """按当前界面语言取一条助手侧文案；语言表里缺这条时回退中文。
+
+    ⚠️ 界面上换了语言，这里取到的串就跟着换 —— 但**这些表不参与 i18n 的
+    .ts/.qm 机制**：它们要出现在送给模型的提示词里，走 QTranslator 会让
+    "模型看到什么"取决于 Qt 的装载时机，出问题时极难复现。宁可多一张显式的表。
+    """
+    try:
+        from . import i18n
+        code = i18n.preferred_language()
+    except Exception:  # noqa: BLE001 - 语言只是显示层，取不到不该影响对话
+        code = "zh_CN"
+    for table in _TEXT_TABLES:
+        entry = table.get(code)
+        if entry and key in entry:
+            return entry[key]
+    for table in _TEXT_TABLES:       # 该语言漏了这条 → 回退中文，绝不返回 None
+        if key in table["zh_CN"]:
+            return table["zh_CN"][key]
+    raise KeyError(key)
+
+
 # Agent 系统提示词
 AGENT_SYSTEM_PROMPT = """你是一个 QGIS 地理信息系统智能助手，运行在 QGIS 桌面版内部。
 
@@ -81,7 +210,7 @@ AGENT_SYSTEM_PROMPT = """你是一个 QGIS 地理信息系统智能助手，运�
 5. 最终向用户汇报操作结果
 
 ## 重要规则
-- 始终用中文回复用户
+<<<REPLY_LANGUAGE_RULE>>>
 - 操作文件时使用绝对路径
 - 执行操作前确认图层存在
 - 如果工具返回错误，分析原因并尝试修复
@@ -210,6 +339,15 @@ QgsPalLayerSettings, QgsVectorLayerSimpleLabeling, QgsTextFormat
 - 坐标变换：QgsCoordinateTransform(src_crs, dst_crs, QgsProject.instance()) 需要三个参数
 - 获取地图画布：iface.mapCanvas() 返回 QgsMapCanvas
 """
+
+
+def agent_system_prompt():
+    """返回**当前应生效**的系统提示词（把语言占位符替换掉）。
+
+    ⚠️ 一律用本函数取提示词，不要直接用 ``AGENT_SYSTEM_PROMPT`` —— 那个常量里
+    还留着占位符，直接送模型会让它看到 ``<<<REPLY_LANGUAGE_RULE>>>``。
+    """
+    return AGENT_SYSTEM_PROMPT.replace(_LANG_TOKEN, _assistant_text("reply_rule"))
 
 
 class Processor(QObject):
@@ -513,7 +651,7 @@ class Processor(QObject):
         """
         steps = self._task_graph_generate(plan)
         if thinking_callback:
-            thinking_callback(f"\n🧩 任务图已分解出 {len(steps)} 个步骤\n")
+            thinking_callback(_assistant_text("thinking_steps") % len(steps))
 
         prev = self.use_task_graph
         self.use_task_graph = False
@@ -625,14 +763,16 @@ class Processor(QObject):
             data_overview_text = self.data_overview.get_data_overview()
             tuned_query = self.query_tuner.tune_query(user_input, data_overview_text) or user_input
             if thinking_callback:
-                thinking_callback(f"[Query Tuning] 优化查询: {tuned_query[:100]}...\n")
+                thinking_callback(_assistant_text("thinking_tuning") % tuned_query[:100])
         except Exception as _e:
             # Query Tuning 失败不影响主流程，回落为原始用户输入
             logger.debug("Query Tuning 优化失败，回落为原始用户输入: %s", _e, exc_info=True)
             tuned_query = user_input
 
         # ── 加载长期记忆 ──
-        system_prompt = AGENT_SYSTEM_PROMPT
+        # ⚠️ 用 agent_system_prompt() 而不是 AGENT_SYSTEM_PROMPT：后者还留着
+        #    "回复语言"占位符，直接送模型会让它看见 <<<REPLY_LANGUAGE_RULE>>>。
+        system_prompt = agent_system_prompt()
         memory_content = ""
         try:
             from qgis.core import QgsApplication
@@ -724,7 +864,7 @@ class Processor(QObject):
             # 检查中断标志
             if self._cancelled:
                 self._cancelled = False
-                final_response = "⏹ 用户中断了操作。"
+                final_response = _assistant_text("interrupted")
                 workflow = "empty"
                 break
 
@@ -734,7 +874,7 @@ class Processor(QObject):
             except (AttributeError, TypeError, NotImplementedError):
                 # 模型不支持 function calling，直接普通对话
                 if thinking_callback:
-                    thinking_callback("[思考中...]\n")
+                    thinking_callback(_assistant_text("thinking_thinking"))
                 response = self.llm.invoke(messages)
                 final_response = (response.content if hasattr(response, 'content') and response.content
                                   else str(response))
@@ -743,7 +883,7 @@ class Processor(QObject):
                 break
 
             if thinking_callback:
-                thinking_callback("[思考中...]\n")
+                thinking_callback(_assistant_text("thinking_thinking"))
 
             # 非流式调用（带 tool_choice="auto"）
             response = llm_with_tools.invoke(messages)
@@ -806,7 +946,7 @@ class Processor(QObject):
                             labeled = "[系统参考文档，仅供编写/调用代码时使用，无需回复]\n" + doc_context
                             messages.append(HumanMessage(content=labeled))
                             if thinking_callback:
-                                thinking_callback("📚 RAG 检索到相关 API / 算法文档\n")
+                                thinking_callback(_assistant_text("thinking_rag"))
                     except Exception as _e:
                         logger.debug("ignored exception", exc_info=True)
 
@@ -815,9 +955,9 @@ class Processor(QObject):
                     self.code_update.emit(tool_args["code"])
                     # 直接同步 emit：本方法运行在 QThreadPool 工作线程，没有事件循环，
                     # QTimer.singleShot 永远不会触发（还会打印 QObject::killTimer）。
-                    self.execution_log.emit("▶ 执行 PyQGIS 代码...")
+                    self.execution_log.emit(_assistant_text("log_run_pyqgis"))
                 elif tool_name == "execute_processing":
-                    self.execution_log.emit(f"▶ 执行 Processing 算法: {tool_name}")
+                    self.execution_log.emit(_assistant_text("log_run_processing") % tool_name)
 
                 # 执行工具
                 tool_error = None
@@ -869,7 +1009,8 @@ class Processor(QObject):
                     error_msg = f"{str(e)}\n{tb.format_exc()}"
                     tool_error = str(e)
                     result_str = json.dumps({"error": error_msg}, ensure_ascii=False)
-                    self.execution_log.emit(f"❌ {tool_name} 执行异常: {str(e)}")
+                    self.execution_log.emit(_assistant_text("log_tool_exception")
+                              % (tool_name, str(e)))
 
                     # ── 更新工作流步骤状态为失败 ──
                     if workflow_data["steps"]:
@@ -883,7 +1024,7 @@ class Processor(QObject):
                     result_str = result_str[:4000] + "\n...(结果已截断)"
 
                 if thinking_callback:
-                    thinking_callback(f"📋 结果:\n{result_str[:500]}\n")
+                    thinking_callback(_assistant_text("thinking_result") % result_str[:500])
 
                 # 添加工具消息到对话
                 # 工具结果属于不可信外部数据（图层名、字段值等），用围栏包裹后再喂给 LLM
@@ -894,7 +1035,8 @@ class Processor(QObject):
 
                 # ── 工具执行失败：交给 SmartDebugger 诊断，让 LLM 看到诊断后自行改写重试 ──
                 if tool_error:
-                    self.execution_log.emit(f"❌ {tool_name} 执行失败: {tool_error[:200]}")
+                    self.execution_log.emit(_assistant_text("log_tool_failed")
+                              % (tool_name, tool_error[:200]))
                     debug_retries += 1
                     debug_text = self._analyze_tool_error(tool_name, tool_args, tool_error)
                     if debug_retries > DEBUG_MAX_RETRIES:
@@ -912,12 +1054,13 @@ class Processor(QObject):
                     if debug_text:
                         messages.append(ToolMessage(content=debug_text, tool_call_id=tool_id))
                         self.execution_log.emit(
-                            f"🩺 已生成错误诊断，交给模型改写重试（第 {debug_retries}/{DEBUG_MAX_RETRIES} 次）"
+                            _assistant_text("log_debug_retry")
+                            % (debug_retries, DEBUG_MAX_RETRIES)
                         )
                         if thinking_callback:
-                            thinking_callback(f"🩺 诊断建议:\n{debug_text[:500]}\n")
+                            thinking_callback(_assistant_text("thinking_diagnosis") % debug_text[:500])
                     else:
-                        self.execution_log.emit("⚠️ SmartDebugger 不可用，未生成诊断建议")
+                        self.execution_log.emit(_assistant_text("log_no_debugger"))
 
             # 重试超限，放弃后续轮次
             if aborted:
@@ -933,22 +1076,15 @@ class Processor(QObject):
             #    工具全都失败时，模型会把失败包装成一串 ✅「已确认」「已准备」把用户
             #    糊过去 —— 用户报障原文就是这样（通篇 ✅，数值全是「待计算」）。
             #    这里把「如实区分成败、拿不到就说没拿到」写成硬性要求。
-            messages.append(HumanMessage(content=(
-                "工具调用轮次已达上限。请基于以上工具执行结果，用中文**如实总结**"
-                "（不要美化、不要凑成果）：\n"
-                "1) 哪些步骤真正成功了 —— 必须有工具返回的**具体数据**为证；"
-                "「准备」「计划」「尝试」「将要」都不算完成，禁止写成 ✅；\n"
-                "2) 哪些步骤失败了，失败原因是什么；\n"
-                "3) 若用户要的最终结果（数值/图层/文件）尚未取得，**必须直接说明没有取得**，"
-                "不得用「待计算」等占位词顶替答案，也不得编造任何数值；\n"
-                "4) 给出下一步可执行的具体建议。"
-            )))
+            messages.append(HumanMessage(content=_assistant_text("force_summary")))
             try:
                 final_resp = self.llm.invoke(messages)
                 final_response = (final_resp.content if hasattr(final_resp, 'content') and final_resp.content
                                   else str(final_resp))
             except Exception:
-                final_response = "已达到最大工具调用轮次，操作已完成但无法生成总结。"
+                # ⚠️ 这条以前是硬编码中文，和 _ASSISTANT_TEXT["summary_failed"]
+                #    各存一份 —— 改文案时极易只改一处。统一走表。
+                final_response = _assistant_text("summary_failed")
             if thinking_callback:
                 thinking_callback(final_response)
 
@@ -957,7 +1093,8 @@ class Processor(QObject):
 
         # ── 更新工作流状态并发送最终更新 ──
         workflow_data["status"] = "completed"
-        workflow_data["summary"] = f"任务执行完成，共 {len(workflow_data['steps'])} 个步骤"
+        workflow_data["summary"] = (_assistant_text("workflow_summary")
+                                    % len(workflow_data["steps"]))
 
         # 发送最终的工作流更新信号
         self.workflow_update.emit(workflow_data)
@@ -966,7 +1103,8 @@ class Processor(QObject):
         if workflow_data["steps"]:
             success_count = sum(1 for s in workflow_data["steps"] if s.get("status") == "completed")
             failed_count = sum(1 for s in workflow_data["steps"] if s.get("status") == "failed")
-            self.execution_log.emit(f"✅ 任务完成: {success_count} 成功, {failed_count} 失败")
+            self.execution_log.emit(_assistant_text("log_task_done")
+                              % (success_count, failed_count))
 
         # ── Cookbook 自动归档 ──
         try:
@@ -996,7 +1134,7 @@ class Processor(QObject):
     def general_chat(self, user_input: str) -> str:
         request_time = get_current_timestamp()
         prompt_row = {
-            "template": "你是一个QGIS地理信息系统助手。请用中文回答：{input}",
+            "template": _assistant_text("general_chat"),
             "ID": "generalChat"
         }
         human_message = HumanMessage(content=prompt_row["template"].format(input=user_input))

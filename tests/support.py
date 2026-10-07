@@ -60,6 +60,28 @@ def import_mod(name):
     return importlib.import_module(name)
 
 
+def pin_language(code):
+    """把界面语言钉死成 ``code``，返回 restore 回调（配套 ``addCleanup`` 使用）。
+
+    ⚠️ 为什么必须有这个：桩环境里 ``QgsApplication.locale()`` 返回 MagicMock，
+    ``i18n.normalize()`` 认不出它 → 落到 ``DEFAULT_LANGUAGE``。于是「界面文案是
+    中文还是英文」取决于**兜底语言**，而不是用例想测的行为。一旦兜底语言变了，
+    成批断言用户可见文案的用例会集体翻车，而报错只会说 'X' != 'Y'，完全看不出
+    根因在语言解析上（实测踩过：4 个用例如此误伤）。
+    """
+    i18n = importlib.import_module("qgis_agent.i18n")
+    saved = i18n.preferred_language
+    i18n.preferred_language = (lambda c: (lambda: c))(code)
+    done = []
+
+    def restore():
+        if not done:
+            i18n.preferred_language = saved
+            done.append(True)
+
+    return restore
+
+
 # ────────────────────────────────────────────────────────────
 # Qt / QObject 最小替身
 # ────────────────────────────────────────────────────────────

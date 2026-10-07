@@ -2,7 +2,13 @@ import logging
 import os
 
 from qgis.PyQt import QtCore, QtWidgets
+from qgis.PyQt.QtCore import QCoreApplication
 import contextlib
+
+# 界面文案统一经此翻译。context 固定为 "QGISAgent"，与 i18n/qgis_agent_*.ts 对应。
+# 刻意采用 pyuic 生成代码的同款写法（别名 + _translate("Ctx", "text")）：
+# pylupdate 认这个模式，能自动把待翻译字符串提取进 .ts，无需手工维护列表。
+_translate = QCoreApplication.translate
 
 logger = logging.getLogger(__name__)
 
@@ -97,13 +103,13 @@ class Ui_QGISAgentDockWidget(object):
         self.titleLayout = QtWidgets.QHBoxLayout()
         self.titleLayout.setContentsMargins(0, 0, 0, 0)
         self.titleLayout.setSpacing(6)
-        self.lbTitle = QtWidgets.QLabel("新建对话")
+        self.lbTitle = QtWidgets.QLabel(_translate("QGISAgent", "新建对话"))
         self.lbTitle.setObjectName("lbTitle")
         self.lbTitle.setStyleSheet("font-size: 14px; font-weight: bold;")
         self.lbTitle.setWordWrap(True)
         self.titleLayout.addWidget(self.lbTitle, 1)
 
-        self.lbDescription = QtWidgets.QLabel("选择或新建对话开始使用 QGIS Agent")
+        self.lbDescription = QtWidgets.QLabel(_translate("QGISAgent", "选择或新建对话开始使用 QGIS Agent"))
         self.lbDescription.setObjectName("lbDescription")
         self.lbDescription.setWordWrap(True)
         self.lbDescription.setStyleSheet("color: #666; font-size: 12px;")
@@ -129,11 +135,11 @@ class Ui_QGISAgentDockWidget(object):
         self.messageLayout.setSpacing(6)
 
         self.ptMessage = QtWidgets.QPlainTextEdit()
-        self.ptMessage.setPlaceholderText("输入指令…  Enter 发送 / Shift+Enter 换行")
+        self.ptMessage.setPlaceholderText(_translate("QGISAgent", "输入指令…  Enter 发送 / Shift+Enter 换行"))
         self.ptMessage.setMinimumHeight(44)
         self.ptMessage.setObjectName("ptMessage")
 
-        self.pbSend = QtWidgets.QPushButton("发送")
+        self.pbSend = QtWidgets.QPushButton(_translate("QGISAgent", "发送"))
         self.pbSend.setObjectName("pbSend")
         self.pbSend.setFixedSize(64, 32)
         self.pbSend.setStyleSheet("""
@@ -150,7 +156,7 @@ class Ui_QGISAgentDockWidget(object):
         self.bottomBarLayout.setContentsMargins(0, 2, 0, 0)
         self.bottomBarLayout.setSpacing(6)
 
-        self.lblModel = QtWidgets.QLabel("模型")
+        self.lblModel = QtWidgets.QLabel(_translate("QGISAgent", "模型"))
         self.lblModel.setStyleSheet("font-size: 12px; color: #888;")
         self.cbModelSelector = QtWidgets.QComboBox()
         self.cbModelSelector.setMinimumWidth(90)
@@ -165,20 +171,20 @@ class Ui_QGISAgentDockWidget(object):
         )
         self.cbModelSelector.setStyleSheet("QComboBox { font-size: 12px; padding: 2px 4px; }")
 
-        self.lblTemperature = QtWidgets.QLabel("温度")
+        self.lblTemperature = QtWidgets.QLabel(_translate("QGISAgent", "温度"))
         self.lblTemperature.setStyleSheet("font-size: 12px; color: #888;")
         self.sliderTemperature = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
         self.sliderTemperature.setRange(0, 100)
         self.sliderTemperature.setValue(0)
         self.sliderTemperature.setFixedWidth(60)
-        self.sliderTemperature.setToolTip("LLM 温度 (0=精确, 1=创造)")
+        self.sliderTemperature.setToolTip(_translate("QGISAgent", "LLM 温度 (0=精确, 1=创造)"))
         self.lblTempValue = QtWidgets.QLabel("0.0")
         self.lblTempValue.setStyleSheet("font-size: 11px; color: #888; min-width: 22px;")
         self.sliderTemperature.valueChanged.connect(
             lambda v: self.lblTempValue.setText(f"{v / 100:.1f}")
         )
 
-        self.pbStop = QtWidgets.QPushButton("停止")
+        self.pbStop = QtWidgets.QPushButton(_translate("QGISAgent", "停止"))
         self.pbStop.setObjectName("pbStop")
         self.pbStop.setFixedSize(64, 32)
         self.pbStop.setVisible(False)
@@ -189,8 +195,8 @@ class Ui_QGISAgentDockWidget(object):
         """)
 
         # 跳过代码确认的开关
-        self.cbSkipConfirm = QtWidgets.QCheckBox("跳过确认")
-        self.cbSkipConfirm.setToolTip("勾选后直接执行所有 PyQGIS/Processing 代码，不再弹窗确认")
+        self.cbSkipConfirm = QtWidgets.QCheckBox(_translate("QGISAgent", "跳过确认"))
+        self.cbSkipConfirm.setToolTip(_translate("QGISAgent", "勾选后直接执行所有 PyQGIS/Processing 代码，不再弹窗确认"))
         self.cbSkipConfirm.setStyleSheet("QCheckBox { font-size: 11px; color: #888; }")
 
         self.bottomBarLayout.addWidget(self.lblModel)
@@ -225,15 +231,15 @@ class Ui_QGISAgentDockWidget(object):
         # 搜索区
         self.searchFrame = QtWidgets.QHBoxLayout()
         self.ptSearchConversationCard = QtWidgets.QPlainTextEdit()
-        self.ptSearchConversationCard.setPlaceholderText("搜索对话...")
+        self.ptSearchConversationCard.setPlaceholderText(_translate("QGISAgent", "搜索对话..."))
         self.ptSearchConversationCard.setFixedHeight(30)
-        self.pbSearchConversationCard = QtWidgets.QPushButton("搜索")
+        self.pbSearchConversationCard = QtWidgets.QPushButton(_translate("QGISAgent", "搜索"))
         self.pbSearchConversationCard.setFixedWidth(60)
         self.searchFrame.addWidget(self.ptSearchConversationCard)
         self.searchFrame.addWidget(self.pbSearchConversationCard)
 
         # 新建按钮
-        self.pbNew = QtWidgets.QPushButton("+ 新建对话")
+        self.pbNew = QtWidgets.QPushButton(_translate("QGISAgent", "+ 新建对话"))
         self.pbNew.setStyleSheet("""
             QPushButton { background-color: #5CB85C; color: white; border-radius: 4px; font-size: 13px; padding: 6px; }
             QPushButton:hover { background-color: #4CAE4C; }
@@ -256,17 +262,17 @@ class Ui_QGISAgentDockWidget(object):
         self.settingsLayout.setSpacing(6)
 
         # 配置页标题
-        self.lblSettingsTitle = QtWidgets.QLabel("大模型配置")
+        self.lblSettingsTitle = QtWidgets.QLabel(_translate("QGISAgent", "大模型配置"))
         self.lblSettingsTitle.setStyleSheet("font-size: 14px; font-weight: bold;")
 
-        self.lblSettingsHint = QtWidgets.QLabel("管理 API 端点及密钥。添加模型时可参考内置信息，支持任意 OpenAI 兼容接口。")
+        self.lblSettingsHint = QtWidgets.QLabel(_translate("QGISAgent", "管理 API 端点及密钥。添加模型时可参考内置信息，支持任意 OpenAI 兼容接口。"))
         self.lblSettingsHint.setWordWrap(True)
         self.lblSettingsHint.setStyleSheet("color: #666; font-size: 11px;")
 
         # 模型配置表格
         self.settingsTable = QtWidgets.QTableWidget()
         self.settingsTable.setColumnCount(4)
-        self.settingsTable.setHorizontalHeaderLabels(["模型名称", "API 端点", "API Key", ""])
+        self.settingsTable.setHorizontalHeaderLabels([_translate("QGISAgent", "模型名称"), _translate("QGISAgent", "API 端点"), "API Key", ""])
         self.settingsTable.horizontalHeader().setStretchLastSection(False)
         self.settingsTable.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
         self.settingsTable.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Stretch)
@@ -276,15 +282,15 @@ class Ui_QGISAgentDockWidget(object):
         self.settingsTable.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
 
         # 添加模型按钮
-        self.btnAddModel = QtWidgets.QPushButton("+ 添加模型")
+        self.btnAddModel = QtWidgets.QPushButton(_translate("QGISAgent", "+ 添加模型"))
         self.btnAddModel.setStyleSheet("""
             QPushButton { background-color: #5CB85C; color: white; border-radius: 4px; padding: 6px 16px; }
             QPushButton:hover { background-color: #4CAE4C; }
         """)
 
         # 模型配置页的"跳过确认"开关（与底部栏的 cbSkipConfirm 保持同步）
-        self.cbSkipConfirmSettings = QtWidgets.QCheckBox("跳过代码执行确认")
-        self.cbSkipConfirmSettings.setToolTip("勾选后直接执行 PyQGIS/Processing 代码，不再弹窗确认")
+        self.cbSkipConfirmSettings = QtWidgets.QCheckBox(_translate("QGISAgent", "跳过代码执行确认"))
+        self.cbSkipConfirmSettings.setToolTip(_translate("QGISAgent", "勾选后直接执行 PyQGIS/Processing 代码，不再弹窗确认"))
         self.cbSkipConfirmSettings.setStyleSheet("QCheckBox { font-size: 12px; color: #888; margin-top: 8px; }")
 
         self.settingsLayout.addWidget(self.lblSettingsTitle)
@@ -316,10 +322,10 @@ class Ui_QGISAgentDockWidget(object):
         self.workflowLayout.setSpacing(4)
 
         # 工作流标题
-        self.lblWorkflowTitle = QtWidgets.QLabel("地理处理工作流")
+        self.lblWorkflowTitle = QtWidgets.QLabel(_translate("QGISAgent", "地理处理工作流"))
         self.lblWorkflowTitle.setStyleSheet("font-size: 14px; font-weight: bold;")
 
-        self.lblWorkflowHint = QtWidgets.QLabel("可视化展示任务执行流程和步骤状态")
+        self.lblWorkflowHint = QtWidgets.QLabel(_translate("QGISAgent", "可视化展示任务执行流程和步骤状态"))
         self.lblWorkflowHint.setWordWrap(True)
         self.lblWorkflowHint.setStyleSheet("color: #666; font-size: 11px;")
 
@@ -339,12 +345,12 @@ class Ui_QGISAgentDockWidget(object):
                 QtWidgets.QSizePolicy.Policy.Ignored,
                 QtWidgets.QSizePolicy.Policy.Ignored)
             self.workflowWebView.setMinimumSize(1, 160)   # 顺便替掉 (-1,-1)
-            self.workflowWebView.setHtml("<html><body><h3>等待任务执行...</h3><p>执行任务后，工作流将在此可视化展示。</p></body></html>")
+            self.workflowWebView.setHtml(_translate("QGISAgent", "<html><body><h3>等待任务执行...</h3><p>执行任务后，工作流将在此可视化展示。</p></body></html>"))
         except ImportError:
             # 如果QWebView不可用，使用QTextBrowser
             self.workflowWebView = QtWidgets.QTextBrowser()
             self.workflowWebView.setOpenExternalLinks(True)
-            self.workflowWebView.setHtml("<html><body><h3>等待任务执行...</h3><p>执行任务后，工作流将在此可视化展示。</p></body></html>")
+            self.workflowWebView.setHtml(_translate("QGISAgent", "<html><body><h3>等待任务执行...</h3><p>执行任务后，工作流将在此可视化展示。</p></body></html>"))
 
         # 工作流摘要
         self.lblWorkflowSummary = QtWidgets.QLabel("")
@@ -374,9 +380,9 @@ class Ui_QGISAgentDockWidget(object):
         # HELP.html 是仓库内最完整的中文帮助，但历史上没有任何代码打开它（孤儿文件）。
         # 位置放在内容**下方**：这个按钮原来占在顶部，把帮助正文挤下去一行，
         # 而它只是「想要更完整文档时」的补充入口 —— 正文应当第一眼就看到。
-        self.pbOpenFullHelp = QtWidgets.QPushButton("📖 打开完整帮助文档 (HELP.html)")
+        self.pbOpenFullHelp = QtWidgets.QPushButton(_translate("QGISAgent", "📖 打开完整帮助文档 (HELP.html)"))
         self.pbOpenFullHelp.setObjectName("pbOpenFullHelp")
-        self.pbOpenFullHelp.setToolTip("在默认浏览器中打开插件目录下的 HELP.html")
+        self.pbOpenFullHelp.setToolTip(_translate("QGISAgent", "在默认浏览器中打开插件目录下的 HELP.html"))
         self.pbOpenFullHelp.clicked.connect(self._open_full_help)
         self.aboutLayout.addWidget(self.pbOpenFullHelp)
         # <<< 手工追加结束 <<<
@@ -389,47 +395,47 @@ class Ui_QGISAgentDockWidget(object):
         self.reportsLayout.setSpacing(4)
 
         # 报告标题
-        self.lblReportsTitle = QtWidgets.QLabel("代码与执行报告")
+        self.lblReportsTitle = QtWidgets.QLabel(_translate("QGISAgent", "代码与执行报告"))
         self.lblReportsTitle.setStyleSheet("font-size: 14px; font-weight: bold;")
 
-        self.lblReportsHint = QtWidgets.QLabel("查看生成的代码和执行日志")
+        self.lblReportsHint = QtWidgets.QLabel(_translate("QGISAgent", "查看生成的代码和执行日志"))
         self.lblReportsHint.setWordWrap(True)
         self.lblReportsHint.setStyleSheet("color: #666; font-size: 11px;")
 
         # 代码编辑器
-        self.lblCode = QtWidgets.QLabel("生成的代码:")
+        self.lblCode = QtWidgets.QLabel(_translate("QGISAgent", "生成的代码:"))
         self.lblCode.setStyleSheet("font-size: 12px; font-weight: bold; margin-top: 8px;")
 
         self.codeEditor = QtWidgets.QPlainTextEdit()
         self.codeEditor.setReadOnly(True)
-        self.codeEditor.setPlaceholderText("等待代码生成...")
+        self.codeEditor.setPlaceholderText(_translate("QGISAgent", "等待代码生成..."))
         self.codeEditor.setStyleSheet("font-family: Consolas, monospace; font-size: 11px;")
 
         # 代码操作按钮（两行网格：窄面板下 5 个按钮排一行会把整个 dock 撑到 590px 宽）
         self.codeButtonLayout = QtWidgets.QGridLayout()
         self.codeButtonLayout.setContentsMargins(0, 0, 0, 0)
         self.codeButtonLayout.setSpacing(6)
-        self.pbRunCode = QtWidgets.QPushButton("▶ 运行代码")
+        self.pbRunCode = QtWidgets.QPushButton(_translate("QGISAgent", "▶ 运行代码"))
         self.pbRunCode.setStyleSheet("""
             QPushButton { background-color: #5CB85C; color: white; border-radius: 4px; padding: 6px 10px; font-weight: bold; }
             QPushButton:hover { background-color: #4CAE4C; }
         """)
-        self.pbLoadCode = QtWidgets.QPushButton("📂 从文件读取")
+        self.pbLoadCode = QtWidgets.QPushButton(_translate("QGISAgent", "📂 从文件读取"))
         self.pbLoadCode.setStyleSheet("""
             QPushButton { background-color: #5BC0DE; color: white; border-radius: 4px; padding: 6px 10px; }
             QPushButton:hover { background-color: #46B8DA; }
         """)
-        self.pbCopyCode = QtWidgets.QPushButton("📋 复制代码")
+        self.pbCopyCode = QtWidgets.QPushButton(_translate("QGISAgent", "📋 复制代码"))
         self.pbCopyCode.setStyleSheet("""
             QPushButton { background-color: #6c757d; color: white; border-radius: 4px; padding: 6px 10px; }
             QPushButton:hover { background-color: #5a6268; }
         """)
-        self.pbSaveCode = QtWidgets.QPushButton("💾 保存代码")
+        self.pbSaveCode = QtWidgets.QPushButton(_translate("QGISAgent", "💾 保存代码"))
         self.pbSaveCode.setStyleSheet("""
             QPushButton { background-color: #17a2b8; color: white; border-radius: 4px; padding: 6px 10px; }
             QPushButton:hover { background-color: #138496; }
         """)
-        self.pbClearCode = QtWidgets.QPushButton("🗑️ 清空")
+        self.pbClearCode = QtWidgets.QPushButton(_translate("QGISAgent", "🗑️ 清空"))
         self.pbClearCode.setStyleSheet("""
             QPushButton { background-color: #dc3545; color: white; border-radius: 4px; padding: 6px 10px; }
             QPushButton:hover { background-color: #c82333; }
@@ -442,17 +448,17 @@ class Ui_QGISAgentDockWidget(object):
         self.codeButtonLayout.setColumnStretch(1, 1)
 
         # 执行日志
-        self.lblExecutionLog = QtWidgets.QLabel("执行日志:")
+        self.lblExecutionLog = QtWidgets.QLabel(_translate("QGISAgent", "执行日志:"))
         self.lblExecutionLog.setStyleSheet("font-size: 12px; font-weight: bold; margin-top: 8px;")
 
         self.executionLog = QtWidgets.QPlainTextEdit()
         self.executionLog.setReadOnly(True)
-        self.executionLog.setPlaceholderText("等待执行日志...")
+        self.executionLog.setPlaceholderText(_translate("QGISAgent", "等待执行日志..."))
         self.executionLog.setMaximumHeight(150)
         self.executionLog.setStyleSheet("font-family: Consolas, monospace; font-size: 10px; color: #666;")
 
         # 错误分析（SmartDebugger）
-        self.lblDebugAnalysis = QtWidgets.QLabel("错误分析:")
+        self.lblDebugAnalysis = QtWidgets.QLabel(_translate("QGISAgent", "错误分析:"))
         self.lblDebugAnalysis.setStyleSheet("font-size: 12px; font-weight: bold; margin-top: 8px; color: #D9534F;")
         self.lblDebugAnalysis.setVisible(False)
 
@@ -473,13 +479,13 @@ class Ui_QGISAgentDockWidget(object):
 
         # 页签文案统一压到 2–3 个字：6 个页签在窄 dock 里一字之差就会被挤成半截，
         # 完整含义由 QGISAgentDockWidgetV2._configure_tab_bar 设置的 tooltip 说明。
-        self.twTabs.addTab(self.tbMessages, "对话")
-        self.twTabs.addTab(self.tbConversations, "历史")
-        self.twTabs.addTab(self.tbSettings, "模型")
+        self.twTabs.addTab(self.tbMessages, _translate("QGISAgent", "对话"))
+        self.twTabs.addTab(self.tbConversations, _translate("QGISAgent", "历史"))
+        self.twTabs.addTab(self.tbSettings, _translate("QGISAgent", "模型"))
         self.twTabs.addTab(self.tbMcp, "MCP")
-        self.twTabs.addTab(self.tbWorkflow, "工作流")
-        self.twTabs.addTab(self.tbReports, "报告")
-        self.twTabs.addTab(self.tbAbout, "帮助")
+        self.twTabs.addTab(self.tbWorkflow, _translate("QGISAgent", "工作流"))
+        self.twTabs.addTab(self.tbReports, _translate("QGISAgent", "报告"))
+        self.twTabs.addTab(self.tbAbout, _translate("QGISAgent", "帮助"))
 
         # 只设结构性属性与最小字号兜底；配色 / 内边距 / 选中态全部由
         # QGISAgentDockWidgetV2._apply_chat_style() 按调色板统一下发
@@ -508,7 +514,7 @@ class Ui_QGISAgentDockWidget(object):
             except Exception as e:  # noqa: BLE001 - 逐个候选模块尝试，失败就换下一个
                 logger.debug("读取插件版本失败，换下一个候选模块 %s: %s", mod, e)
                 continue
-        return "以插件管理器显示为准"
+        return _translate("QGISAgent", "以插件管理器显示为准")
 
     def _help_file_path(self):
         """返回随包分发的 HELP.html 绝对路径；不存在时返回 None。"""
@@ -527,9 +533,15 @@ class Ui_QGISAgentDockWidget(object):
             QtWidgets.QMessageBox.information(
                 None,
                 "QGIS Agent",
-                "未找到完整帮助文档 HELP.html。\n"
-                "请重新安装插件，或在线查看：\n"
-                "https://github.com/bunkmr/qgis-agent",
+                # ⚠️ `_translate("QGISAgent",` 的**上下文必须与函数名同行**。
+                #    写成 `_translate(` 单独占一行、上下文落到下一行时，
+                #    pylupdate 会**整条漏提取**（实测：这一条曾经就没进 .ts，
+                #    英文界面下会静默留在中文）。tests/test_i18n.py 的静态覆盖
+                #    用例会拦住这类漏翻。
+                _translate("QGISAgent",
+                           "未找到完整帮助文档 HELP.html。\n"
+                           "请重新安装插件，或在线查看：\n"
+                           "https://github.com/bunkmr/qgis-agent"),
             )
             return
 
@@ -546,7 +558,7 @@ class Ui_QGISAgentDockWidget(object):
             QtWidgets.QMessageBox.information(
                 None,
                 "QGIS Agent",
-                "无法自动打开帮助文档，请手动打开：\n%s" % path,
+                _translate("QGISAgent", "无法自动打开帮助文档，请手动打开：\n%s") % path,
             )
 
     def _get_about_html(self):
@@ -569,7 +581,10 @@ class Ui_QGISAgentDockWidget(object):
                 from utils import chat_colors
         except Exception as _e:
             logger.debug("帮助页模块不可用: %s", _e, exc_info=True)
-            return "<html><body><h1>QGIS Agent</h1><p>帮助内容加载失败。</p></body></html>"
+            return _translate(
+                "QGISAgent",
+                "<html><body><h1>QGIS Agent</h1>"
+                "<p>帮助内容加载失败。</p></body></html>")
 
         try:
             colors = chat_colors()
@@ -595,4 +610,90 @@ class Ui_QGISAgentDockWidget(object):
 
 
     def retranslateUi(self):
-        pass
+        """按当前语言重新设置全部界面文案。
+
+        QTranslator 只影响**此后**发生的 ``translate()`` 调用 —— 已经写进控件的
+        文字不会自己跟着变。所以切换语言后必须重跑一遍这里，这正是 pyuic 生成
+        的代码把文案与 setupUi 分开的用意。
+
+        ⚠️ 新增界面文案时，**setupUi 与这里都要写**：两处的字符串集合由单测
+        （tests/test_i18n_coverage.py）逐条比对，漏一处就会变红。
+
+        ⚠️ 这里刻意**不刷新** workflowWebView 的占位 HTML：它可能正在显示真实的
+        工作流图，切语言不该把用户的执行结果抹掉。
+        """
+        # ── 对话页 ──
+        self.lbTitle.setText(_translate("QGISAgent", "新建对话"))
+        self.lbDescription.setText(
+            _translate("QGISAgent", "选择或新建对话开始使用 QGIS Agent"))
+        self.ptMessage.setPlaceholderText(
+            _translate("QGISAgent", "输入指令…  Enter 发送 / Shift+Enter 换行"))
+        self.pbSend.setText(_translate("QGISAgent", "发送"))
+        self.lblModel.setText(_translate("QGISAgent", "模型"))
+        self.lblTemperature.setText(_translate("QGISAgent", "温度"))
+        self.sliderTemperature.setToolTip(
+            _translate("QGISAgent", "LLM 温度 (0=精确, 1=创造)"))
+        self.pbStop.setText(_translate("QGISAgent", "停止"))
+        self.cbSkipConfirm.setText(_translate("QGISAgent", "跳过确认"))
+        self.cbSkipConfirm.setToolTip(
+            _translate("QGISAgent",
+                       "勾选后直接执行所有 PyQGIS/Processing 代码，不再弹窗确认"))
+
+        # ── 历史页 ──
+        self.ptSearchConversationCard.setPlaceholderText(
+            _translate("QGISAgent", "搜索对话..."))
+        self.pbSearchConversationCard.setText(_translate("QGISAgent", "搜索"))
+        self.pbNew.setText(_translate("QGISAgent", "+ 新建对话"))
+
+        # ── 模型页 ──
+        self.lblSettingsTitle.setText(_translate("QGISAgent", "大模型配置"))
+        self.lblSettingsHint.setText(_translate(
+            "QGISAgent",
+            "管理 API 端点及密钥。添加模型时可参考内置信息，支持任意 OpenAI 兼容接口。"))
+        self.settingsTable.setHorizontalHeaderLabels([
+            _translate("QGISAgent", "模型名称"),
+            _translate("QGISAgent", "API 端点"),
+            "API Key",
+            "",
+        ])
+        self.btnAddModel.setText(_translate("QGISAgent", "+ 添加模型"))
+        self.cbSkipConfirmSettings.setText(
+            _translate("QGISAgent", "跳过代码执行确认"))
+        self.cbSkipConfirmSettings.setToolTip(
+            _translate("QGISAgent",
+                       "勾选后直接执行 PyQGIS/Processing 代码，不再弹窗确认"))
+
+        # ── 工作流页 ──
+        self.lblWorkflowTitle.setText(_translate("QGISAgent", "地理处理工作流"))
+        self.lblWorkflowHint.setText(
+            _translate("QGISAgent", "可视化展示任务执行流程和步骤状态"))
+
+        # ── 帮助页 ──
+        self.pbOpenFullHelp.setText(
+            _translate("QGISAgent", "📖 打开完整帮助文档 (HELP.html)"))
+        self.pbOpenFullHelp.setToolTip(
+            _translate("QGISAgent", "在默认浏览器中打开插件目录下的 HELP.html"))
+
+        # ── 报告页 ──
+        self.lblReportsTitle.setText(_translate("QGISAgent", "代码与执行报告"))
+        self.lblReportsHint.setText(_translate("QGISAgent", "查看生成的代码和执行日志"))
+        self.lblCode.setText(_translate("QGISAgent", "生成的代码:"))
+        self.codeEditor.setPlaceholderText(_translate("QGISAgent", "等待代码生成..."))
+        self.pbRunCode.setText(_translate("QGISAgent", "▶ 运行代码"))
+        self.pbLoadCode.setText(_translate("QGISAgent", "📂 从文件读取"))
+        self.pbCopyCode.setText(_translate("QGISAgent", "📋 复制代码"))
+        self.pbSaveCode.setText(_translate("QGISAgent", "💾 保存代码"))
+        self.pbClearCode.setText(_translate("QGISAgent", "🗑️ 清空"))
+        self.lblExecutionLog.setText(_translate("QGISAgent", "执行日志:"))
+        self.executionLog.setPlaceholderText(
+            _translate("QGISAgent", "等待执行日志..."))
+        self.lblDebugAnalysis.setText(_translate("QGISAgent", "错误分析:"))
+
+        # ── 页签文案 ──（下标顺序必须与 setupUi 里 addTab 的顺序一致）
+        self.twTabs.setTabText(0, _translate("QGISAgent", "对话"))
+        self.twTabs.setTabText(1, _translate("QGISAgent", "历史"))
+        self.twTabs.setTabText(2, _translate("QGISAgent", "模型"))
+        self.twTabs.setTabText(3, _translate("QGISAgent", "MCP"))
+        self.twTabs.setTabText(4, _translate("QGISAgent", "工作流"))
+        self.twTabs.setTabText(5, _translate("QGISAgent", "报告"))
+        self.twTabs.setTabText(6, _translate("QGISAgent", "帮助"))

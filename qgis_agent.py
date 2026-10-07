@@ -6,7 +6,7 @@ import sys
 import html as html_module
 
 from qgis.PyQt.QtCore import (
-    QSettings, Qt, QTimer, QPoint,
+    QSettings, Qt, QTimer, QPoint, QCoreApplication, QT_TRANSLATE_NOOP,
     pyqtSignal, QThread
 )
 from qgis.PyQt.QtGui import QIcon, QPalette, QFont
@@ -18,10 +18,29 @@ from qgis.PyQt.QtWidgets import (
 )
 from qgis.utils import iface
 
+from . import i18n
 from .package_manager import PackageManager
 import logging
 import contextlib
 logger = logging.getLogger(__name__)
+
+#: 界面文案翻译入口。写法**刻意与 pyuic 生成的代码保持一致**（字面量 context +
+#: 模块级别名），因为 pylupdate 只认这种字面量形式 —— 把 context 写成变量
+#: 它就抓不到这些串（提取结果会静默变少，翻译"看起来没生效"）。
+#: 三处 context 必须一致：这里、base_ui、``build_translations.CONTEXT``。
+_translate = QCoreApplication.translate
+
+#: 插件菜单名。用 ``QT_TRANSLATE_NOOP`` 声明 —— 它是 Qt 官方的"**只标记**、不
+#: 翻译"写法：pylupdate 照常把它抓进 .ts，而运行时拿到的仍是原文，由我们自己
+#: 在合适的时机（切换语言时）现翻。这样菜单名不必为了可提取而写两遍。
+#: （已实测 pylupdate 确实认得这个宏。）
+_MENU_TEXT = QT_TRANSLATE_NOOP("QGISAgent", "QGIS 智能助手(&Q)")
+
+#: 工具栏标题，同上。
+_TOOLBAR_TEXT = QT_TRANSLATE_NOOP("QGISAgent", "QGIS Agent")
+
+#: 工具栏/菜单里那一个动作的文案，同上（同样用 NOOP 标记，运行时现翻）。
+_ACTION_OPEN_TEXT = QT_TRANSLATE_NOOP("QGISAgent", "打开 QGIS Agent")
 
 required_modules = [
     "langchain_core",
@@ -67,15 +86,19 @@ class CodeConfirmDialog(QDialog):
         super().__init__(parent)
         self.decision = None  # "once" | "session" | "always" | None(取消)
         self._review_worker = None  # 由 _start_code_review 挂上，便于收尾时断开
-        self.setWindowTitle("代码执行确认")
+        self.setWindowTitle(_translate("QGISAgent", "代码执行确认"))
         self.setMinimumSize(580, 520)
         self.setModal(True)
 
         layout = QVBoxLayout(self)
 
+        # ⚠️ f-string 里的内容 pylupdate 抓不到，必须改成 _translate(...) % 值 的形式
         warn = QLabel(
-            f"即将执行 <b>{html_module.escape(tool_name)}</b>，是否继续？\n"
-            "请检查下方代码是否正确，确认无误后再点「执行」。"
+            _translate(
+                "QGISAgent",
+                "即将执行 <b>%s</b>，是否继续？\n"
+                "请检查下方代码是否正确，确认无误后再点「执行」。")
+            % html_module.escape(tool_name)
         )
         warn.setWordWrap(True)
         layout.addWidget(warn)
@@ -91,7 +114,7 @@ class CodeConfirmDialog(QDialog):
         layout.addWidget(code_view, 1)
 
         # 代码审查区：先占位，审查线程返回后由 apply_review 回填
-        self.reviewStatus = QLabel("🔍 代码审查：正在后台审查…")
+        self.reviewStatus = QLabel(_translate("QGISAgent", "🔍 代码审查：正在后台审查…"))
         self.reviewStatus.setWordWrap(True)
         self.reviewStatus.setStyleSheet("QLabel { color:#666; }")
         layout.addWidget(self.reviewStatus)
@@ -103,10 +126,10 @@ class CodeConfirmDialog(QDialog):
         layout.addWidget(self.reviewView)
 
         # 按钮行
-        btn_once = QPushButton("仅此一次")
-        btn_session = QPushButton("本次会话允许该工具")
-        btn_always = QPushButton("总是允许")
-        btn_cancel = QPushButton("取消")
+        btn_once = QPushButton(_translate("QGISAgent", "仅此一次"))
+        btn_session = QPushButton(_translate("QGISAgent", "本次会话允许该工具"))
+        btn_always = QPushButton(_translate("QGISAgent", "总是允许"))
+        btn_cancel = QPushButton(_translate("QGISAgent", "取消"))
         for _b in (btn_once, btn_session, btn_always, btn_cancel):
             _b.setStyleSheet("QPushButton { padding: 6px 10px; }")
         btn_cancel.setStyleSheet(
@@ -138,31 +161,33 @@ class CodeConfirmDialog(QDialog):
             suggestions = [str(s) for s in (review.get("suggestions") or [])]
 
             if not review:
-                self.reviewStatus.setText("🔍 代码审查：不可用（已跳过）")
+                self.reviewStatus.setText(_translate("QGISAgent", "🔍 代码审查：不可用（已跳过）"))
                 self.reviewStatus.setStyleSheet("QLabel { color:#888; }")
             elif issues:
-                self.reviewStatus.setText(
-                    f"❌ 代码审查：发现 {len(issues)} 个问题、{len(suggestions)} 条建议，请谨慎执行"
-                )
+                self.reviewStatus.setText(_translate(
+                    "QGISAgent",
+                    "❌ 代码审查：发现 %d 个问题、%d 条建议，请谨慎执行")
+                    % (len(issues), len(suggestions)))
                 self.reviewStatus.setStyleSheet("QLabel { color:#c0392b; font-weight:bold; }")
             else:
-                self.reviewStatus.setText(
-                    f"✅ 代码审查：未发现问题（{len(suggestions)} 条建议）"
-                )
+                self.reviewStatus.setText(_translate(
+                    "QGISAgent", "✅ 代码审查：未发现问题（%d 条建议）")
+                    % len(suggestions))
                 self.reviewStatus.setStyleSheet("QLabel { color:#27793f; }")
 
             lines = []
             if issues:
-                lines.append("问题：")
-                lines.extend(f"  - {i}" for i in issues)
+                lines.append(_translate("QGISAgent", "问题："))
+                lines.extend("  - %s" % i for i in issues)
             if suggestions:
-                lines.append("建议：")
-                lines.extend(f"  - {s}" for s in suggestions)
+                lines.append(_translate("QGISAgent", "建议："))
+                lines.extend("  - %s" % s for s in suggestions)
             if summary:
                 lines.append("")
-                lines.append("审查摘要：")
+                lines.append(_translate("QGISAgent", "审查摘要："))
                 lines.append(str(summary))
-            self.reviewView.setPlainText("\n".join(lines) or "审查未返回内容。")
+            self.reviewView.setPlainText(
+                "\n".join(lines) or _translate("QGISAgent", "审查未返回内容。"))
         except Exception:
             logger.debug("回填代码审查结果失败（不影响确认流程）", exc_info=True)
 
@@ -196,13 +221,13 @@ class DiagnosisDialog(QDialog):
 
     def __init__(self, headline, report, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("连接诊断")
+        self.setWindowTitle(_translate("QGISAgent", "连接诊断"))
         self.resize(600, 440)
 
         layout = QVBoxLayout(self)
         layout.setSpacing(6)
 
-        self.lblHeadline = QLabel(str(headline or "诊断完成"))
+        self.lblHeadline = QLabel(str(headline or _translate("QGISAgent", "诊断完成")))
         self.lblHeadline.setWordWrap(True)
         font = self.lblHeadline.font()
         font.setBold(True)
@@ -217,9 +242,9 @@ class DiagnosisDialog(QDialog):
         layout.addWidget(self.txtReport, 1)
 
         buttons = QHBoxLayout()
-        self.pbCopy = QPushButton("复制报告")
+        self.pbCopy = QPushButton(_translate("QGISAgent", "复制报告"))
         self.pbCopy.clicked.connect(self._copy_report)
-        pbClose = QPushButton("关闭")
+        pbClose = QPushButton(_translate("QGISAgent", "关闭"))
         pbClose.clicked.connect(self.accept)
         buttons.addWidget(self.pbCopy)
         buttons.addStretch(1)
@@ -229,7 +254,7 @@ class DiagnosisDialog(QDialog):
     def _copy_report(self):
         try:
             QApplication.clipboard().setText(self.txtReport.toPlainText())
-            self.pbCopy.setText("已复制 ✓")
+            self.pbCopy.setText(_translate("QGISAgent", "已复制 ✓"))
         except Exception as _e:
             logger.debug("复制诊断报告失败: %s", _e, exc_info=True)
 
@@ -320,12 +345,23 @@ class QGISAgent:
         self.iface = iface
         self.plugin_dir = os.path.dirname(__file__)
 
+        # ── 界面语言必须在**造出任何界面文案之前**装好 ──
+        # QAction 的 text 是在构造那一刻取的值，之后再 retranslate 是补不上的
+        # （菜单名、工具栏提示都在这里定下来）。失败一律吞掉：语言只是显示层，
+        # 不该成为插件起不来的原因。
+        try:
+            i18n.apply_language()
+        except Exception as _e:  # noqa: BLE001
+            logger.debug("装载界面语言失败，回退源码原文: %s", _e, exc_info=True)
+
         self.actions = []
-        # 菜单名直接用中文：插件 UI 本身就是中文原生，此前经 .qm 翻译
-        # "QGIS Agent"→"QGIS 智能助手"，但 .qm 是空文件从未生效（12 字节，
-        # 只有 magic 头）。与其维护 lrelease 链路只为这一条文案，不如硬编码。
-        self.menu = "QGIS 智能助手(&Q)"
-        self.toolbar = self.iface.addToolBar("QGIS Agent")
+        #: [(QAction, 源码原文), ...] —— 切换语言时按原文重算文案。
+        self._action_sources = []
+        #: 当前显示用的插件菜单名（翻译结果）。
+        self.menu = _translate("QGISAgent", _MENU_TEXT)
+        #: 已经注册进 QGIS 的那个名字 —— 换语言时靠它"摘旧的、挂新的"。
+        self._registered_menu = self.menu
+        self.toolbar = self.iface.addToolBar(_translate("QGISAgent", _TOOLBAR_TEXT))
         self.toolbar.setObjectName("QGISAgentToolbar")
 
         # 将工具栏放到Python控制台后面
@@ -382,7 +418,7 @@ class QGISAgent:
                    add_to_menu=True, add_to_toolbar=True, status_tip=None,
                    whats_this=None, parent=None):
         icon = QIcon(icon_path)
-        action = QAction(icon, text, parent)
+        action = QAction(icon, _translate("QGISAgent", text), parent)
         action.triggered.connect(callback)
         action.setEnabled(enabled_flag)
         if status_tip is not None:
@@ -393,6 +429,9 @@ class QGISAgent:
             self.toolbar.addAction(action)
         if add_to_menu:
             self.iface.addPluginToMenu(self.menu, action)
+        # 留下源码原文，切换语言时才能重算一次文案（QAction 的 text 只在构造时
+        # 取一次，不记原文就再也翻不回去）。
+        self._action_sources.append((action, text))
         self.actions.append(action)
         return action
 
@@ -400,7 +439,7 @@ class QGISAgent:
         icon_path = os.path.join(self.plugin_dir, "icon.png")
         self.add_action(
             icon_path,
-            text="打开 QGIS Agent",
+            text=_ACTION_OPEN_TEXT,
             callback=self.run,
             parent=self.iface.mainWindow(),
         )
@@ -504,7 +543,9 @@ class QGISAgent:
         # 5) 清理菜单与工具栏（必须放在最后，且全程 try，unload 抛异常会让 QGIS 关闭卡死）
         for action in list(self.actions):
             try:
-                self.iface.removePluginMenu("QGIS 智能助手(&Q)", action)
+                # ⚠️ 必须用**已注册**的那个名字：菜单名会随界面语言变，写死字面量
+                # 时英文界面下会摘不掉（QGIS 找不到那个菜单），留下一个空壳子菜单。
+                self.iface.removePluginMenu(self._registered_menu, action)
                 self.iface.removeToolBarIcon(action)
             except Exception as _e:
                 logger.debug("ignored exception", exc_info=True)
@@ -523,9 +564,9 @@ class QGISAgent:
             except Exception:
                 logger.warning("依赖提示流程异常", exc_info=True)
                 QMessageBox.warning(
-                    None, "依赖不可用",
-                    "QGIS Agent 的 Python 依赖无法正常加载。\n\n"
-                    "请打开「QGIS Agent」面板的日志或 QGIS 的 Python 控制台查看详细信息。")
+                    None, _translate("QGISAgent", "依赖不可用"),
+                    _translate("QGISAgent", "QGIS Agent 的 Python 依赖无法正常加载。\n\n"
+                    "请打开「QGIS Agent」面板的日志或 QGIS 的 Python 控制台查看详细信息。"))
             return
 
         if not self.plugin_is_active:
@@ -545,8 +586,8 @@ class QGISAgent:
         if package_manager.broken:
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Icon.Warning)
-            msg.setWindowTitle("依赖已安装但无法加载")
-            msg.setText("以下 Python 库可以找到，但导入时报错，插件无法继续启动：")
+            msg.setWindowTitle(_translate("QGISAgent", "依赖已安装但无法加载"))
+            msg.setText(_translate("QGISAgent", "以下 Python 库可以找到，但导入时报错，插件无法继续启动："))
             msg.setInformativeText(
                 package_manager.broken_report() + "\n\n" + package_manager.hint_text())
             msg.setStandardButtons(QMessageBox.StandardButton.Ok)
@@ -555,24 +596,28 @@ class QGISAgent:
 
         # 情况二：确实没有 → 询问是否自动安装。
         if not package_manager.missing:
-            QMessageBox.information(None, "已就绪", "依赖已安装，请重启 QGIS。")
+            QMessageBox.information(None, _translate("QGISAgent", "已就绪"), _translate("QGISAgent", "依赖已安装，请重启 QGIS。"))
             return
 
         msg = QMessageBox()
-        msg.setWindowTitle("缺少依赖")
-        msg.setText("QGIS Agent 需要安装以下 Python 库：")
-        detail = "\n".join(f"• {m}" for m in package_manager.missing)
-        msg.setInformativeText(detail + "\n\n是否尝试自动安装？")
+        msg.setWindowTitle(_translate("QGISAgent", "缺少依赖"))
+        msg.setText(_translate("QGISAgent", "QGIS Agent 需要安装以下 Python 库："))
+        detail = "\n".join("• %s" % m for m in package_manager.missing)
+        msg.setInformativeText(
+            detail + _translate("QGISAgent", "\n\n是否尝试自动安装？"))
         msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         msg.setDefaultButton(QMessageBox.StandardButton.Yes)
         if msg.exec() == QMessageBox.StandardButton.Yes:
             ok = package_manager.install_missing()
             if ok:
-                QMessageBox.information(None, "安装成功", "依赖安装完成，请重启 QGIS 后重新启用插件。")
+                QMessageBox.information(None, _translate("QGISAgent", "安装成功"), _translate("QGISAgent", "依赖安装完成，请重启 QGIS 后重新启用插件。"))
             else:
-                QMessageBox.warning(None, "安装失败",
-                                    "自动安装失败，请在 OSGeo4W Shell 中手动运行：\n\n"
-                                    f"pip install {' '.join(required_modules)}")
+                QMessageBox.warning(
+                    None, _translate("QGISAgent", "安装失败"),
+                    _translate(
+                        "QGISAgent",
+                        "自动安装失败，请在 OSGeo4W Shell 中手动运行：\n\n"
+                        "pip install %s") % " ".join(required_modules))
 
     def _init_plugin(self):
         from .dataloader import DataLoader
@@ -722,8 +767,8 @@ class QGISAgent:
                 llm_id = self._get_selected_llm_id()
                 if not llm_id:
                     QMessageBox.warning(
-                        None, "无可用模型",
-                        "请先在「模型配置」标签页中添加 LLM 模型，或使用「+ 新建对话」指定模型。",
+                        None, _translate("QGISAgent", "无可用模型"),
+                        _translate("QGISAgent", "请先在「模型配置」标签页中添加 LLM 模型，或使用「+ 新建对话」指定模型。"),
                     )
                     self.dockwidget.twTabs.setCurrentWidget(self.dockwidget.tbSettings)
                     return
@@ -855,7 +900,7 @@ class QGISAgent:
         """用户请求模糊时弹出追问输入框，并把补充信息回传给会话。"""
         try:
             text, ok = QInputDialog.getText(
-                self.dockwidget, "需要补充信息", str(question)
+                self.dockwidget, _translate("QGISAgent", "需要补充信息"), str(question)
             )
         except Exception:
             logger.debug("弹出澄清追问输入框失败，跳过本次追问", exc_info=True)
@@ -1240,13 +1285,13 @@ class QGISAgent:
                 return
             QMessageBox.information(
                 self.dockwidget,
-                "欢迎使用 QGIS Agent",
-                "这是一款在 QGIS 内运行的 AI 助手插件。\n\n"
+                _translate("QGISAgent", "欢迎使用 QGIS Agent"),
+                _translate("QGISAgent", "这是一款在 QGIS 内运行的 AI 助手插件。\n\n"
                 "• 在底部输入框直接描述 GIS 任务（如「把图层重投影到 WGS84」）；\n"
                 "• 执行 PyQGIS 代码前会弹出确认框，可勾选「总是允许」免重复确认；\n"
                 "• 首次会自动在后台构建 PyQGIS API 索引（约 10-30 秒，不卡界面）；\n"
                 "• 发送中可随时点「停止」，停止后该对话仍可继续。\n\n"
-                "更多用法见帮助页（聊天框右上角「?」）。",
+                "更多用法见帮助页（聊天框右上角「?」）。"),
             )
             settings.setValue("firstRunDone", True)
         except Exception as _e:
@@ -1283,7 +1328,7 @@ class QGISAgent:
 
         # 进入「停止中」中间态
         with contextlib.suppress(Exception):
-            self.dockwidget.pbStop.setText("停止中…")
+            self.dockwidget.pbStop.setText(_translate("QGISAgent", "停止中…"))
             self.dockwidget.pbStop.setEnabled(False)
             _set_status = getattr(self.dockwidget, "_set_status", None)
             if callable(_set_status):
@@ -1295,7 +1340,7 @@ class QGISAgent:
     def _reset_send_controls(self):
         """U10：恢复发送/停止按钮到初始可用状态（停止按钮文案复位为「停止」）。"""
         with contextlib.suppress(Exception):
-            self.dockwidget.pbStop.setText("停止")
+            self.dockwidget.pbStop.setText(_translate("QGISAgent", "停止"))
             self.dockwidget.pbStop.setEnabled(True)
 
     def _on_new_conversation(self):
@@ -1309,7 +1354,7 @@ class QGISAgent:
             llm_id = self._get_selected_llm_id()
             if not llm_id:
                 # 没有模型可用，提示用户先配置
-                QMessageBox.warning(None, "无可用模型", "请先在「模型配置」标签页中添加 LLM 模型。")
+                QMessageBox.warning(None, _translate("QGISAgent", "无可用模型"), _translate("QGISAgent", "请先在「模型配置」标签页中添加 LLM 模型。"))
                 self.dockwidget.twTabs.setCurrentWidget(self.dockwidget.tbSettings)
                 return
 
@@ -1386,9 +1431,9 @@ class QGISAgent:
         # 删除不可恢复，先做二次确认，避免误点永久丢失整个会话
         reply = QMessageBox.question(
             self.dockwidget,
-            "删除会话",
-            "确定要删除这个会话吗？\n\n"
-            "会话中的全部消息与代码记录将被永久移除，删除后不可恢复。",
+            _translate("QGISAgent", "删除会话"),
+            _translate("QGISAgent", "确定要删除这个会话吗？\n\n"
+            "会话中的全部消息与代码记录将被永久移除，删除后不可恢复。"),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
@@ -1478,7 +1523,7 @@ class QGISAgent:
             self._on_search_conversation
         )
         self.dockwidget.searchPressed.disconnect(self._on_search_conversation)
-        self.dockwidget.pbSearchConversationCard.setText("取消")
+        self.dockwidget.pbSearchConversationCard.setText(_translate("QGISAgent", "取消"))
         self.dockwidget.pbSearchConversationCard.clicked.connect(
             self._switch_clear_mode
         )
@@ -1494,7 +1539,7 @@ class QGISAgent:
             self._on_search_conversation
         )
         self.dockwidget.searchPressed.connect(self._on_search_conversation)
-        self.dockwidget.pbSearchConversationCard.setText("搜索")
+        self.dockwidget.pbSearchConversationCard.setText(_translate("QGISAgent", "搜索"))
 
     def _on_tab_changed(self, index):
         """标签页切换时刷新模型配置页"""
@@ -1510,20 +1555,306 @@ class QGISAgent:
         except Exception as _e:  # noqa: BLE001
             logger.debug("切换页签刷新模型表失败，忽略: %s", _e, exc_info=True)
 
+    # ──────────────────────────────────────────────
+    # 界面语言 / Interface language（v2.4.14 引入）
+    # ──────────────────────────────────────────────
+    def _build_language_ui(self):
+        """在「模型」设置页顶部放一个「语言 / Language」分组。
+
+        ⚠️ 分组标题与下拉项**刻意不做翻译**（永远两种写法并排）：
+        界面本身可能是中文或英文，双语标注才能保证用户在任一边都认得出这个
+        入口 —— 尤其是"界面已经被切成英文、想切回中文"的那一刻。若把标题也
+        翻译掉，英文界面里它就只剩一个 "Language"，中文用户反而找不到它。
+        这与用户明确要求的「语言设置的菜单名称要双语标注」一致。
+        """
+        # ⚠️ 这一串**不能**包 _translate：它必须两种语言并排同时出现。
+        group = QGroupBox("🌐 语言 / Language")
+        outer = QVBoxLayout(group)
+        outer.setSpacing(4)
+
+        self.cbLanguage = QComboBox()
+        # 同理，工具提示也保持双语原文，不做翻译。
+        self.cbLanguage.setToolTip(
+            "界面语言 / Interface language\n"
+            "默认跟随 QGIS 的语言设置；也可以在这里单独指定。\n"
+            "Defaults to the QGIS language setting; you can also pick one here.\n"
+            "改动立即生效，无需重启 QGIS（插件菜单名会在下次启动时更新）。\n"
+            "Takes effect immediately, no restart needed "
+            "(the plugin menu name updates on the next start)."
+        )
+        # 第一项固定是"跟随系统"，其余按 i18n 支持的清单来 —— 都用 itemData 存语言码，
+        # 显示文本换成双语也不会影响取值。
+        self.cbLanguage.addItem(i18n.AUTO_LABEL, i18n.AUTO)
+        for code, label in i18n.available_languages():
+            self.cbLanguage.addItem(label, code)
+        self._select_language(i18n.stored_choice())
+        self.cbLanguage.currentIndexChanged.connect(self._on_language_changed)
+        outer.addWidget(self.cbLanguage)
+
+        self.lblLanguageHint = QLabel()
+        self.lblLanguageHint.setWordWrap(True)
+        self.lblLanguageHint.setStyleSheet("color: #666; font-size: 11px;")
+        self._refresh_language_hint()
+        outer.addWidget(self.lblLanguageHint)
+
+        self.boxLanguage = group
+        # 插在页面标题/说明之后、模型表格之前：语言是全局设置，放最上面一眼可见 ——
+        # 窄面板里不必滚过模型表格才找得到它。
+        self.dockwidget.settingsLayout.insertWidget(2, group)
+
+    def _select_language(self, value):
+        """按设置值选中下拉项；认不出来则落到「跟随系统」。"""
+        label = i18n.choice_label(value)
+        idx = self.cbLanguage.findText(label)
+        self.cbLanguage.blockSignals(True)      # 程序化选中不该触发"用户改了语言"
+        self.cbLanguage.setCurrentIndex(idx if idx >= 0 else 0)
+        self.cbLanguage.blockSignals(False)
+
+    def _current_language_choice(self):
+        """读下拉框当前选中的语言码（拿不到就回 auto）。"""
+        data = self.cbLanguage.currentData()
+        return str(data).strip() if data else i18n.AUTO
+
+    def _on_language_changed(self, _index=None):
+        """用户切换语言：落盘 → 当场装载 → 就地刷新界面文案。"""
+        choice = self._current_language_choice()
+        try:
+            QSettings("QGIS", "QGISAgent").setValue(i18n.SETTINGS_KEY, choice)
+        except Exception as _e:  # noqa: BLE001
+            logger.debug("保存语言设置失败: %s", _e, exc_info=True)
+        applied = i18n.apply_language(choice)
+        self._refresh_after_language_change(applied)
+
+    def _refresh_language_hint(self):
+        """说清楚"现在实际用的是哪个语言"，尤其是跟随系统时跟随到了什么。"""
+        label = getattr(self, "lblLanguageHint", None)
+        if label is None:
+            return
+        if i18n.stored_choice() == i18n.AUTO:
+            label.setText(_translate(
+                "QGISAgent",
+                "当前跟随 QGIS 的语言（%s）。如需固定为某种语言，请在上方选择。")
+                % i18n.language_label(i18n.preferred_language()))
+        else:
+            label.setText(_translate(
+                "QGISAgent", "当前界面语言：%s。")
+                % i18n.language_label(i18n.preferred_language()))
+
+    def _refresh_after_language_change(self, _applied_code=None):
+        """语言切换后把界面文案刷新一遍。
+
+        ⚠️ 这里**只改字符串，不重建任何控件**：下拉框本身、对话列表、当前会话
+        都还在用着，重建会把用户状态抹掉。静态文案由 base_ui 的 retranslateUi
+        统一覆盖（那是 setupUi 的镜像），本文件自己造的控件在这里另刷。
+        """
+        try:
+            self.dockwidget.retranslateUi()
+        except Exception as _e:  # noqa: BLE001
+            logger.debug("刷新 dock 文案失败: %s", _e, exc_info=True)
+        # base_ui 管不到运行时动态创建的控件的文案，由 dockwidget 自己刷
+        try:
+            self.dockwidget.retranslate_dynamic_ui()
+        except Exception as _e:  # noqa: BLE001
+            logger.debug("刷新 dock 动态文案失败: %s", _e, exc_info=True)
+        self._retranslate_own_widgets()
+        self._retranslate_actions()
+        self._refresh_plugin_menu()
+
+    def _retranslate_own_widgets(self):
+        """刷新 qgis_agent.py 自己造的那些常驻控件（不含 base_ui 负责的部分）。
+
+        与 base_ui 的 ``retranslateUi()`` 是同一件事的两个半边。
+
+        ⚠️ 新增界面文案时，**构造处与这里必须成对写**，否则切换语言后该控件会
+        一直停在旧语言（静默、不报错）。``tests/test_i18n_coverage.py`` 会比对
+        两处的字符串集合。
+
+        ⚠️ 刻意不动的地方：
+          - 语言分组标题与下拉项：它们**永远双语并排**，不参与翻译（见
+            ``_build_language_ui``）；
+          - 临时对话框（代码确认 / 连接诊断 / 添加模型）：都是按需新建的，
+            新建时自然取当前语言，不需要在这里刷；
+          - 状态类文案（MCP 服务状态、令牌显示/隐藏、录制状态）：一律**按当前
+            状态重算**，不能写死成某个固定词 —— 否则会把界面说反。
+        """
+        # ── 语言分组自身 ──
+        self._refresh_language_hint()
+
+        # ── 模型配置页（mcpLayout 之外的常驻控件）──
+        btn = getattr(self, "btnTestConnection", None)
+        if btn is not None:
+            btn.setText(_translate("QGISAgent", "🔌 测试连接与诊断"))
+            btn.setToolTip(_translate(
+                "QGISAgent",
+                "逐项检查：服务地址是否可达、模型名是否与服务端一致、"
+                "上下文长度是否够用、是否支持工具调用（后台线程执行，不阻塞界面）"))
+        cb_tls = getattr(self, "cbBrowserTls", None)
+        if cb_tls is not None:
+            cb_tls.setText(_translate(
+                "QGISAgent",
+                "使用浏览器兼容 TLS（仅当接口连接被网关重置时需要，"
+                "需 pip install curl_cffi）"))
+            cb_tls.setToolTip(_translate(
+                "QGISAgent",
+                "部分 API 网关会依据客户端 TLS 指纹判断请求来源，"
+                "非浏览器客户端可能在握手阶段被中断（典型表现：Connection reset by peer）。"
+                "开启后改用 curl_cffi 的浏览器 TLS 栈，以提升这类接口的连接成功率。\n"
+                "curl_cffi 是可选依赖：未安装时本选项会置灰不可选，"
+                "插件改用标准 TLS 栈，其它功能不受影响。"))
+            # 提示语有"未安装 / 已启用 / 就绪"三态，必须按状态重算
+            self._refresh_browser_tls_hint()
+
+        self._retranslate_mcp_widgets()
+
+        # 最后刷依赖状态的文案：上面若写死过，这里会被状态值纠正
+        self._refresh_mcp_status()
+
+    def _retranslate_mcp_widgets(self):
+        """刷新 MCP 页的静态文案（状态相关的那几条交给 ``_refresh_mcp_status``）。"""
+        group = getattr(self, "boxMcp", None)
+        if group is None:
+            return                      # MCP 区没建起来（例如早期异常），跳过
+        group.setTitle(_translate("QGISAgent", "MCP 服务"))
+
+        hint = getattr(self, "lblMcpHint", None)
+        if hint is not None:
+            try:
+                from .mcp_protocol import session_file_path
+                session_hint = session_file_path()
+            except Exception:       # noqa: BLE001
+                session_hint = "~/.qgis_agent/mcp_session.json"
+            hint.setText(
+                _translate("QGISAgent",
+                           "把本插件的 GIS 工具暴露给 Claude Desktop / Cursor 等外部 Agent 调用。"
+                           "启动后仅在 127.0.0.1 上监听，且强制校验访问令牌，"
+                           "局域网内其他机器无法连接。"
+                           "端口与令牌已写入 %s，外部 MCP Server 会自动读取，"
+                           "通常无需手工配置。")
+                % session_hint)
+
+        for attr, text in (
+            ("cbMcpAutostart", "随插件启动时自动运行 MCP 服务"),
+            ("lblMcpPortLabel", "监听端口"),
+            ("lblMcpTokenLabel", "访问令牌"),
+            ("btnMcpRegen", "重新生成"),
+            ("btnMcpCopyToken", "复制令牌"),
+            ("btnMcpCopyConfig", "复制客户端配置"),
+            ("btnMcpCheck", "测试连通性"),
+        ):
+            widget = getattr(self, attr, None)
+            if widget is not None:
+                widget.setText(_translate("QGISAgent", text))
+
+        tips = (
+            ("cbMcpAutostart",
+             "只影响「下次 QGIS 启动插件时要不要自动拉起服务」，改动立即写入设置，"
+             "不会当场启动或停止服务。"),
+            ("spMcpPort",
+             "默认 9876。若被占用可换一个端口。\n"
+             "⚠️ 监听端口无法热切换：改动会被保存，"
+             "但要在「停止服务 → 启动服务」之后才生效，当前连接不受影响。"),
+            ("btnMcpRegen", "生成一份新的 32 字节随机令牌（旧令牌立即失效）"),
+            ("btnMcpCopyConfig",
+             "复制一段可直接粘贴进 Claude Desktop / Cursor 配置文件的 mcpServers JSON。\n"
+             "其中的 command 会自动换成「本机确实能跑起 MCP Server」的 Python 解释器 —— "
+             "不能直接用 QGIS 主程序，它不会讲 MCP 协议。"),
+            ("btnMcpCheck", "运行 MCP Server 的自检，确认外部客户端能连上插件内的桥接服务"),
+        )
+        for attr, text in tips:
+            widget = getattr(self, attr, None)
+            if widget is not None:
+                widget.setToolTip(_translate("QGISAgent", text))
+
+        checkbox = getattr(self, "cbMcpDangerous", None)
+        if checkbox is not None:
+            checkbox.setText(_translate(
+                "QGISAgent",
+                "允许外部 Agent 调用特权工具（执行 PyQGIS 代码 / 处理算法 / 删图层 / 运行技能）"))
+            checkbox.setToolTip(_translate(
+                "QGISAgent",
+                "默认关闭：这些工具既不会出现在外部 Agent 的工具清单里，"
+                "直接调用也会被拒绝。\n"
+                "开启后外部 Agent 可以请求它们，但每次执行仍会在 QGIS 界面上"
+                "弹出确认框，由你本人点击确认。\n"
+                "「运行技能」之所以归入此类，是因为技能会执行用户技能目录下的 Python 代码。\n"
+                "注意：若你同时打开了插件底部的「跳过代码执行确认」，"
+                "外部 Agent 的这些操作也将不再弹窗。\n"
+                "改动立即生效（服务运行中也会当场刷新工具清单与权限），无需重启服务。"))
+
+        field = getattr(self, "leMcpToken", None)
+        if field is not None:
+            field.setToolTip(_translate(
+                "QGISAgent",
+                "外部客户端必须携带该令牌才能调用工具。\n"
+                "编辑完（焦点离开输入框）会立即生效并写回设置，服务无需重启。\n"
+                "默认以星号隐藏，避免截图/录屏时泄露；要核对时点右侧「显示」展开。\n"
+                "取完整令牌请用「复制令牌」按钮，不要手抄屏幕上的片段。"))
+
+        reveal = getattr(self, "btnMcpTokenReveal", None)
+        if reveal is not None:
+            # 显示 / 隐藏是状态相关：按当前是否勾选重算
+            reveal.setText(_translate("QGISAgent", "隐藏") if reveal.isChecked()
+                           else _translate("QGISAgent", "显示"))
+            reveal.setToolTip(_translate(
+                "QGISAgent",
+                "在明文与星号之间切换。只改变本机屏幕上的呈现，"
+                "不会修改或复制令牌本身。"))
+
+    def _refresh_plugin_menu(self):
+        """把插件菜单名换成当前语言的写法。
+
+        ⚠️ QGIS 没有"重命名插件菜单"的接口 —— 只能先 removePluginMenu 摘掉、
+        再 addPluginToMenu 挂回去。摘/挂之间菜单是空的，万一 add 失败会留下
+        一个彻底消失的菜单，所以异常时必须**用旧名字补挂一次**。
+        """
+        new_name = _translate("QGISAgent", _MENU_TEXT)
+        if new_name == self._registered_menu:
+            return
+        old_name = self._registered_menu
+        try:
+            for action in list(self.actions):
+                self.iface.removePluginMenu(old_name, action)
+            for action in self.actions:
+                self.iface.addPluginToMenu(new_name, action)
+            self._registered_menu = new_name
+            self.menu = new_name
+        except Exception as _e:  # noqa: BLE001
+            logger.debug("重挂插件菜单失败，回退旧名字: %s", _e, exc_info=True)
+            try:
+                for action in list(self.actions):
+                    self.iface.addPluginToMenu(old_name, action)
+            except Exception:  # noqa: BLE001
+                logger.debug("回退插件菜单也失败，忽略", exc_info=True)
+
+    def _retranslate_actions(self):
+        """按源码原文重算工具栏/菜单里 QAction 的文案。
+
+        ⚠️ QAction 的 text 只在构造时取一次；不主动改，切语言后菜单与工具提示
+        会永远停在装载时那一版。
+        """
+        for action, source in list(getattr(self, "_action_sources", [])):
+            try:
+                action.setText(_translate("QGISAgent", source))
+            except Exception as _e:  # noqa: BLE001
+                logger.debug("刷新动作文案失败: %s", _e, exc_info=True)
+
     def _init_settings_tab(self):
         """初始化模型配置标签页"""
         self._settings_row_data = {}  # row_idx -> {"llm_id": str, "name": str}
 
         self.dockwidget.btnAddModel.clicked.connect(self._add_model_row)
 
+        # 语言分组最先建：它要插在页面顶部，晚建的话下标会被别的控件挤走
+        self._build_language_ui()
+
         # D14：测试连接按钮（点击后后台线程执行，不阻塞界面）
         # v2.4.2 起升级为「测试连接与诊断」：一次跑完地址 / 模型名 / 上下文 / 工具支持
         # 四项检查 —— 只测「连不连得上」会漏掉最坑的一类故障（模型不支持工具调用时
         # 连接测试照样通过，但对话每次都失败）。
-        self.btnTestConnection = QPushButton("🔌 测试连接与诊断")
+        self.btnTestConnection = QPushButton(_translate("QGISAgent", "🔌 测试连接与诊断"))
         self.btnTestConnection.setToolTip(
-            "逐项检查：服务地址是否可达、模型名是否与服务端一致、"
-            "上下文长度是否够用、是否支持工具调用（后台线程执行，不阻塞界面）"
+            _translate("QGISAgent", "逐项检查：服务地址是否可达、模型名是否与服务端一致、"
+            "上下文长度是否够用、是否支持工具调用（后台线程执行，不阻塞界面）")
         )
         self.btnTestConnection.clicked.connect(self._on_test_connection)
         self.dockwidget.settingsLayout.addWidget(self.btnTestConnection)
@@ -1558,13 +1889,13 @@ class QGISAgent:
             self._browser_tls_ready = False
 
         self.cbBrowserTls = QCheckBox(
-            "使用浏览器兼容 TLS（仅当接口连接被网关重置时需要，需 pip install curl_cffi）"
+            _translate("QGISAgent", "使用浏览器兼容 TLS（仅当接口连接被网关重置时需要，需 pip install curl_cffi）")
         )
         self.cbBrowserTls.setToolTip(
-            "部分 API 网关会依据客户端 TLS 指纹判断请求来源，非浏览器客户端可能在握手阶段被中断"
+            _translate("QGISAgent", "部分 API 网关会依据客户端 TLS 指纹判断请求来源，非浏览器客户端可能在握手阶段被中断"
             "（典型表现：Connection reset by peer）。开启后改用 curl_cffi 的浏览器 TLS 栈，"
             "以提升这类接口的连接成功率。\n"
-            "curl_cffi 是可选依赖：未安装时本选项会置灰不可选，插件改用标准 TLS 栈，其它功能不受影响。"
+            "curl_cffi 是可选依赖：未安装时本选项会置灰不可选，插件改用标准 TLS 栈，其它功能不受影响。")
         )
         requested = bool(QSettings("QGIS", "QGISAgent").value("use_browser_tls", False))
         # 依赖不在位时，把陈旧的「已勾选」纠正掉：设置里写着开、实际永远生效不了，
@@ -1597,14 +1928,14 @@ class QGISAgent:
             return
         if not getattr(self, "_browser_tls_ready", False):
             label.setText(
-                "⚠ 未安装 curl_cffi（可选依赖），此选项已置灰。"
+                _translate("QGISAgent", "⚠ 未安装 curl_cffi（可选依赖），此选项已置灰。"
                 "只有在接口出现「连接被重置」时才需要它；如需启用，请在 QGIS 自带的 Python 中执行："
-                " pip install curl_cffi （装好后重启 QGIS）。不影响其它功能。"
+                " pip install curl_cffi （装好后重启 QGIS）。不影响其它功能。")
             )
         elif self.cbBrowserTls.isChecked():
-            label.setText("✔ 已启用：请求将走 curl_cffi 的浏览器 TLS 栈。")
+            label.setText(_translate("QGISAgent", "✔ 已启用：请求将走 curl_cffi 的浏览器 TLS 栈。"))
         else:
-            label.setText("curl_cffi 已就绪，需要时可开启。")
+            label.setText(_translate("QGISAgent", "curl_cffi 已就绪，需要时可开启。"))
 
     def _on_browser_tls_changed(self, _state=None):
         checked = self.cbBrowserTls.isChecked()
@@ -1618,12 +1949,12 @@ class QGISAgent:
             self._refresh_browser_tls_hint()
             QMessageBox.information(
                 self.dockwidget,
-                "「浏览器兼容 TLS」暂不可用",
-                "未检测到 curl_cffi，该选项已自动关闭。\n\n"
+                _translate("QGISAgent", "「浏览器兼容 TLS」暂不可用"),
+                _translate("QGISAgent", "未检测到 curl_cffi，该选项已自动关闭。\n\n"
                 "它是可选依赖，只在接口连接被网关重置（Connection reset by peer）时才需要。"
                 "如需启用，请在 QGIS 自带的 Python 中执行：\n\n"
                 "    pip install curl_cffi\n\n"
-                "不安装不影响插件的其它功能 —— 插件会自动使用标准 TLS 栈。",
+                "不安装不影响插件的其它功能 —— 插件会自动使用标准 TLS 栈。"),
             )
             return
         QSettings("QGIS", "QGISAgent").setValue("use_browser_tls", checked)
@@ -1641,7 +1972,7 @@ class QGISAgent:
         settings = self._mcp_settings()
         # 分组标题保持短（只写「MCP 服务」）：窄 dock 下 QGroupBox 的标题会被裁掉，
         # 「供 Claude Desktop / Cursor …」这类说明放到下边的 hint 里更稳妥。
-        group = QGroupBox("MCP 服务")
+        group = QGroupBox(_translate("QGISAgent", "MCP 服务"))
         outer = QVBoxLayout(group)
         outer.setSpacing(6)
 
@@ -1653,21 +1984,24 @@ class QGISAgent:
             default_port = 9876
             session_hint = "~/.qgis_agent/mcp_session.json"
 
-        hint = QLabel(
-            "把本插件的 GIS 工具暴露给 Claude Desktop / Cursor 等外部 Agent 调用。"
-            "启动后仅在 127.0.0.1 上监听，且强制校验访问令牌，局域网内其他机器无法连接。"
-            "端口与令牌已写入 %s，外部 MCP Server 会自动读取，通常无需手工配置。"
+        # 存成属性（而不是局部变量）：切换界面语言时要能重新设一遍文案。
+        self.lblMcpHint = QLabel(
+            _translate("QGISAgent",
+                       "把本插件的 GIS 工具暴露给 Claude Desktop / Cursor 等外部 Agent 调用。"
+                       "启动后仅在 127.0.0.1 上监听，且强制校验访问令牌，局域网内其他机器无法连接。"
+                       "端口与令牌已写入 %s，外部 MCP Server 会自动读取，通常无需手工配置。")
             % session_hint
         )
-        hint.setWordWrap(True)
-        hint.setStyleSheet("color: #666; font-size: 11px;")
-        outer.addWidget(hint)
+        self.lblMcpHint.setWordWrap(True)
+        self.lblMcpHint.setStyleSheet("color: #666; font-size: 11px;")
+        outer.addWidget(self.lblMcpHint)
 
-        self.cbMcpAutostart = QCheckBox("随插件启动时自动运行 MCP 服务")
+        self.cbMcpAutostart = QCheckBox(_translate("QGISAgent", "随插件启动时自动运行 MCP 服务"))
         self.cbMcpAutostart.setChecked(bool(settings.value("mcp/autostart", False)))
         self.cbMcpAutostart.setToolTip(
-            "只影响「下次 QGIS 启动插件时要不要自动拉起服务」，改动立即写入设置，"
-            "不会当场启动或停止服务。"
+            _translate("QGISAgent",
+                       "只影响「下次 QGIS 启动插件时要不要自动拉起服务」，改动立即写入设置，"
+                       "不会当场启动或停止服务。")
         )
         # 勾/取消都要落盘 —— 之前只有点「启动/停止服务」时才顺手持久化，
         # 单独勾一下再关设置页，设置就丢了。
@@ -1675,7 +2009,8 @@ class QGISAgent:
         outer.addWidget(self.cbMcpAutostart)
 
         row_port = QHBoxLayout()
-        row_port.addWidget(QLabel("监听端口"))
+        self.lblMcpPortLabel = QLabel(_translate("QGISAgent", "监听端口"))
+        row_port.addWidget(self.lblMcpPortLabel)
         self.spMcpPort = QSpinBox()
         self.spMcpPort.setRange(1024, 65535)
         try:
@@ -1683,28 +2018,31 @@ class QGISAgent:
         except (TypeError, ValueError):
             self.spMcpPort.setValue(default_port)
         self.spMcpPort.setToolTip(
-            "默认 9876。若被占用可换一个端口。\n"
-            "⚠️ 监听端口无法热切换：改动会被保存，但要在「停止服务 → 启动服务」之后才生效，"
-            "当前连接不受影响。"
+            _translate("QGISAgent",
+                       "默认 9876。若被占用可换一个端口。\n"
+                       "⚠️ 监听端口无法热切换：改动会被保存，"
+                       "但要在「停止服务 → 启动服务」之后才生效，当前连接不受影响。")
         )
         self.spMcpPort.valueChanged.connect(self._on_mcp_port_changed)
         row_port.addWidget(self.spMcpPort)
-        self.btnMcpToggle = QPushButton("启动服务")
+        self.btnMcpToggle = QPushButton(_translate("QGISAgent", "启动服务"))
         self.btnMcpToggle.clicked.connect(self._on_mcp_toggle)
         row_port.addWidget(self.btnMcpToggle)
         outer.addLayout(row_port)
 
         row_token = QHBoxLayout()
-        row_token.addWidget(QLabel("访问令牌"))
+        self.lblMcpTokenLabel = QLabel(_translate("QGISAgent", "访问令牌"))
+        row_token.addWidget(self.lblMcpTokenLabel)
         self.leMcpToken = QLineEdit()
         # 默认掩码：令牌是长期凭证，明文长期摊在屏幕上，截图/录屏/远程协助时等于直接泄露。
         # 需要核对时点右侧「显示」临时展开。
         self.leMcpToken.setEchoMode(QLineEdit.EchoMode.Password)
         self.leMcpToken.setToolTip(
-            "外部客户端必须携带该令牌才能调用工具。\n"
-            "编辑完（焦点离开输入框）会立即生效并写回设置，服务无需重启。\n"
-            "默认以星号隐藏，避免截图/录屏时泄露；要核对时点右侧「显示」展开。\n"
-            "取完整令牌请用「复制令牌」按钮，不要手抄屏幕上的片段。"
+            _translate("QGISAgent",
+                       "外部客户端必须携带该令牌才能调用工具。\n"
+                       "编辑完（焦点离开输入框）会立即生效并写回设置，服务无需重启。\n"
+                       "默认以星号隐藏，避免截图/录屏时泄露；要核对时点右侧「显示」展开。\n"
+                       "取完整令牌请用「复制令牌」按钮，不要手抄屏幕上的片段。")
         )
         token = str(settings.value("mcp/token", "") or "")
         if not token:
@@ -1717,32 +2055,41 @@ class QGISAgent:
         # editingFinished：只在"编辑完并离开焦点/回车"时触发，避免每敲一个字符就改令牌。
         self.leMcpToken.editingFinished.connect(self._on_mcp_token_edited)
         row_token.addWidget(self.leMcpToken)
-        self.btnMcpTokenReveal = QPushButton("显示")
+        self.btnMcpTokenReveal = QPushButton(_translate("QGISAgent", "显示"))
         self.btnMcpTokenReveal.setCheckable(True)
         self.btnMcpTokenReveal.setToolTip(
-            "在明文与星号之间切换。只改变本机屏幕上的呈现，不会修改或复制令牌本身。"
+            _translate("QGISAgent",
+                       "在明文与星号之间切换。只改变本机屏幕上的呈现，"
+                       "不会修改或复制令牌本身。")
         )
         self.btnMcpTokenReveal.toggled.connect(self._on_mcp_token_reveal_toggled)
         row_token.addWidget(self.btnMcpTokenReveal)
-        btn_regen = QPushButton("重新生成")
-        btn_regen.setToolTip("生成一份新的 32 字节随机令牌（旧令牌立即失效）")
-        btn_regen.clicked.connect(self._on_mcp_regenerate_token)
-        row_token.addWidget(btn_regen)
-        btn_copy_token = QPushButton("复制令牌")
-        btn_copy_token.clicked.connect(self._on_mcp_copy_token)
-        row_token.addWidget(btn_copy_token)
+        self.btnMcpRegen = QPushButton(_translate("QGISAgent", "重新生成"))
+        self.btnMcpRegen.setToolTip(
+            _translate("QGISAgent", "生成一份新的 32 字节随机令牌（旧令牌立即失效）"))
+        self.btnMcpRegen.clicked.connect(self._on_mcp_regenerate_token)
+        row_token.addWidget(self.btnMcpRegen)
+        self.btnMcpCopyToken = QPushButton(_translate("QGISAgent", "复制令牌"))
+        self.btnMcpCopyToken.clicked.connect(self._on_mcp_copy_token)
+        row_token.addWidget(self.btnMcpCopyToken)
         outer.addLayout(row_token)
 
         self.cbMcpDangerous = QCheckBox(
-            "允许外部 Agent 调用特权工具（执行 PyQGIS 代码 / 处理算法 / 删图层 / 运行技能）"
+            _translate("QGISAgent", "允许外部 Agent 调用特权工具（执行 PyQGIS 代码 / 处理算法 / 删图层 / 运行技能）")
         )
         self.cbMcpDangerous.setChecked(bool(settings.value("mcp/allow_dangerous", False)))
         self.cbMcpDangerous.setToolTip(
-            "默认关闭：这些工具既不会出现在外部 Agent 的工具清单里，直接调用也会被拒绝。\n"
-            "开启后外部 Agent 可以请求它们，但每次执行仍会在 QGIS 界面上弹出确认框，由你本人点击确认。\n"
-            "「运行技能」之所以归入此类，是因为技能会执行用户技能目录下的 Python 代码。\n"
-            "注意：若你同时打开了插件底部的「跳过代码执行确认」，外部 Agent 的这些操作也将不再弹窗。\n"
-            "改动立即生效（服务运行中也会当场刷新工具清单与权限），无需重启服务。"
+            _translate("QGISAgent",
+                       "默认关闭：这些工具既不会出现在外部 Agent 的工具清单里，"
+                       "直接调用也会被拒绝。\n"
+                       "开启后外部 Agent 可以请求它们，但每次执行仍会在 QGIS 界面上"
+                       "弹出确认框，由你本人点击确认。\n"
+                       "「运行技能」之所以归入此类，是因为技能会执行用户技能目录下的 "
+                       "Python 代码。\n"
+                       "注意：若你同时打开了插件底部的「跳过代码执行确认」，"
+                       "外部 Agent 的这些操作也将不再弹窗。\n"
+                       "改动立即生效（服务运行中也会当场刷新工具清单与权限），"
+                       "无需重启服务。")
         )
         # ⚠️ 这里必须有 toggled 连接：此前 allow_dangerous 只在 bridge.start() 那一刻
         # 读一次，勾上开关却什么都不发生 —— 表现为「测试连接里暴露危险工具仍是 false」，
@@ -1751,24 +2098,28 @@ class QGISAgent:
         self.cbMcpDangerous.toggled.connect(self._on_mcp_dangerous_toggled)
         outer.addWidget(self.cbMcpDangerous)
 
-        self.lblMcpStatus = QLabel("状态：未运行")
+        self.lblMcpStatus = QLabel(_translate("QGISAgent", "状态：未运行"))
         self.lblMcpStatus.setWordWrap(True)
         self.lblMcpStatus.setStyleSheet("color: #666; font-size: 11px;")
         outer.addWidget(self.lblMcpStatus)
 
         row_actions = QHBoxLayout()
-        self.btnMcpCopyConfig = QPushButton("复制客户端配置")
+        self.btnMcpCopyConfig = QPushButton(_translate("QGISAgent", "复制客户端配置"))
         self.btnMcpCopyConfig.setToolTip(
-            "复制一段可直接粘贴进 Claude Desktop / Cursor 配置文件的 mcpServers JSON。\n"
-            "其中的 command 会自动换成「本机确实能跑起 MCP Server」的 Python 解释器 —— "
-            "不能直接用 QGIS 主程序，它不会讲 MCP 协议。"
+            _translate("QGISAgent",
+                       "复制一段可直接粘贴进 Claude Desktop / Cursor 配置文件的 "
+                       "mcpServers JSON。\n"
+                       "其中的 command 会自动换成「本机确实能跑起 MCP Server」的 "
+                       "Python 解释器 —— 不能直接用 QGIS 主程序，它不会讲 MCP 协议。")
         )
         self.btnMcpCopyConfig.clicked.connect(self._on_mcp_copy_config)
         row_actions.addWidget(self.btnMcpCopyConfig)
-        btn_check = QPushButton("测试连通性")
-        btn_check.setToolTip("运行 MCP Server 的自检，确认外部客户端能连上插件内的桥接服务")
-        btn_check.clicked.connect(self._on_mcp_selfcheck)
-        row_actions.addWidget(btn_check)
+        self.btnMcpCheck = QPushButton(_translate("QGISAgent", "测试连通性"))
+        self.btnMcpCheck.setToolTip(
+            _translate("QGISAgent",
+                       "运行 MCP Server 的自检，确认外部客户端能连上插件内的桥接服务"))
+        self.btnMcpCheck.clicked.connect(self._on_mcp_selfcheck)
+        row_actions.addWidget(self.btnMcpCheck)
         outer.addLayout(row_actions)
 
         self.boxMcp = group
@@ -1804,18 +2155,20 @@ class QGISAgent:
                 # 两者在热更新尚未落地时会不一致，用复选框的值会掩盖问题。
                 dangerous_now = bridge.allow_dangerous
                 self.lblMcpStatus.setText(
-                    "状态：运行中 · 监听 127.0.0.1:%d · 工具 %d 个（含危险工具：%s）"
+                    _translate("QGISAgent", "状态：运行中 · 监听 127.0.0.1:%d · 工具 %d 个（含危险工具：%s）")
                     % (bridge.port or 0,
                        len(self._mcp_visible_tool_names()),
-                       "是" if dangerous_now else "否")
+                       _translate("QGISAgent", "是") if dangerous_now
+                       else _translate("QGISAgent", "否"))
                 )
                 if dangerous_now != self.cbMcpDangerous.isChecked():
                     self.lblMcpStatus.setText(
-                        self.lblMcpStatus.text() + "（与服务当前设置不一致）")
-                self.btnMcpToggle.setText("停止服务")
+                        self.lblMcpStatus.text()
+                        + _translate("QGISAgent", "（与服务当前设置不一致）"))
+                self.btnMcpToggle.setText(_translate("QGISAgent", "停止服务"))
             else:
-                self.lblMcpStatus.setText("状态：未运行")
-                self.btnMcpToggle.setText("启动服务")
+                self.lblMcpStatus.setText(_translate("QGISAgent", "状态：未运行"))
+                self.btnMcpToggle.setText(_translate("QGISAgent", "启动服务"))
         except Exception as _e:
             logger.debug("刷新 MCP 状态失败: %s", _e, exc_info=True)
 
@@ -1892,9 +2245,9 @@ class QGISAgent:
         if not token:
             if last:
                 QMessageBox.warning(
-                    self.dockwidget, "令牌不能为空",
-                    "访问令牌留空会让所有外部请求被拒绝（服务强制要求令牌）。\n"
-                    "已恢复为上一个有效令牌。"
+                    self.dockwidget, _translate("QGISAgent", "令牌不能为空"),
+                    _translate("QGISAgent", "访问令牌留空会让所有外部请求被拒绝（服务强制要求令牌）。\n"
+                    "已恢复为上一个有效令牌。")
                 )
             self.leMcpToken.setText(last)
             self.leMcpToken.setCursorPosition(0)
@@ -1965,7 +2318,7 @@ class QGISAgent:
             if callable(_set_status):
                 _set_status("MCP 服务已启动 · 127.0.0.1:%d" % (bridge.port or 0))
         else:
-            QMessageBox.warning(self.dockwidget, "MCP 服务启动失败", message)
+            QMessageBox.warning(self.dockwidget, _translate("QGISAgent", "MCP 服务启动失败"), message)
 
     def _maybe_autostart_mcp(self):
         """按设置决定是否随插件启动 MCP 服务（失败不打扰用户，仅记录）。"""
@@ -2005,9 +2358,9 @@ class QGISAgent:
         self._apply_mcp_live(token=token)
         self._refresh_mcp_status()
         QMessageBox.information(
-            self.dockwidget, "令牌已更新",
-            "已生成新的访问令牌，并立即生效（服务运行中无需重启）。\n"
-            "请把新令牌同步到 MCP 客户端配置（点「复制客户端配置」即可拿到）。"
+            self.dockwidget, _translate("QGISAgent", "令牌已更新"),
+            _translate("QGISAgent", "已生成新的访问令牌，并立即生效（服务运行中无需重启）。\n"
+            "请把新令牌同步到 MCP 客户端配置（点「复制客户端配置」即可拿到）。")
         )
 
     def _on_mcp_copy_token(self):
@@ -2029,7 +2382,7 @@ class QGISAgent:
         self.leMcpToken.setEchoMode(
             QLineEdit.EchoMode.Normal if revealed else QLineEdit.EchoMode.Password
         )
-        self.btnMcpTokenReveal.setText("隐藏" if revealed else "显示")
+        self.btnMcpTokenReveal.setText(_translate("QGISAgent", "隐藏") if revealed else _translate("QGISAgent", "显示"))
         self.leMcpToken.setCursorPosition(0)
 
     def _on_mcp_copy_config(self):
@@ -2045,12 +2398,12 @@ class QGISAgent:
             hint = str(getattr(bridge, "last_python_hint", "") or "")
             extra = ("\n\n" + hint) if hint else ""
             QMessageBox.information(
-                self.dockwidget, "客户端配置已复制",
-                "已复制 Claude Desktop / Cursor 的 mcpServers 配置片段：\n\n"
+                self.dockwidget, _translate("QGISAgent", "客户端配置已复制"),
+                _translate("QGISAgent", "已复制 Claude Desktop / Cursor 的 mcpServers 配置片段：\n\n")
                 + text + extra + "\n\n粘贴到客户端的配置文件后重启客户端即可。"
             )
         except Exception as _e:
-            QMessageBox.warning(self.dockwidget, "复制失败", "生成配置片段失败：%s" % _e)
+            QMessageBox.warning(self.dockwidget, _translate("QGISAgent", "复制失败"), _translate("QGISAgent", "生成配置片段失败：%s") % _e)
 
     def _on_mcp_selfcheck(self):
         """用一个真能跑的解释器执行 MCP Server 自检，确认整条链路通。
@@ -2067,8 +2420,8 @@ class QGISAgent:
             "mcp_server", "qgis_agent_mcp_server.py",
         )
         if not os.path.exists(server_script):
-            QMessageBox.warning(self.dockwidget, "找不到 MCP Server",
-                                "未找到 %s" % server_script)
+            QMessageBox.warning(self.dockwidget, _translate("QGISAgent", "找不到 MCP Server"),
+                                _translate("QGISAgent", "未找到 %s") % server_script)
             return
         try:
             from .mcp_bridge import resolve_python_executable
@@ -2084,12 +2437,16 @@ class QGISAgent:
             )
             output = (proc.stdout or "") + (proc.stderr or "")
         except Exception as _e:
-            QMessageBox.warning(self.dockwidget, "自检失败", "无法运行自检：%s" % _e)
+            QMessageBox.warning(self.dockwidget, _translate("QGISAgent", "自检失败"), _translate("QGISAgent", "无法运行自检：%s") % _e)
             return
         box = QMessageBox(self.dockwidget)
-        box.setWindowTitle("MCP 连通性自检")
-        box.setText("自检%s" % ("通过" if proc.returncode == 0 else "未通过"))
-        box.setDetailedText("解释器：%s\n\n%s" % (python, output.strip()))
+        box.setWindowTitle(_translate("QGISAgent", "MCP 连通性自检"))
+        box.setText(
+            _translate("QGISAgent", "自检%s")
+            % (_translate("QGISAgent", "通过") if proc.returncode == 0
+               else _translate("QGISAgent", "未通过")))
+        box.setDetailedText(_translate("QGISAgent", "解释器：%s\n\n%s")
+                            % (python, output.strip()))
         box.exec()
 
 
@@ -2103,20 +2460,22 @@ class QGISAgent:
         llm_id = self._get_selected_llm_id()
         if not llm_id:
             QMessageBox.warning(
-                None, "无可用模型", "请先在「模型配置」标签页添加并选中一个模型。"
+                None, _translate("QGISAgent", "无可用模型"), _translate("QGISAgent", "请先在「模型配置」标签页添加并选中一个模型。")
             )
             return
         try:
             provider, model_name = self.dataloader.get_llm_info(llm_id)
             name, endpoint, api_key = self.dataloader.fetch_llm_info(llm_id)
         except Exception as _e:
-            QMessageBox.warning(None, "读取模型失败", f"无法读取模型配置：{_e}")
+            QMessageBox.warning(
+                None, _translate("QGISAgent", "读取模型失败"),
+                _translate("QGISAgent", "无法读取模型配置：%s") % _e)
             return
 
         btn = getattr(self, "btnTestConnection", None)
         if btn is not None:
             btn.setEnabled(False)
-            btn.setText("诊断中…")
+            btn.setText(_translate("QGISAgent", "诊断中…"))
         _set_status = getattr(self.dockwidget, "_set_status", None)
         if callable(_set_status):
             _set_status("🔍 正在诊断连接…")
@@ -2139,7 +2498,7 @@ class QGISAgent:
             try:
                 if btn is not None:
                     btn.setEnabled(True)
-                    btn.setText("🔌 测试连接与诊断")
+                    btn.setText(_translate("QGISAgent", "🔌 测试连接与诊断"))
                 if callable(_set_status):
                     _set_status("✅ 诊断通过" if ok else "⚠ 诊断发现问题")
                 dlg = DiagnosisDialog(headline, report, self.dockwidget)
@@ -2187,7 +2546,7 @@ class QGISAgent:
         key_widget = QLineEdit()
         key_widget.setEchoMode(QLineEdit.EchoMode.Password)
         key_widget.setText(api_key)
-        key_widget.setPlaceholderText("输入 API Key")
+        key_widget.setPlaceholderText(_translate("QGISAgent", "输入 API Key"))
         key_widget.setStyleSheet("QLineEdit { border: none; padding: 2px; }")
         # 单元格宽度不足以再放一个「显示/隐藏」按钮，此处不做明文切换；
         # 目前只有 MCP「访问令牌」那一行（_build_mcp_settings_ui）带该开关。
@@ -2195,7 +2554,7 @@ class QGISAgent:
         table.setCellWidget(row_idx, 2, key_widget)
 
         # 第3列：删除按钮
-        del_btn = QPushButton("删除")
+        del_btn = QPushButton(_translate("QGISAgent", "删除"))
         del_btn.setStyleSheet(
             "QPushButton { background-color: #FA7070; color: white; border-radius: 3px; padding: 2px 8px; font-size: 11px; }"
             " QPushButton:hover { background-color: #E05050; }"
@@ -2334,7 +2693,7 @@ class AddModelReferenceDialog(QDialog):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("添加模型 — 参考信息")
+        self.setWindowTitle(_translate("QGISAgent", "添加模型 — 参考信息"))
         self.setMinimumSize(520, 440)
         self._setup_ui()
 
@@ -2343,13 +2702,13 @@ class AddModelReferenceDialog(QDialog):
         layout.setSpacing(10)
 
         # 标题
-        title_lbl = QLabel("选择参考模板（可修改任何字段）")
+        title_lbl = QLabel(_translate("QGISAgent", "选择参考模板（可修改任何字段）"))
         title_lbl.setStyleSheet("font-size: 13px; font-weight: bold;")
         layout.addWidget(title_lbl)
 
         # 参考信息下拉选择
         ref_layout = QHBoxLayout()
-        ref_layout.addWidget(QLabel("参考:"))
+        ref_layout.addWidget(QLabel(_translate("QGISAgent", "参考:")))
         self.cbReference = QComboBox()
         ref_names = [r["name"] for r in _MODEL_REFERENCE_DATA]
         self.cbReference.addItems(ref_names)
@@ -2372,22 +2731,22 @@ class AddModelReferenceDialog(QDialog):
         layout.addWidget(line)
 
         # 模型名称
-        layout.addWidget(QLabel("模型名称:"))
+        layout.addWidget(QLabel(_translate("QGISAgent", "模型名称:")))
         self.ptName = QLineEdit()
-        self.ptName.setPlaceholderText("例如: gpt-4o")
+        self.ptName.setPlaceholderText(_translate("QGISAgent", "例如: gpt-4o"))
         layout.addWidget(self.ptName)
 
         # API 端点
-        layout.addWidget(QLabel("API 端点:"))
+        layout.addWidget(QLabel(_translate("QGISAgent", "API 端点:")))
         self.ptEndpoint = QLineEdit()
-        self.ptEndpoint.setPlaceholderText("例如: https://api.openai.com/v1")
+        self.ptEndpoint.setPlaceholderText(_translate("QGISAgent", "例如: https://api.openai.com/v1"))
         layout.addWidget(self.ptEndpoint)
 
         # API Key（密码模式）
         layout.addWidget(QLabel("API Key:"))
         self.ptApiKey = QLineEdit()
         self.ptApiKey.setEchoMode(QLineEdit.EchoMode.Password)
-        self.ptApiKey.setPlaceholderText("输入 API Key")
+        self.ptApiKey.setPlaceholderText(_translate("QGISAgent", "输入 API Key"))
         layout.addWidget(self.ptApiKey)
 
         layout.addStretch()
@@ -2395,13 +2754,13 @@ class AddModelReferenceDialog(QDialog):
         # 按钮
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
-        self.btnOk = QPushButton("添加")
+        self.btnOk = QPushButton(_translate("QGISAgent", "添加"))
         self.btnOk.setStyleSheet(
             "QPushButton { background-color: #4A90D9; color: white; border-radius: 4px; padding: 6px 24px; }"
             " QPushButton:hover { background-color: #357ABD; }"
         )
         self.btnOk.clicked.connect(self.accept)
-        self.btnCancel = QPushButton("取消")
+        self.btnCancel = QPushButton(_translate("QGISAgent", "取消"))
         self.btnCancel.clicked.connect(self.reject)
         btn_layout.addWidget(self.btnOk)
         btn_layout.addWidget(self.btnCancel)
@@ -2414,18 +2773,20 @@ class AddModelReferenceDialog(QDialog):
         """切换参考模板时更新展示信息和预填字段"""
         if 0 <= index < len(_MODEL_REFERENCE_DATA):
             ref = _MODEL_REFERENCE_DATA[index]
-            self.lblRefInfo.setText(
-                f"<b>可用模型:</b> {ref['models']}<br>"
-                f"<b>API 端点:</b> {ref['endpoint']}<br>"
-                f"<b>说明:</b> {ref['note']}"
-            )
+            self.lblRefInfo.setText(_translate(
+                "QGISAgent",
+                "<b>可用模型:</b> %s<br>"
+                "<b>API 端点:</b> %s<br>"
+                "<b>说明:</b> %s")
+                % (ref["models"], ref["endpoint"], ref["note"]))
             # 预填端点（用户可修改）
             self.ptEndpoint.setText(ref["endpoint"])
             # 不清除已输入的名称和 key，但如果是第一个端点模板则填入建议
             if not self.ptName.text():
                 # 取第一个模型名作为建议
                 first_model = ref["models"].split(",")[0].strip()
-                self.ptName.setPlaceholderText(f"例如: {first_model}")
+                self.ptName.setPlaceholderText(
+                    _translate("QGISAgent", "例如: %s") % first_model)
 
     def get_values(self):
         """返回 (name, endpoint, api_key)"""

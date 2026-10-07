@@ -155,7 +155,7 @@ td { border: 1px solid __BORDER__; padding: 4px 7px; vertical-align: top; }
 <body>
 
 <h1>🗺️ QGIS Agent</h1>
-<p class="sub">v__VERSION__ · 把大语言模型接进 QGIS：用中文描述任务，Agent 自己调用 QGIS 工具完成</p>
+<p class="sub">v__VERSION__ · 把大语言模型接进 QGIS：用中文或英文描述任务，Agent 自己调用 QGIS 工具完成</p>
 
 <h2>🚀 30 秒上手</h2>
 <table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
@@ -177,7 +177,11 @@ __CARD_TIP__
 <tr><th style="width:64px;">页签</th><th>作用</th></tr>
 <tr><td>对话</td><td>下达任务、查看回复（带思考过程，可折叠展开）</td></tr>
 <tr><td>历史</td><td>历史对话列表，可搜索 / 加载 / 删除</td></tr>
-<tr><td>模型</td><td>模型增删、测试连接与诊断、浏览器兼容 TLS</td></tr>
+<tr><td>模型</td><td>模型增删、测试连接与诊断、浏览器兼容 TLS。<br>
+    <b>页面顶部是「🌐 语言 / Language」</b>：默认<b>跟随 QGIS 的界面语言</b>，
+    也可固定为简体中文或 English —— 改动立即生效，无需重启插件。
+    助手的回复语言跟界面语言一致；代码、命令、API 名与文件路径始终原样保留。
+    该选项<b>始终中英并排显示</b>，所以切成英文后也能一眼找到切回中文的入口。</td></tr>
 <tr><td>MCP</td><td>把 QGIS 工具暴露给 Claude Desktop / Cursor 等外部 Agent：启停服务、端口与令牌、复制客户端配置、连通性自检</td></tr>
 <tr><td>工作流</td><td>本次任务已执行的步骤可视化</td></tr>
 <tr><td>报告</td><td>生成的 PyQGIS 代码、执行日志、SmartDebugger 诊断结论（<b>排查报错看这里</b>）</td></tr>

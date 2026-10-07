@@ -14,7 +14,8 @@ import math
 from datetime import datetime
 
 from qgis.PyQt import QtWidgets
-from qgis.PyQt.QtCore import pyqtSignal, QEvent, Qt, QElapsedTimer
+from qgis.PyQt.QtCore import (
+    pyqtSignal, QEvent, Qt, QElapsedTimer, QCoreApplication, QT_TRANSLATE_NOOP)
 from qgis.PyQt.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QLabel, QGroupBox, QPushButton,
     QSizePolicy, QSpacerItem, QWidget, QPlainTextEdit,
@@ -28,6 +29,13 @@ from .utils import (handle_none_conversation, pack, unpack, format_description,
 from .qgis_agent_dockwidget_base_ui import Ui_QGISAgentDockWidget
 from .thinking_display import ThinkingManager, create_thinking_block
 import contextlib
+
+#: 界面文案翻译入口。写法与 base_ui / qgis_agent 一致（字面量 context + 模块级别名），
+#: 因为 pylupdate 只认这种**字面量**形式 —— context 写成变量它就抓不到。
+_translate = QCoreApplication.translate
+
+#: 底部状态条的空闲态文案（源码原文）。
+_IDLE_STATUS = QT_TRANSLATE_NOOP("QGISAgent", "就绪")
 
 logger = logging.getLogger(__name__)
 
@@ -153,23 +161,23 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         """
         # ---- 搜索条（默认隐藏，Ctrl+F 唤起）----
         self.searchBar = QLineEdit()
-        self.searchBar.setPlaceholderText("搜索对话内容…")
-        self.searchBar.setToolTip("Enter 下一处 / Shift+Enter 上一处 / Esc 关闭")
+        self.searchBar.setPlaceholderText(_translate("QGISAgent", "搜索对话内容…"))
+        self.searchBar.setToolTip(_translate("QGISAgent", "Enter 下一处 / Shift+Enter 上一处 / Esc 关闭"))
         self.searchBar.textChanged.connect(self._on_search_text_changed)
         self.searchBar.returnPressed.connect(self._on_search_next)
         self.searchBar.installEventFilter(self)
 
         self.btnSearchPrev = QToolButton()
         self.btnSearchPrev.setText("↑")
-        self.btnSearchPrev.setToolTip("上一个匹配")
+        self.btnSearchPrev.setToolTip(_translate("QGISAgent", "上一个匹配"))
         self.btnSearchPrev.clicked.connect(self._on_search_prev)
         self.btnSearchNext = QToolButton()
         self.btnSearchNext.setText("↓")
-        self.btnSearchNext.setToolTip("下一个匹配")
+        self.btnSearchNext.setToolTip(_translate("QGISAgent", "下一个匹配"))
         self.btnSearchNext.clicked.connect(self._on_search_next)
         self.btnSearchClose = QToolButton()
         self.btnSearchClose.setText("✕")
-        self.btnSearchClose.setToolTip("关闭搜索")
+        self.btnSearchClose.setToolTip(_translate("QGISAgent", "关闭搜索"))
         self.btnSearchClose.clicked.connect(self._hide_search_bar)
 
         search_layout = QHBoxLayout()
@@ -187,19 +195,21 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         # ---- 复制回复按钮（扁平无边框；不用 emoji，该环境下 📋 会渲染成空心方块）----
         self.btnCopyReply = QToolButton()
         self.btnCopyReply.setObjectName("qaCopyReply")
-        self.btnCopyReply.setText("复制回复")
-        self.btnCopyReply.setToolTip("复制最近一条回复到剪贴板")
+        self.btnCopyReply.setText(_translate("QGISAgent", "复制回复"))
+        self.btnCopyReply.setToolTip(_translate("QGISAgent", "复制最近一条回复到剪贴板"))
         self.btnCopyReply.setAutoRaise(True)
         self.btnCopyReply.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btnCopyReply.clicked.connect(self._on_copy_reply)
         self.titleLayout.addWidget(self.btnCopyReply, 0, Qt.AlignmentFlag.AlignRight)
 
         # ---- 底部状态条（细 footer，与内容区用一条分隔线隔开）----
-        self.statusLabel = QLabel("就绪")
+        self.statusLabel = QLabel(_translate("QGISAgent", _IDLE_STATUS))
         self.statusLabel.setObjectName("qaStatus")
         self.statusLabel.setWordWrap(False)
         self.statusLabel.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
-        self._status_base = "就绪"
+        # 空闲态文案在各语言下的写法。切换语言时靠它判断"现在是不是空闲" ——
+        # 状态栏平时显示的是随操作变化的动态消息，那类文案重刷会把当前进度抹掉。
+        self._status_idle_variants = {self.statusLabel.text().strip()}
 
         self.footerBar = QFrame()
         self.footerBar.setObjectName("qaFooterBar")
@@ -217,23 +227,32 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         elay.setContentsMargins(2, 10, 2, 10)
         elay.setSpacing(6)
 
-        self.lblEmptyHint = QLabel("试试这样问：")
+        self.lblEmptyHint = QLabel(_translate("QGISAgent", "试试这样问："))
         self.lblEmptyHint.setObjectName("qaEmptyHint")
         elay.addWidget(self.lblEmptyHint)
 
+        # ⚠️ 这 4 条既是按钮文案、又是"点一下填进输入框"的示例指令，所以文案写在
+        # 列表里而不是直接写在 QPushButton(...) 里 —— 那样 pylupdate 抓不到。
+        # 用 QT_TRANSLATE_NOOP 标记（只登记、不翻译），运行时再逐处现翻。
         examples = [
-            "列出当前所有图层",
-            "统计各行政区面积并生成分级设色地图",
-            "把图层重投影到 WGS84",
-            "导出当前图层为 GeoPackage",
+            QT_TRANSLATE_NOOP("QGISAgent", "列出当前所有图层"),
+            QT_TRANSLATE_NOOP("QGISAgent", "统计各行政区面积并生成分级设色地图"),
+            QT_TRANSLATE_NOOP("QGISAgent", "把图层重投影到 WGS84"),
+            QT_TRANSLATE_NOOP("QGISAgent", "导出当前图层为 GeoPackage"),
         ]
+        # 存下来供切换语言时重刷。
+        self._example_buttons = []
         for text in examples:
-            btn = QPushButton(text)
+            btn = QPushButton(_translate("QGISAgent", text))
             btn.setObjectName("qaExampleBtn")
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn.setToolTip("点击填入输入框")
-            btn.clicked.connect(lambda _checked=False, t=text: self._on_example_clicked(t))
+            btn.setToolTip(_translate("QGISAgent", "点击填入输入框"))
+            # 填进输入框的也应当是**当前语言**的示例：英文界面里点一下却填进中文，
+            # 用户只会一脸问号（而且模型也会被中文提示语带走）。
+            btn.clicked.connect(lambda _checked=False, t=text:
+                                self._on_example_clicked(_translate("QGISAgent", t)))
             elay.addWidget(btn)
+            self._example_buttons.append((btn, text))
         elay.addStretch(1)
 
         # ---- 聊天区堆叠：历史 / 空状态 二选一显示 ----
@@ -637,15 +656,15 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         btn_layout = QHBoxLayout()
         spacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
-        btn_edit = QPushButton("编辑")
+        btn_edit = QPushButton(_translate("QGISAgent", "编辑"))
         btn_edit.setStyleSheet("QPushButton { background-color: #9DDE8B; }")
         btn_edit.clicked.connect(lambda: on_edit(conv_id))
 
-        btn_delete = QPushButton("删除")
+        btn_delete = QPushButton(_translate("QGISAgent", "删除"))
         btn_delete.setStyleSheet("QPushButton { background-color: #FA7070; }")
         btn_delete.clicked.connect(lambda: on_delete(conv_id))
 
-        btn_open = QPushButton("打开")
+        btn_open = QPushButton(_translate("QGISAgent", "打开"))
         btn_open.clicked.connect(lambda: on_load(conv_id))
 
         btn_layout.addSpacerItem(spacer)
@@ -1140,7 +1159,7 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         控件均在 __init__ 内创建，信号连接使用作用域枚举；不改动 processor 与其它文件。
         """
         # 录制 / 回放容器（插到工作流标题下方）
-        wf_group = QGroupBox("工作流录制 / 回放")
+        wf_group = QGroupBox(_translate("QGISAgent", "工作流录制 / 回放"))
         wf_layout = QVBoxLayout(wf_group)
         wf_layout.setContentsMargins(6, 6, 6, 6)
         wf_layout.setSpacing(4)
@@ -1148,12 +1167,12 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         # 第一行：录制切换按钮 + 录制状态标签
         rec_row = QHBoxLayout()
         rec_row.setSpacing(6)
-        self.btnRecordToggle = QPushButton("● 开始录制")
+        self.btnRecordToggle = QPushButton(_translate("QGISAgent", "● 开始录制"))
         self.btnRecordToggle.setObjectName("btnRecordToggle")
-        self.btnRecordToggle.setToolTip("开启后将本次对话操作录制为一个可回放的工作流")
+        self.btnRecordToggle.setToolTip(_translate("QGISAgent", "开启后将本次对话操作录制为一个可回放的工作流"))
         self.btnRecordToggle.clicked.connect(self._on_toggle_recording)
 
-        self.lblRecStatus = QLabel("状态: 未录制")
+        self.lblRecStatus = QLabel(_translate("QGISAgent", "状态: 未录制"))
         self.lblRecStatus.setObjectName("lblRecStatus")
         self.lblRecStatus.setStyleSheet("color: #888; font-size: 11px;")
 
@@ -1169,14 +1188,14 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         self.cmbWorkflow.setInsertPolicy(QComboBox.InsertPolicy.InsertAtBottom)
         self.cmbWorkflow.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
-        self.btnPlaybackWorkflow = QPushButton("▶ 回放工作流")
+        self.btnPlaybackWorkflow = QPushButton(_translate("QGISAgent", "▶ 回放工作流"))
         self.btnPlaybackWorkflow.setObjectName("btnPlaybackWorkflow")
-        self.btnPlaybackWorkflow.setToolTip("回放选中的工作流")
+        self.btnPlaybackWorkflow.setToolTip(_translate("QGISAgent", "回放选中的工作流"))
         self.btnPlaybackWorkflow.clicked.connect(self._on_playback_workflow)
 
         self.btnRefreshWorkflows = QPushButton("⟳")
         self.btnRefreshWorkflows.setObjectName("btnRefreshWorkflows")
-        self.btnRefreshWorkflows.setToolTip("刷新工作流列表")
+        self.btnRefreshWorkflows.setToolTip(_translate("QGISAgent", "刷新工作流列表"))
         self.btnRefreshWorkflows.setFixedWidth(32)
         self.btnRefreshWorkflows.clicked.connect(self._refresh_workflow_list)
 
@@ -1188,6 +1207,7 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         # 插到工作流标题下方（lblWorkflowTitle 之后）
         title_index = self.workflowLayout.indexOf(self.lblWorkflowTitle)
         self.workflowLayout.insertWidget(title_index + 1, wf_group)
+        self.wfGroup = wf_group          # 切换语言时要重设分组标题
 
         # 切到工作流标签页时自动刷新列表（another connection to currentChanged，互不干扰）
         self.twTabs.currentChanged.connect(self._on_workflow_tab_shown)
@@ -1195,13 +1215,84 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         # 初始按当前（无对话）状态刷新一次列表
         self._refresh_workflow_list()
 
+    def retranslate_dynamic_ui(self):
+        """切换界面语言后，重设**本文件运行时创建**的那些常驻控件文案。
+
+        与 base_ui 的 ``retranslateUi()`` 是同一件事的两个半边：那个覆盖
+        ``setupUi`` 里静态创建的控件，这个覆盖这里动态创建的。
+
+        ⚠️ 新增界面文案时，**构造处与这里必须成对写**，否则切换语言后该控件会
+        一直停在旧语言（静默、不报错）。``tests/test_i18n_coverage.py`` 会比对
+        两处的字符串集合。
+
+        ⚠️ 刻意不动的两类：
+          - 对话卡片上的「编辑 / 删除 / 打开」按钮：每次刷新会话列表都会重建，
+            天然会用新语言；
+          - 状态栏里随操作变化的动态消息：重刷会把当前进度信息抹掉。
+        """
+        # 搜索条
+        self.searchBar.setPlaceholderText(_translate("QGISAgent", "搜索对话内容…"))
+        self.searchBar.setToolTip(
+            _translate("QGISAgent", "Enter 下一处 / Shift+Enter 上一处 / Esc 关闭"))
+        self.btnSearchPrev.setToolTip(_translate("QGISAgent", "上一个匹配"))
+        self.btnSearchNext.setToolTip(_translate("QGISAgent", "下一个匹配"))
+        self.btnSearchClose.setToolTip(_translate("QGISAgent", "关闭搜索"))
+
+        # 复制回复
+        self.btnCopyReply.setText(_translate("QGISAgent", "复制回复"))
+        self.btnCopyReply.setToolTip(
+            _translate("QGISAgent", "复制最近一条回复到剪贴板"))
+
+        # 空状态：提示语 + 4 个示例按钮（按钮文案同时也是"点一下填进输入框"的内容）
+        self.lblEmptyHint.setText(_translate("QGISAgent", "试试这样问："))
+        for btn, source in getattr(self, "_example_buttons", []):
+            btn.setText(_translate("QGISAgent", source))
+            btn.setToolTip(_translate("QGISAgent", "点击填入输入框"))
+
+        # 工作流录制 / 回放
+        group = getattr(self, "wfGroup", None)
+        if group is not None:
+            group.setTitle(_translate("QGISAgent", "工作流录制 / 回放"))
+        self.btnPlaybackWorkflow.setText(_translate("QGISAgent", "▶ 回放工作流"))
+        self.btnPlaybackWorkflow.setToolTip(
+            _translate("QGISAgent", "回放选中的工作流"))
+        self.btnRefreshWorkflows.setToolTip(
+            _translate("QGISAgent", "刷新工作流列表"))
+        # ⚠️ 录制按钮与录制状态是**状态相关**文案：必须按当前状态重算，
+        #    一律刷成「开始录制」会在录制中把界面说反。
+        if getattr(self, "_is_recording", False):
+            self.btnRecordToggle.setText(_translate("QGISAgent", "■ 停止录制"))
+            self.lblRecStatus.setText(_translate("QGISAgent", "状态: 录制中…"))
+        else:
+            self.btnRecordToggle.setText(_translate("QGISAgent", "● 开始录制"))
+            self.lblRecStatus.setText(_translate("QGISAgent", "状态: 未录制"))
+
+        self._refresh_status_language()
+
+    def _refresh_status_language(self):
+        """状态栏：**只有处于空闲态时**才随语言重刷。
+
+        判断"是不是空闲"不能靠猜文案内容：状态栏平时显示的是动态消息
+        （"正在发送…"之类），拿中文原文去比对会误伤。这里记住空闲态文案在
+        各语言下的写法（见 ``_status_idle_variants``），命中才替换。
+        """
+        status = getattr(self, "statusLabel", None)
+        if status is None:
+            return
+        variants = getattr(self, "_status_idle_variants", None)
+        if not variants or status.text().strip() not in variants:
+            return
+        new_text = _translate("QGISAgent", _IDLE_STATUS)
+        status.setText(new_text)
+        variants.add(new_text.strip())
+
     def _reset_recording_ui(self):
         """复位录制按钮与状态标签到「未录制」。"""
         with contextlib.suppress(Exception):
             self._is_recording = False
-            self.btnRecordToggle.setText("● 开始录制")
+            self.btnRecordToggle.setText(_translate("QGISAgent", "● 开始录制"))
             self.btnRecordToggle.setStyleSheet("")
-            self.lblRecStatus.setText("状态: 未录制")
+            self.lblRecStatus.setText(_translate("QGISAgent", "状态: 未录制"))
             self.lblRecStatus.setStyleSheet("color: #888; font-size: 11px;")
 
     def _get_processor(self):
@@ -1245,11 +1336,11 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
             if not self._is_recording:
                 processor.start_recording()
                 self._is_recording = True
-                self.btnRecordToggle.setText("■ 停止录制")
+                self.btnRecordToggle.setText(_translate("QGISAgent", "■ 停止录制"))
                 self.btnRecordToggle.setStyleSheet(
                     "QPushButton { background-color: #FA7070; color: white; font-weight: bold; }"
                 )
-                self.lblRecStatus.setText("状态: 录制中…")
+                self.lblRecStatus.setText(_translate("QGISAgent", "状态: 录制中…"))
                 self.lblRecStatus.setStyleSheet("color: #C0392B; font-size: 11px; font-weight: bold;")
                 self._set_status("⏺ 录制中…")
             else:
@@ -1828,7 +1919,7 @@ body {{
 
     def clear_workflow_display(self):
         """清空工作流显示"""
-        self.workflowWebView.setHtml("""
+        self.workflowWebView.setHtml(_translate("QGISAgent", """
 <!DOCTYPE html>
 <html>
 <head>
@@ -1851,7 +1942,7 @@ body {
 <div class="desc">执行任务后，工作流将在此可视化展示。</div>
 </body>
 </html>
-""")
+"""))
         self.lblWorkflowSummary.setText("")
 
     # ── 报告页签方法 ──

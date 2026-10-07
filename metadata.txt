@@ -3,7 +3,7 @@ name=QGIS Agent
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
 description=LLM-powered intelligent assistant for QGIS. Natural language control of QGIS tools, plus an optional local MCP server so external AI agents (Claude Desktop, Cursor, etc.) can drive QGIS.
-version=2.4.13
+version=2.4.14
 author=bunkmr
 email=bunkr@qq.com
 about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It allows you to control QGIS through natural language conversations, including: viewing project info, adding/removing layers, executing Processing algorithms, running PyQGIS code, setting layer labels, rendering maps, and more.
@@ -18,6 +18,7 @@ about=QGIS Agent is an AI-powered assistant that runs inside QGIS desktop. It al
     - Multiple LLM providers (DeepSeek, Mimo, GLM, Gemini, etc.)
     - Safety: PyQGIS AST static scan, confirmation for dangerous ops, untrusted data sanitization
     - Skills system: load/run user or bundled skill recipes (run_skill tool)
+    - Multi-language UI (Simplified Chinese / English): follows the QGIS locale by default and can be pinned to either language from the settings tab
     - Workflow recording & replay: record a QGIS operation sequence and replay it later
     - Proactive clarification: agent asks when intent is ambiguous before acting
     - Task graph: decompose complex goals into a trackable plan
@@ -49,6 +50,13 @@ deprecated=False
 hasProcessingProvider=no
 server=no
 changelog=
+    v2.4.14 更新内容：
+    【新功能】多语言支持（简体中文 / English）。设置页顶部新增「🌐 语言 / Language」，默认「跟随系统 / Follow system」——自动沿用 QGIS 的界面语言；也可手动固定为简体中文或 English，改动**立即生效、无需重启**（插件菜单名与按钮文案随之刷新）。语言项与「跟随系统」标签本身**始终中英并排显示且不做翻译**，因此切成英文之后也能一眼找到切回中文的入口。
+    【实现】走 Qt 标准的 .ts / .qm 机制：.qm 为主路径，.ts 为零依赖退路——.qm 缺失、损坏或与当前 Qt 版本不兼容时，插件自动改为直读 .ts，用户只会感到「这条翻译生效得晚一点」，而不会看到空白。中文同样配一份**恒等映射**文件：QGIS 会按系统语言自动替我们装载一份英文翻译，而那个翻译器的引用我们拿不到、也就移不掉；中文文件由插件**后装入**（Qt 的翻译器是栈式，后装先查），把界面稳稳锁回中文。
+    【重要修复】帮助文档缺失时弹出的话「未找到完整帮助文档 HELP.html」**此前根本没进翻译表**。真因是它被写成 `_translate(` 单独占一行、上下文参数落到下一行，且自身嵌在别的调用里当参数——字符串提取工具是**行敏感**的，这种写法会把整条调用**静默丢弃**。这类漏翻不报任何错，只是英文界面下那一句默默留在中文。现已修正写法，并新增**静态覆盖守卫**：把源码里所有翻译调用与翻译表**双向比对**，既拦「漏翻」也拦「死译文」（文案已删但译文还在）。
+    【覆盖面】核心界面文案共 192 条全部双语：设置页、对话页、历史、工作流、报告、帮助、MCP 服务页、模型配置、代码审查与依赖缺失提示、连接诊断，含全部工具提示与确认框正文。助手的**回复语言与界面语言同源**——界面是英文时，助手也用英文作答（含进度汇报、错误说明与确认请求）；代码、命令、API 名、字段名与文件路径一律保持原样，绝不翻译。提示词本体**不**分中英两份：那里面腌着一批用真实故障换来的硬约束，一旦分叉就会出现「修好了一份、另一份还是旧的」这类静默退化；按语言现变的只有「回复语言」这一条。
+    【测试】新增 50 例：i18n 机制 40 例 + 打包资源守卫 10 例。全部含**反向验证**——卸掉翻译器后翻译必须消失，否则「装载成功」这类断言全是假绿。打包守卫专门盯住一个历史坑：曾经进包的那个 .qm 是 12 字节空文件，因为「文件确实在包里」而从未被发现；现在断言大小、魔数、两种语言不得相同、语言文件成对，且文件名必须符合 QGIS 的自动装载约定。另外补上「英文译文里不得残留中文」与「中文表必须是恒等映射」两条体检。真机 Qt5 与 Qt6 双版本各 199 项界面与提示词验收全通过；单测 610 例增至 668 例全绿。
+
     v2.4.13 更新内容：
     【重要修复】MCP「允许外部 Agent 调用特权工具」开关勾了不生效。用户勾选后，在「测试连接」里看到的仍是「暴露危险工具：false」。真因是这个复选框从未连接任何处理函数，开关值只在服务启动那一刻被读一次；而为此早就写好、专门支持热更新的接口，此前只在「重新生成令牌」那一处被调用过，等于放在那里没人用。现在勾选或取消**立即生效**（服务运行中会当场刷新工具清单与权限），不必再靠「停止服务 → 启动服务」；令牌编辑同样即时生效；状态标签改为显示服务**实际生效**的值，不再显示复选框的样子（后者会把「下发失败」伪装成「保存失败」，把排查引向错误方向）。端口是唯一例外：监听端口无法热切换，改动会被保存，并在状态栏明确提示需要停启服务才生效。同时补上空令牌防呆——令牌留空会让服务端拒绝一切请求，现在会被拦下并恢复上一个有效值。
     【新功能】新增面积统计工具（compute_area_stats）：按**正确的分度带投影与中央经线**统计矢量**面**图层面积，并可按字段分级汇总。这是「统计某图层面积」「按社区 / 街道乡镇 / 区县 / 地市州分级汇总面积」这类需求的唯一正确入口——不要再用 execute_pyqgis 手写。逐要素按**质心经度**取 CGCS2000 三度带（中央经线 = 3 倍四舍五入(lon/3)，走官方 EPSG 4542 / 4543 / 4544…），把几何变换到该带后取**投影平面**面积；同时给出 QgsDistanceArea + GRS80 **椭球**面积作基准，两者差异正常小于万分之三，可互相校验。支持多级字段汇总、附加编码等字段、每级按面积降序、并可直接落 CSV（UTF-8 带 BOM，Excel 双击不乱码）。实测某省 COM_S 图层：投影 383293.5529 平方公里，椭球 383218.9322 平方公里，偏差千分之零点二，与插件内统计完全一致。
