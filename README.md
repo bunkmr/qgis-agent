@@ -41,7 +41,7 @@ QGIS Agent 是 QGIS 的 AI 原生插件——用自然语言直接操控 QGIS，
 | 🔍 **Code Review** ✅ | 确认弹窗可附带 LLM 代码审查意见（`code_reviewer.py`） |
 | 🔌 **Skills 系统** ✅ | 内置/用户技能通过 `run_skill` 工具调用（`skills/`） |
 | 🔄 **Workflow** ✅ | 工作流录制与回放（`workflow_store.py` / `workflow_recorder.py` / `workflow_executor.py`） |
-| 🌐 **多语言界面** ✅ | 核心界面共 **192 条**文案双语（简体中文 / English）。**默认跟随 QGIS 的界面语言**，也可在设置页手动固定；改动立即生效、无需重启。助手回复语言与界面语言同源。翻译走 Qt 标准 `.ts`/`.qm`，`.qm` 为主、`.ts` 为零依赖退路 |
+| 🌐 **多语言界面** ✅ | 核心界面共 **192 条**文案双语（简体中文 / English）。**默认跟随 QGIS 的界面语言**，也可在设置页手动固定；改动立即生效、无需重启。助手回复语言与界面语言同源。翻译走 Qt 标准 `.ts`/`.qm`，`.qm` 为主、同源生成的 `messages_*.json` 为零依赖退路（退路刻意不解析 XML —— 那会被插件仓库的安全扫描挡下整版） |
 | ❓ **Clarification** ✅ | 意图不明确时主动向用户澄清（`clarification_manager.py`） |
 
 > ✅ = 已接入主对话链路。工具数量以 `TOOL_MAP` 为准，当前为 **23** 个。
@@ -303,7 +303,7 @@ qgis_agent/
 │   ├── skill_manager.py         #   技能管理器
 │   ├── builtins.py              #   内置技能（网络搜索等）
 │   └── user_skills/             #   用户自定义技能
-├── i18n/                        # 🌐 多语言（.ts 源 + .qm 产物 + en.json 翻译真源）
+├── i18n/                        # 🌐 多语言（.ts 源 + .qm 产物 + messages_*.json 降级表 + en.json 翻译真源）
 │   └── __init__.py              #   translator 装载/降级/热切换
 ├── scripts/build_api_index.py   # 构建 API 索引
 ├── tests/                       # 单元测试

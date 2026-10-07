@@ -268,7 +268,7 @@ class TestHistoryReconstruction(ProcessorTestCase):
         self.assertEqual(loader.select_interaction_calls, [self.CONVERSATION_ID])
         # ⚠️ 比对 agent_system_prompt() 而不是裸常量 AGENT_SYSTEM_PROMPT：
         #    后者还留着语言占位符，拿它比对等于**默许占位符被送进模型**。
-        self.assertNotIn(module._LANG_TOKEN, llm.contents_of(0)[0][1],
+        self.assertNotIn(module._LANG_PLACEHOLDER, llm.contents_of(0)[0][1],
                          "语言占位符不得泄进系统提示词")
         self.assertEqual(llm.contents_of(0), [
             ("SystemMessage", module.agent_system_prompt()),
@@ -287,7 +287,7 @@ class TestHistoryReconstruction(ProcessorTestCase):
         _h, module, proc, _loader = self.new_processor(llm, dataloader=BrokenLoader())
         text, _wf = proc.agent_chat("问题")
         self.assertEqual(text, "仍然可以回答")
-        self.assertNotIn(module._LANG_TOKEN, llm.contents_of(0)[0][1],
+        self.assertNotIn(module._LANG_PLACEHOLDER, llm.contents_of(0)[0][1],
                          "语言占位符不得泄进系统提示词")
         self.assertEqual(llm.contents_of(0), [
             ("SystemMessage", module.agent_system_prompt()),
@@ -540,7 +540,7 @@ class TestAssistantReplyLanguage(ProcessorTestCase):
         for code in ("zh_CN", "en"):
             self._pin(code)
             text = module.agent_system_prompt()
-            self.assertNotIn(module._LANG_TOKEN, text,
+            self.assertNotIn(module._LANG_PLACEHOLDER, text,
                              "占位符泄进提示词了（%s）" % code)
             self.assertGreater(len(text), 3000, "提示词被截断（%s）" % code)
 
@@ -554,7 +554,7 @@ class TestAssistantReplyLanguage(ProcessorTestCase):
         self.assertNotIn("- 始终用中文回复用户", text)
         # 挖掉规则行之后必须与中文版逐字相同 —— 证明"只换了一条"
         zh = module.AGENT_SYSTEM_PROMPT.replace(
-            module._LANG_TOKEN, module._ASSISTANT_TEXT["zh_CN"]["reply_rule"])
+            module._LANG_PLACEHOLDER, module._ASSISTANT_TEXT["zh_CN"]["reply_rule"])
         self.assertEqual(text.replace(module._ASSISTANT_TEXT["en"]["reply_rule"], ""),
                          zh.replace(module._ASSISTANT_TEXT["zh_CN"]["reply_rule"], ""))
 
@@ -564,7 +564,7 @@ class TestAssistantReplyLanguage(ProcessorTestCase):
         self._pin("en")
         proc.agent_chat("问题")
         system_text = llm.contents_of(0)[0][1]
-        self.assertNotIn(module._LANG_TOKEN, system_text)
+        self.assertNotIn(module._LANG_PLACEHOLDER, system_text)
         self.assertIn("Always reply to the user in **English**", system_text)
 
     def test_cancelled_message_follows_language(self):

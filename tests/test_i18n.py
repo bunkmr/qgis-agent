@@ -17,6 +17,7 @@
 
 import ast
 import glob
+import json
 import os
 import shutil
 import sys
@@ -219,9 +220,42 @@ def _translate_calls():
     return found
 
 
+def _read_ts(path):
+    """读 Qt .ts，返回 ``{(context, source): translation}``（只含已生效条目）。
+
+    ⚠️ 这是**测试专用**的解析器：运行时（``i18n/__init__.py``）刻意不碰
+    ``xml.etree``，因为插件仓库的 Bandit 扫描会把它判为 B405/B314，
+    **一条发现就让整个版本被 BLOCKED**（v2.4.14 首次上传就被挡过）。
+    但 ``tests/`` 不进发布包，所以这里用 XML 解析来校验 .ts 本身没问题 ——
+    恰恰相反：.ts 是人工/社区维护的入口，必须有人真的读懂它。
+    """
+    import xml.etree.ElementTree as ET
+    data = {}
+    try:
+        root = ET.parse(path).getroot()
+    except Exception:
+        return data
+    for context in root.findall("context"):
+        name = (context.findtext("name") or "").strip()
+        if not name:
+            continue
+        for message in context.findall("message"):
+            source = message.findtext("source") or ""
+            node = message.find("translation")
+            if node is None:
+                continue
+            if (node.get("type") or "").strip().lower() in (
+                    "unfinished", "vanished", "obsolete", "obsolete-unfinished"):
+                continue
+            text = node.text or ""
+            if text:
+                data[(name, source)] = text
+    return data
+
+
 def _ts_sources(code):
-    """读 .ts 里的 ``<source>`` 集合（用 i18n 的解析器，顺带验证解析链路）。"""
-    return {src for (ctx, src) in i18n.load_messages(i18n.translation_file(code))}
+    """读 .ts 里的 ``<source>`` 集合。"""
+    return {src for (_ctx, src) in _read_ts(i18n.translation_file(code))}
 
 
 MULTILINE_HINT = (
@@ -281,6 +315,56 @@ class TestStaticCoverage(unittest.TestCase):
             for text in sorted(must_stay):
                 self.assertNotIn(text, sources,
                                  "%s 收录了双向标签 %r —— 必须两种语言并排显示" % (code, text))
+
+    def test_degraded_tables_are_in_sync_with_ts(self):
+        """``messages_<code>.json``（运行时降级表）必须与 .ts 逐条一致。
+
+        两者由同一个脚本同源生成，但**生成物不参与运行时的 XML 解析**，
+        所以漂移了只会在"正好用上降级路径"（.qm 缺失/损坏）时才暴露 ——
+        属于最难发现的那种静默退化。这里把它钉死在单测里。
+        """
+        for code in i18n.available_codes():
+            from_ts = {src: text
+                       for (ctx, src), text in _read_ts(
+                           i18n.translation_file(code)).items()
+                       if ctx == i18n.TRANSLATION_CONTEXT and text}
+            from_json = i18n.load_messages(i18n.messages_file(code))
+            self.assertEqual(
+                from_json, from_ts,
+                "%s 的 messages 表与 .ts 不同步（跑 build_translations.py "
+                "--messages 重新生成）：仅 json %s / 仅 ts %s"
+                % (code, sorted(set(from_json) - set(from_ts))[:5],
+                   sorted(set(from_ts) - set(from_json))[:5]))
+
+    def test_degraded_tables_are_not_trivially_empty(self):
+        """空表 = 静默失去降级能力（历史上出现过 12 字节的空 .qm）。"""
+        for code in i18n.available_codes():
+            self.assertGreater(
+                len(i18n.load_messages(i18n.messages_file(code))), 100,
+                "%s 的 messages 表几乎是空的，降级路径等于没有" % code)
+
+    def test_ts_reader_skips_unfinished_vanished_and_empty(self):
+        """测试用的 .ts 解析器口径：只认真正生效的条目。
+
+        它不是产品代码（运行时读 JSON），但**守卫依赖它的口径** ——
+        若把 unfinished 也算进来，覆盖守卫就会把"其实没翻"当成"已翻"而假绿。
+        """
+        path = os.path.join(tempfile.gettempdir(), "qgis_agent_probe_%d.ts" % os.getpid())
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write("""<?xml version="1.0" encoding="utf-8"?>
+<TS version="2.1"><context><name>QGISAgent</name>
+  <message><source>done</source><translation>完成</translation></message>
+  <message><source>todo</source><translation type="unfinished"></translation></message>
+  <message><source>gone</source><translation type="vanished">旧</translation></message>
+  <message><source>empty</source><translation></translation></message>
+</context></TS>""")
+        try:
+            self.assertEqual(_read_ts(path), {("QGISAgent", "done"): "完成"},
+                             "只应保留真正生效的那一条")
+            self.assertEqual(_read_ts(os.path.join(
+                tempfile.gettempdir(), "nope_%d.ts" % os.getpid())), {})
+        finally:
+            os.remove(path)
 
 
 # ─────────────────────── 3. 真 Qt 行为 ───────────────────────
@@ -446,83 +530,105 @@ class TestQtTranslationBehaviour(unittest.TestCase):
                              "兜底语言有翻译文件，应当正常装上")
         self.assertEqual(self.T("就绪"), "Ready")
 
-    # ── .ts 降级路径 ──
-    def test_ts_fallback_when_qm_missing(self):
-        """包里只有 .ts 时（别人 clone 仓库 / 直接软链源码目录）翻译不能丢。"""
+    # ── 降级路径（.qm 不在时读 messages_*.json）──
+    def test_json_fallback_when_qm_missing(self):
+        """包里没有 .qm 时翻译不能丢（退路是同源生成的 messages_*.json）。"""
         saved = i18n.qm_file
         i18n.qm_file = lambda code: os.path.join(self.tmpdir, "nope_%s.qm" % code)
         try:
             self.assertEqual(i18n.apply_language("en"), "en")
-            self.assertEqual(i18n.current_translator_source(), "ts",
-                             "没有 .qm 时必须落到 .ts")
+            self.assertEqual(i18n.current_translator_source(), "json",
+                             "没有 .qm 时必须落到 JSON 降级表")
             self.assertEqual(self.T("就绪"), "Ready")
         finally:
             i18n.qm_file = saved
 
-    def test_ts_fallback_when_qm_is_corrupt(self):
-        """.qm 损坏（或与当前 Qt 版本不兼容）时同样要落到 .ts，而不是整片变空。"""
+    def test_json_fallback_when_qm_is_corrupt(self):
+        """.qm 损坏（或与当前 Qt 版本不兼容）时要落到 JSON 表，而不是整片变空。"""
         broken = os.path.join(self.tmpdir, "broken")
         os.makedirs(broken, exist_ok=True)
         with open(os.path.join(broken, "qgis_agent_en.qm"), "wb") as fh:
             fh.write(b"not a qm at all" * 8)
-        shutil.copy(i18n.translation_file("en"),
-                    os.path.join(broken, "qgis_agent_en.ts"))
+        shutil.copy(i18n.messages_file("en"),
+                    os.path.join(broken, "messages_en.json"))
 
-        saved = i18n.qm_file
+        saved_qm, saved_msg = i18n.qm_file, i18n.messages_file
         i18n.qm_file = lambda code: os.path.join(broken, "qgis_agent_%s.qm" % code)
+        i18n.messages_file = lambda code: os.path.join(broken, "messages_%s.json" % code)
         try:
             self.assertEqual(i18n.apply_language("en"), "en")
-            self.assertEqual(i18n.current_translator_source(), "ts")
+            self.assertEqual(i18n.current_translator_source(), "json")
             self.assertEqual(self.T("就绪"), "Ready")
         finally:
-            i18n.qm_file = saved
+            i18n.qm_file, i18n.messages_file = saved_qm, saved_msg
+
+    def test_qm_takes_priority_over_json(self):
+        """两条路都在时必须走 .qm —— JSON 只是退路，不是并列选项。"""
+        i18n.apply_language("en")
+        self.assertEqual(i18n.current_translator_source(), "qm")
 
     def test_missing_files_install_nothing_and_do_not_raise(self):
-        saved_qm, saved_ts = i18n.qm_file, i18n.translation_file
+        saved = (i18n.qm_file, i18n.messages_file)
         i18n.qm_file = lambda code: os.path.join(self.tmpdir, "no_%s.qm" % code)
-        i18n.translation_file = lambda code: os.path.join(self.tmpdir, "no_%s.ts" % code)
+        i18n.messages_file = lambda code: os.path.join(self.tmpdir, "no_%s.json" % code)
         try:
             self.assertEqual(i18n.apply_language("en"), "en")
             self.assertIsNone(i18n.current_translator())
             self.assertEqual(self.T("就绪"), "就绪", "宁可保留原文，也不能空白或抛异常")
         finally:
-            i18n.qm_file, i18n.translation_file = saved_qm, saved_ts
+            i18n.qm_file, i18n.messages_file = saved
 
-    # ── .ts 解析器契约 ──
-    def test_ts_translator_returns_none_on_miss_not_empty_string(self):
+    # ── 降级表读取契约 ──
+    def test_message_translator_returns_none_on_miss_not_empty_string(self):
         """⚠️ 未命中返回 None 而不是 ""。
 
         返回空串会被 Qt 当作"确有一条空翻译"而采纳 → 界面所有未翻译文案整片空白。
         """
-        translator = i18n.TsTranslator(i18n.translation_file("en"))
+        translator = i18n.MessageTranslator(i18n.messages_file("en"))
         self.assertIsNone(translator.translate(
             i18n.TRANSLATION_CONTEXT, "这个串肯定不在翻译表里"))
-        self.assertEqual(translator.translate(i18n.TRANSLATION_CONTEXT, "就绪"), "Ready")
+        self.assertEqual(
+            translator.translate(i18n.TRANSLATION_CONTEXT, "就绪"), "Ready")
 
-    def test_load_messages_skips_unfinished_and_empty(self):
-        path = os.path.join(self.tmpdir, "probe.ts")
-        with open(path, "w", encoding="utf-8") as fh:
-            fh.write("""<?xml version="1.0" encoding="utf-8"?>
-<TS version="2.1"><context><name>QGISAgent</name>
-  <message><source>done</source><translation>完成</translation></message>
-  <message><source>todo</source><translation type="unfinished"></translation></message>
-  <message><source>gone</source><translation type="vanished">旧</translation></message>
-  <message><source>empty</source><translation></translation></message>
-</context></TS>""")
-        messages = i18n.load_messages(path)
-        self.assertEqual(messages, {("QGISAgent", "done"): "完成"},
-                         "只应保留真正生效的那一条")
+    def test_message_translator_never_returns_empty_string_for_any_entry(self):
+        """表里任何一条都不能是空串 —— 那是"整片变空白"的另一种成因。"""
+        for code in i18n.available_codes():
+            translator = i18n.MessageTranslator(i18n.messages_file(code))
+            for source in translator.messages:
+                self.assertTrue(
+                    translator.translate(i18n.TRANSLATION_CONTEXT, source),
+                    "%s 的 %r 译文为空串" % (code, source[:40]))
 
-    def test_load_messages_survives_broken_xml(self):
-        path = os.path.join(self.tmpdir, "broken.ts")
+    def test_load_messages_ignores_empty_and_non_string_values(self):
+        path = os.path.join(self.tmpdir, "probe.json")
         with open(path, "w", encoding="utf-8") as fh:
-            fh.write("<TS><context>not closed")
+            fh.write(json.dumps({
+                "done": "完成",
+                "empty": "",
+                "none": None,
+                "number": 42,
+                "": "没有 key",
+            }, ensure_ascii=False))
+        self.assertEqual(i18n.load_messages(path), {"done": "完成"},
+                         "只应保留非空字符串的那一条")
+
+    def test_load_messages_survives_broken_json(self):
+        path = os.path.join(self.tmpdir, "broken.json")
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write("{ this is not json")
         self.assertEqual(i18n.load_messages(path), {},
                          "翻译文件坏了不该让插件起不来")
 
+    def test_load_messages_survives_non_object_json(self):
+        """JSON 合法但顶层不是对象（如数组）时也不能炸。"""
+        path = os.path.join(self.tmpdir, "array.json")
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write("[1, 2, 3]")
+        self.assertEqual(i18n.load_messages(path), {})
+
     def test_load_messages_on_missing_file_is_empty(self):
         self.assertEqual(i18n.load_messages(
-            os.path.join(self.tmpdir, "does_not_exist.ts")), {})
+            os.path.join(self.tmpdir, "does_not_exist.json")), {})
 
     # ── 翻译完整性（运行时口径）──
     def test_english_table_has_no_identity_translations(self):
@@ -533,8 +639,8 @@ class TestQtTranslationBehaviour(unittest.TestCase):
         就是实打实的漏翻。
         """
         import re
-        en = i18n.load_messages(i18n.translation_file("en"))
-        identity = sorted(src for (_c, src), tr in en.items()
+        en = i18n.load_messages(i18n.messages_file("en"))
+        identity = sorted(src for src, tr in en.items()
                           if src == tr and re.search(r"[\u4e00-\u9fff]", src))
         self.assertFalse(
             identity,
@@ -543,7 +649,7 @@ class TestQtTranslationBehaviour(unittest.TestCase):
     def test_every_english_translation_is_ascii_or_punctuation(self):
         """英文译文里不该残留中文（漏翻的典型症状）。"""
         import re
-        en = i18n.load_messages(i18n.translation_file("en"))
+        en = i18n.load_messages(i18n.messages_file("en"))
         leftover = sorted(tr for tr in en.values()
                           if re.search(r"[\u4e00-\u9fff]", tr))
         self.assertFalse(leftover,
@@ -551,14 +657,14 @@ class TestQtTranslationBehaviour(unittest.TestCase):
 
     def test_chinese_table_is_identity_mapping(self):
         """中文表是恒等映射：它的作用是把界面锁回中文，不是提供新文案。"""
-        zh = i18n.load_messages(i18n.translation_file("zh_CN"))
-        non_identity = sorted((s, t) for (_c, s), t in zh.items() if s != t)
+        zh = i18n.load_messages(i18n.messages_file("zh_CN"))
+        non_identity = sorted((s, t) for s, t in zh.items() if s != t)
         self.assertFalse(non_identity,
                          "中文表出现非恒等条目：%s" % non_identity[:5])
 
     def test_two_tables_cover_the_same_keys(self):
-        en = i18n.load_messages(i18n.translation_file("en"))
-        zh = i18n.load_messages(i18n.translation_file("zh_CN"))
+        en = i18n.load_messages(i18n.messages_file("en"))
+        zh = i18n.load_messages(i18n.messages_file("zh_CN"))
         self.assertEqual(set(en), set(zh),
                          "仅 en: %s / 仅 zh: %s" % (sorted(set(en) - set(zh))[:5],
                                                     sorted(set(zh) - set(en))[:5]))

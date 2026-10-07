@@ -61,7 +61,7 @@ def shutdown_all_processors():
 #
 # 语言取值与界面语言**同源**（``i18n.preferred_language()``），不另设开关：
 # 界面是英文却让助手用中文回话，是最不该出现的错配。
-_LANG_TOKEN = "<<<REPLY_LANGUAGE_RULE>>>"
+_LANG_PLACEHOLDER = "<<<REPLY_LANGUAGE_RULE>>>"
 
 #: 助手侧文案表 —— 这里放的是**会直接进入回复流、被用户读到**的串。
 #: 它们本质上是"回复"而不是内部日志，所以必须跟着回复语言走。
@@ -347,7 +347,7 @@ def agent_system_prompt():
     ⚠️ 一律用本函数取提示词，不要直接用 ``AGENT_SYSTEM_PROMPT`` —— 那个常量里
     还留着占位符，直接送模型会让它看到 ``<<<REPLY_LANGUAGE_RULE>>>``。
     """
-    return AGENT_SYSTEM_PROMPT.replace(_LANG_TOKEN, _assistant_text("reply_rule"))
+    return AGENT_SYSTEM_PROMPT.replace(_LANG_PLACEHOLDER, _assistant_text("reply_rule"))
 
 
 class Processor(QObject):

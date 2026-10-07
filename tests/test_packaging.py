@@ -8,6 +8,7 @@
 import ast
 import builtins
 import glob
+import json
 import os
 import re
 import unittest
@@ -409,7 +410,8 @@ class TestI18nPackaging(unittest.TestCase):
     def test_i18n_files_are_packed(self):
         for rel in ["i18n/__init__.py", "i18n/en.json"] + \
                    ["i18n/qgis_agent_%s.%s" % (c, ext)
-                    for c in self.codes for ext in ("ts", "qm")]:
+                    for c in self.codes for ext in ("ts", "qm")] + \
+                   ["i18n/messages_%s.json" % c for c in self.codes]:
             self.assertTrue(self.bp.should_include(rel),
                             "i18n 资源必须进包，但被排除了：%s" % rel)
 
@@ -457,6 +459,112 @@ class TestI18nPackaging(unittest.TestCase):
                 blobs[code] = fh.read()
         self.assertGreaterEqual(len(set(blobs.values())), 2,
                                 "所有语言的 .qm 内容相同 —— 多半是复制错了")
+
+    # ── 降级表（.qm 不可用时的退路）──
+    def messages_path(self, code):
+        return os.path.join(self.I18N_DIR, "messages_%s.json" % code)
+
+    def test_degraded_tables_exist_and_are_not_empty(self):
+        for code in self.codes:
+            path = self.messages_path(code)
+            self.assertTrue(os.path.isfile(path), "缺少降级表 %s" % path)
+            with open(path, encoding="utf-8") as fh:
+                data = json.load(fh)
+            self.assertIsInstance(data, dict)
+            self.assertGreater(
+                len(data), self.MIN_ENTRIES,
+                "%s 的降级表只有 %d 条 —— .qm 一旦不可用就等于没有翻译"
+                % (code, len(data)))
+            self.assertTrue(all(k and isinstance(v, str) and v
+                                for k, v in data.items()),
+                            "%s 的降级表里有空值 —— 会让界面整片变空白" % code)
+
+    def test_no_orphan_degraded_tables(self):
+        allowed = {"messages_%s.json" % c for c in self.codes} | {"en.json"}
+        found = {os.path.basename(p)
+                 for p in glob.glob(os.path.join(self.I18N_DIR, "*.json"))}
+        self.assertEqual(found, allowed,
+                         "存在孤儿降级表：%s" % sorted(found - allowed))
+
+    # ── 发布包里的 Python 不得碰"不可信 XML"解析（Bandit 会 BLOCK 整版）──
+    # bandit 的黑名单里与 XML 有关的导入名（B405/B406/B407/B408/B409/B410/B411）。
+    # 名称必须与 bandit 的 blacklist 同源，否则守卫会比扫描器更严 → 误报。
+    XML_IMPORTS = ("xml.etree", "xml.sax", "xml.parsers.expat",
+                   "xml.dom.minidom", "xml.dom.pulldom", "lxml", "xmlrpclib")
+
+    @staticmethod
+    def _shipped_trees():
+        """产出 ``(相对路径, AST)``，只含**会进发布包**的 .py。"""
+        for path in glob.glob(os.path.join(PROJECT_ROOT, "**", "*.py"),
+                              recursive=True):
+            rel = os.path.relpath(path, PROJECT_ROOT)
+            if not TestI18nPackaging.bp.should_include(rel):
+                continue                      # 开发期文件，不进包，不管
+            try:
+                with open(path, encoding="utf-8") as fh:
+                    yield rel, ast.parse(fh.read(), filename=path)
+            except (SyntaxError, UnicodeDecodeError):
+                continue
+
+    def test_shipped_code_never_imports_unhardened_xml(self):
+        """进包的 .py 不得 import xml.etree / xml.sax / minidom 等。
+
+        插件仓库（plugins.qgis.org）用 Bandit 静态扫描发布包：
+        ``xml.etree.ElementTree`` 被判 B405（导入）与 B314（调用），而
+        **只要有一条 Bandit 发现，整个版本就会被 BLOCKED** ——
+        不进入人审、不可下载。v2.4.14 首次上传正是这样被挡住的
+        （7 条发现里有 2 条来自 i18n 里对 .ts 的 XML 解析）。
+        这条守卫按"是否进包"判断，正好覆盖发布口径。
+        """
+        offenders = []
+        for rel, tree in self._shipped_trees():
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    names = [a.name for a in node.names]
+                elif isinstance(node, ast.ImportFrom):
+                    names = [node.module or ""]
+                else:
+                    continue
+                for name in names:
+                    if any(name == m or name.startswith(m + ".")
+                           for m in self.XML_IMPORTS):
+                        offenders.append("%s:%d import %s"
+                                         % (rel, node.lineno, name))
+        self.assertFalse(
+            offenders,
+            "发布包里的代码 import 了 XML 解析模块，会被插件仓库的 Bandit "
+            "扫描判为 B405/B406/B407 等并 BLOCK 整个版本：%s" % offenders[:5])
+
+    def test_shipped_code_has_no_bandit_b110_pattern(self):
+        """进包的 .py 不得出现 Bandit 会判 B110 的 ``try/except: pass``。
+
+        ⚠️ 判据必须与 bandit **同源**（已读其源码 try_except_pass.py）：
+        默认配置 ``check_typed_exception = False`` 时，**只有裸 ``except:``
+        或异常类型恰好是 ``Exception``** 才算，写明具体类型
+        （``except json.JSONDecodeError:``）一律放过。先前按"任意 except + pass"
+        写会多报 3 处（实测 7 vs 扫描器的 4），那种守卫会把人训练成无视它。
+        """
+        offenders = []
+        for rel, tree in self._shipped_trees():
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Try):
+                    continue
+                for handler in node.handlers:
+                    if len(handler.body) != 1:
+                        continue
+                    if not isinstance(handler.body[0], ast.Pass):
+                        continue
+                    type_node = handler.type
+                    # 裸 except:（type 为 None）或 except Exception: 才命中
+                    if type_node is not None and \
+                            getattr(type_node, "id", None) != "Exception":
+                        continue
+                    offenders.append("%s:%d" % (rel, handler.lineno))
+        self.assertFalse(
+            offenders,
+            "出现 Bandit B110 模式（try/except[Exception]: pass）—— "
+            "一条发现就会 BLOCK 整个版本；改用 contextlib.suppress 或把 "
+            "except 体写成有意义的赋值/日志：%s" % offenders[:5])
 
     # ── .ts 必须完整且不含未完成条目 ──
     @staticmethod
