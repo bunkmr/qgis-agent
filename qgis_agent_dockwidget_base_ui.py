@@ -5,6 +5,10 @@ from qgis.PyQt import QtCore, QtWidgets
 from qgis.PyQt.QtCore import QCoreApplication
 import contextlib
 
+# 文案会折行的小控件（见 qt_widgets.py）。长文案的 QCheckBox 不折行，会把面板的
+# 最小宽度顶高，且**中英差异极大** —— 换语言后面板就再也拉不回原宽度。
+from .qt_widgets import WrappingCheckBox
+
 # 界面文案统一经此翻译。context 固定为 "QGISAgent"，与 i18n/qgis_agent_*.ts 对应。
 # 刻意采用 pyuic 生成代码的同款写法（别名 + _translate("Ctx", "text")）：
 # pylupdate 认这个模式，能自动把待翻译字符串提取进 .ts，无需手工维护列表。
@@ -33,6 +37,26 @@ class _DockTabWidget(QtWidgets.QTabWidget):
     MAX_HINT_W = 560
     MIN_HINT_H = 430
     MAX_HINT_H = 720
+
+    #: 每页强制的最小宽度 —— **与界面语言无关**。
+    #:
+    #: 为什么需要它：一页的最小宽度本质上是「内容算出来的」，而英文文案普遍比中文长
+    #: （"Access token / Regenerate / Copy token" vs 「访问令牌 / 重新生成 / 复制令牌」），
+    #: 于是**切一次语言，面板的最小宽度就变一次** —— 用户表现为「切成英文后面板变很宽，
+    #: 再也拉不回原来的宽度」。
+    #:
+    #: 解决办法不是在每个控件上继续打补丁（那要追着每一条译文跑），而是给每页一个
+    #: **固定下限**：面板最小宽度 = max(各页内容宽度, PAGE_MIN_W)。只要各页内容都不超过
+    #: 这个下限（见 tests/test_ui_layout.py 的守卫），面板最小宽度就恒等于
+    #: ``PAGE_MIN_W + 页签边框 + dock 边距``，中英文一模一样。
+    #:
+    #: ⚠️ 用 ``setMinimumWidth``（**抬下限**）而不是改 ``sizeHint``：
+    #: 内容比它宽时取内容宽度（**永远不会裁掉内容**），内容比它窄时才抬到下限。
+    #: 所以它只有「把矮的抬平」这一个效果，不会把任何东西压小。
+    #:
+    #: 取值 340 的来由：``setMinimumSize(360, 500)`` 是本 dock 的既定最小宽度，
+    #: 360 - 12（mainLayout 边距）= 348 ≥ 340 + 页签边框 4 → dock 最小宽度回到设计值 360。
+    PAGE_MIN_W = 340
 
     def _clamp(self, size):
         w = max(self.MIN_HINT_W, min(self.MAX_HINT_W, size.width()))
@@ -72,6 +96,16 @@ class _DockTabWidget(QtWidgets.QTabWidget):
             return QtCore.QSize(base.width(), h)
         except Exception:  # noqa: BLE001
             return super().minimumSizeHint()
+
+    def addTab(self, widget, *args):
+        """加页时顺手把「语言无关的最小宽度」装上（见 ``PAGE_MIN_W``）。
+
+        放在 ``addTab`` 里而不是逐个页面手写：新加的页自动享受同一条规则，
+        不会因为「忘了设」又把面板的最小宽度变回语言相关。
+        """
+        with contextlib.suppress(Exception):
+            widget.setMinimumWidth(self.PAGE_MIN_W)
+        return super().addTab(widget, *args)
 
 
 class Ui_QGISAgentDockWidget(object):
@@ -194,17 +228,31 @@ class Ui_QGISAgentDockWidget(object):
             QPushButton:disabled { background-color: #d9a0a0; }
         """)
 
-        # 跳过代码确认的开关
-        self.cbSkipConfirm = QtWidgets.QCheckBox(_translate("QGISAgent", "跳过确认"))
+        # 跳过代码确认的开关。
+        # ⚠️ 必须用**会折行**的复选框：英文 "Skip confirmation" 比中文「跳过确认」
+        #    宽 47px，而 QCheckBox 不折行 → 最小宽度 = 整行文字宽度。
+        self.cbSkipConfirm = WrappingCheckBox(_translate("QGISAgent", "跳过确认"))
         self.cbSkipConfirm.setToolTip(_translate("QGISAgent", "勾选后直接执行所有 PyQGIS/Processing 代码，不再弹窗确认"))
         self.cbSkipConfirm.setStyleSheet("QCheckBox { font-size: 11px; color: #888; }")
 
+        # ⚠️ 这一行**刻意拆成两行**（模型 / 温度 + 跳过确认）：
+        #    原先五件套挤一行（模型 + 下拉 + 温度 + 滑杆 + 数值 + 跳过确认），英文下
+        #    该行最小宽度 440px、中文只有 324px —— 因为英文的 "Model/Temperature/
+        #    Skip confirmation" 都更长。实测（QGIS 3.44.14 / Qt5）它把整个「对话」页
+        #    的最小宽度顶到 440px（中文 324px），于是**切到英文后面板再也拉不回原宽度**。
+        #    拆成两行后，最宽的一行只有 ~200px，且远低于各页的语言无关下限。
         self.bottomBarLayout.addWidget(self.lblModel)
         self.bottomBarLayout.addWidget(self.cbModelSelector, 1)
-        self.bottomBarLayout.addWidget(self.lblTemperature)
-        self.bottomBarLayout.addWidget(self.sliderTemperature)
-        self.bottomBarLayout.addWidget(self.lblTempValue)
-        self.bottomBarLayout.addWidget(self.cbSkipConfirm)
+
+        # 第二行：温度滑杆 + 跳过确认（跳过确认靠右，与输入区右边界对齐）
+        self.tempBarLayout = QtWidgets.QHBoxLayout()
+        self.tempBarLayout.setContentsMargins(0, 0, 0, 0)
+        self.tempBarLayout.setSpacing(6)
+        self.tempBarLayout.addWidget(self.lblTemperature)
+        self.tempBarLayout.addWidget(self.sliderTemperature)
+        self.tempBarLayout.addWidget(self.lblTempValue)
+        self.tempBarLayout.addStretch(1)
+        self.tempBarLayout.addWidget(self.cbSkipConfirm)
 
         # >>> 手工调整（非 Designer 生成；若重新生成 .ui 需一并保留）<<<
         # 「停止」与「发送」同占一格、互斥显示：
@@ -220,6 +268,7 @@ class Ui_QGISAgentDockWidget(object):
         self.messagesLayout.addWidget(self.txHistory)
         self.messagesLayout.addWidget(self.messageFrame)
         self.messagesLayout.addLayout(self.bottomBarLayout)
+        self.messagesLayout.addLayout(self.tempBarLayout)
 
         # --- 对话列表标签页 ---
         self.tbConversations = QtWidgets.QWidget()
@@ -288,8 +337,11 @@ class Ui_QGISAgentDockWidget(object):
             QPushButton:hover { background-color: #4CAE4C; }
         """)
 
-        # 模型配置页的"跳过确认"开关（与底部栏的 cbSkipConfirm 保持同步）
-        self.cbSkipConfirmSettings = QtWidgets.QCheckBox(_translate("QGISAgent", "跳过代码执行确认"))
+        # 模型配置页的"跳过确认"开关（与底部栏的 cbSkipConfirm 保持同步）。
+        # 同样用折行复选框：英文 "Skip code execution confirmation" 比中文长一大截
+        # （实测 200px vs 84px），而 QCheckBox 不折行。
+        self.cbSkipConfirmSettings = WrappingCheckBox(
+            _translate("QGISAgent", "跳过代码执行确认"))
         self.cbSkipConfirmSettings.setToolTip(_translate("QGISAgent", "勾选后直接执行 PyQGIS/Processing 代码，不再弹窗确认"))
         self.cbSkipConfirmSettings.setStyleSheet("QCheckBox { font-size: 12px; color: #888; margin-top: 8px; }")
 

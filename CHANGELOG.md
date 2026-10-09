@@ -1,5 +1,79 @@
 # 更新日志
 
+## [2.4.15] - 2026-10-09
+
+### 修复（界面：切语言后最小宽度跳变 / 重开面板设置项叠加）
+
+两个来自真机截图报障的界面问题，都已定位到 Qt 的具体行为并给出根因级修法。
+
+**1. 切到英文后，面板的最小宽度变得很宽、再也拉不回原宽度**
+
+英文文案普遍比中文长 30%~70%，而 `QCheckBox` / `QPushButton` **不支持折行** ——
+控件的最小宽度等于「整行文字宽度」，顺着「控件 → 页面 → `QTabWidget` → dock」
+一路传上去，就成了整个面板的最小宽度。实测（QGIS 3.44.14 / Qt5）：
+
+| 控件 | 中文 | 英文 |
+|---|---|---|
+| 「使用浏览器兼容 TLS（…需 pip install curl_cffi）」勾选框 | 624px | 888px |
+| 「允许外部 Agent 调用特权工具（…）」勾选框 | 642px | 883px |
+| 空状态示例按钮（最长一条） | — | 472px |
+| 底部栏「模型 / 温度 / 跳过确认」一行 | 324px | 440px |
+| MCP「访问令牌 + 三个按钮」一行 | ~330px | 447px |
+
+结果是 dock 的最小宽度 **中文 690px / 英文 931px** —— 切成英文后拉不回原来的宽度。
+
+修法分三层：
+
+- **新增 `qt_widgets.py`**：`WrappingCheckBox` / `WrappingPushButton` 两个「文案自动
+  折行」的控件（C++ 侧文本置空 + 内部 `wordWrap` 标签 + `WA_TransparentForMouseEvents`
+  + `heightForWidth`），**文案一字未改，因此不需要动翻译文件**。
+- **拆开两处过挤的行**：底部栏拆成「模型」/「温度 + 跳过确认」两条；MCP 的
+  「访问令牌」把三个按钮另起一行。
+- **给每页一个语言无关的最小宽度下限**（`_DockTabWidget.PAGE_MIN_W = 340`）：
+  面板最小宽度 = max(各页内容宽度, 340) + 边距，于是**中英文恒等于 360px**
+  （回到 `setMinimumSize(360, 500)` 的设计值）。用 `setMinimumWidth`（抬下限）而不是
+  改 `sizeHint`，所以它**只有「把窄的抬平」这一个效果，永远不会裁掉内容**。
+
+修好后：dock 最小宽度 **中文 360px = 英文 360px**。
+
+⚠️ 顺手记四个 Qt 行为坑（都写进了源码注释与单测）：
+
+1. `QAbstractButton::sizeHint()`（`QCheckBox` / `QPushButton` 都用它）**完全不看子布局**：
+   C++ 文本置空后它按「空文案 + 指示器」报 ~19px。竖排布局里看不出来（宽度由父控件
+   给满），一放进**横排布局**就只拿到 19px、标签宽度归零、**文案整片消失**
+   （实测现场：底部栏「跳过确认 / Skip confirmation」变成了一个空方框）。必须自己实现
+   `sizeHint()`。
+2. `QCheckBox::minimumSizeHint()` 内部**转调 `sizeHint()`**，所以覆盖 `sizeHint` 之后
+   `minimumSizeHint` 会跟着变成「整行文案宽度」（实测四个复选框瞬间从 19px 涨到 875px）。
+   要「布局算出来的最小尺寸」必须显式调 `QWidget.minimumSizeHint(self)`。
+3. 折行标签是**子控件**，样式表写的 `color` / `font-size` **不会**稳定地传下去
+   （同一句 `QCheckBox { color: #737373; }`，在 MCP 页的复选框上标签继承了，直接设在
+   底部栏复选框上时标签却仍是黑字）。改成 `changeEvent` / `showEvent` / `setStyleSheet`
+   三处主动同步字体与调色板。
+4. `QCheckBox::hitButton()` 按**文字范围**算热区（`SE_CheckBoxClickRect`），C++ 文本
+   置空后只有那个小方框能点 —— 必须覆盖成整个控件矩形。
+
+**2. 点 × 关闭面板、再点图标重开，设置页的栏目会按打开次数叠加**
+
+点面板右上角的 × 只调用了 `iface.removeDockWidget`（`dockwidget` 对象并**没有销毁**），
+而重开时 `run()` 会再次走 `_init_plugin()` → 又 `insertWidget` 一遍分组、又 `connect`
+一遍信号。实测 3 个来回后：语言分组 1→2→3、测试连接按钮 1→2→3、TLS 复选框 1→2→3、
+MCP 分组 1→2→3、`settingsLayout` 项数 10→14→18。
+
+修法：把 `_init_plugin` 拆成两半 —— 「控件构建 + 信号连接」全部移进新的
+`_setup_dock_ui()`，用 `_dock_ui_ready` 闸门保证**整个进程只跑一次**；剩下的（读设置、
+重连 `closingPlugin`、`addDockWidget`、`show`、自适应屏幕、重建 DataLoader、刷新模型
+列表等）保持每次打开都做。3 个来回后各项计数恒为 1/1/1/1/10/2。
+
+### 测试
+
+- 新增 `tests/test_ui_layout.py`（21 例）：源码级守卫（禁止「文案来自翻译却不折行」的
+  复选框、底部两栏与 MCP 令牌行的拆分、`PAGE_MIN_W` 与 `setMinimumSize(360, 500)` 的
+  一致性、`_dock_ui_ready` 闸门）+ 真 Qt 行为用例（`sizeHint` / `minimumSizeHint` /
+  热区 / 字体颜色同步，无真 Qt 时自动跳过）。
+- 基线 **678 → 699 例**全绿；Qt5（QGIS 3.44.14）与 Qt6（QGIS 4.2.1）双平台各真机跑通
+  同一份界面验收脚本（60/60 项）。
+
 ## [2.4.14] - 2026-10-07
 
 ### 修复（首次上传被插件仓库的安全扫描 BLOCK，已整改）

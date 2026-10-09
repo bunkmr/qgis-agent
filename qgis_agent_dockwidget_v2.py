@@ -27,6 +27,7 @@ from qgis.PyQt.QtGui import QFont, QTextDocument, QTextLayout, QTextOption
 from .utils import (handle_none_conversation, pack, unpack, format_description,
                     create_markdown, chat_colors, is_dark_color)
 from .qgis_agent_dockwidget_base_ui import Ui_QGISAgentDockWidget
+from .qt_widgets import WrappingPushButton
 from .thinking_display import ThinkingManager, create_thinking_block
 import contextlib
 
@@ -243,7 +244,11 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         # 存下来供切换语言时重刷。
         self._example_buttons = []
         for text in examples:
-            btn = QPushButton(_translate("QGISAgent", text))
+            # ⚠️ 必须用会折行的按钮：QPushButton 不折行，英文文案最长那条
+            #    （Compute the area of every administrative region …）会把
+            #    「对话」页的最小宽度从 324px 顶到 **476px** —— 又一处
+            #    「切成英文后面板拉不小」。
+            btn = WrappingPushButton(_translate("QGISAgent", text))
             btn.setObjectName("qaExampleBtn")
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.setToolTip(_translate("QGISAgent", "点击填入输入框"))
@@ -283,19 +288,22 @@ class QGISAgentDockWidgetV2(QtWidgets.QDockWidget, Ui_QGISAgentDockWidget):
         if chat_index >= 0:
             self.messagesLayout.setStretch(chat_index, 1)
 
-        # 自检顺序不变式：搜索条 → 聊天区 → 输入区 → 底部栏 → 状态条。
+        # 自检顺序不变式：搜索条 → 聊天区 → 输入区 → 底部栏 → 温度栏 → 状态条。
         # 顺序错了界面就会「输入框在消息上面」，所以这里把顺序也纳入自检。
         i_search = self.messagesLayout.indexOf(self.searchFrameWidget)
         i_input = self.messagesLayout.indexOf(self.messageFrame)
         i_bar = self.messagesLayout.indexOf(self.bottomBarLayout)
+        i_temp = self.messagesLayout.indexOf(getattr(self, "tempBarLayout", None)) \
+            if getattr(self, "tempBarLayout", None) is not None else i_bar
         i_footer = self.messagesLayout.indexOf(self.footerBar)
         self._chat_layout_ok = (
             i_search >= 0 and chat_index >= 0 and i_input >= 0
-            and i_search < chat_index < i_input < i_bar < i_footer
+            and i_search < chat_index < i_input < i_bar <= i_temp < i_footer
         )
         if not self._chat_layout_ok:
-            logger.warning("聊天区装配自检失败：search=%s chat=%s input=%s bar=%s footer=%s",
-                           i_search, chat_index, i_input, i_bar, i_footer)
+            logger.warning(
+                "聊天区装配自检失败：search=%s chat=%s input=%s bar=%s temp=%s footer=%s",
+                i_search, chat_index, i_input, i_bar, i_temp, i_footer)
 
         # 监测 txHistory 内容变化以切换空状态/历史视图。
         #

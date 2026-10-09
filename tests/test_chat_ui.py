@@ -134,10 +134,15 @@ class TestLayoutAssemblyGuards(unittest.TestCase):
         self.assertNotIn("replaceWidget", _called_attrs(_parse(DOCK_V2)))
 
     def test_layout_order_invariant_present(self):
-        """装配自检不变式必须在，且比较顺序正确。"""
+        """装配自检不变式必须在，且比较顺序正确。
+
+        2.4.15 起底部栏拆成两条（模型 / 温度+跳过确认），不变式相应变成
+        ``i_bar <= i_temp < i_footer`` —— 温度栏可以不在（旧布局），但不能跑到
+        状态条后面去。
+        """
         src = _read(DOCK_V2)
         self.assertIn("_chat_layout_ok", src)
-        self.assertIn("i_search < chat_index < i_input < i_bar < i_footer", src)
+        self.assertIn("i_search < chat_index < i_input < i_bar <= i_temp < i_footer", src)
 
     def test_stack_add_after_remove_widget(self):
         """必须先把 txHistory 摘出布局，再收进 chatStack。"""

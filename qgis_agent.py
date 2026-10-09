@@ -14,12 +14,13 @@ from qgis.PyQt.QtWidgets import (
     QAction, QDialog, QPushButton, QLineEdit, QPlainTextEdit,
     QDockWidget, QApplication, QMessageBox, QLabel, QVBoxLayout, QHBoxLayout,
     QComboBox, QTableWidgetItem, QFrame, QToolBar, QInputDialog,
-    QCheckBox, QGroupBox, QSpinBox
+    QGroupBox, QSpinBox
 )
 from qgis.utils import iface
 
 from . import i18n
 from .package_manager import PackageManager
+from .qt_widgets import WrappingCheckBox
 import logging
 import contextlib
 logger = logging.getLogger(__name__)
@@ -639,6 +640,82 @@ class QGISAgent:
         # 设置全局代码确认回调
         set_code_confirm_callback(self._on_code_confirm_sync)
 
+        # ⚠️ 控件构建与信号连接**整个进程只做一次**，见 _setup_dock_ui 的说明。
+        if not getattr(self, "_dock_ui_ready", False):
+            self._setup_dock_ui()
+            self._dock_ui_ready = True
+
+        # ── 以下每次「打开面板」都要做（点 × 关闭后再点图标重开会重走一遍）──
+
+        # ── 恢复保存的设置 ──
+        self._load_saved_settings()
+
+        # onClosePlugin 里会断开这个连接，重开必须接回来
+        with contextlib.suppress(Exception):
+            self.dockwidget.closingPlugin.connect(self.onClosePlugin)
+        self.iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dockwidget)
+        self.dockwidget.show()
+
+        # 一次性纠正历史遗留的 dock 尺寸（详见 _clamp_dock_to_screen 说明）。
+        # 延后到事件循环里跑：dock 的实际尺寸要等布局跑完才定下来。
+        QTimer.singleShot(600, self._clamp_dock_to_screen)
+
+        self.dataloader = DataLoader(DB_NAME)
+        self.dataloader.connect()
+
+        # 加载模型列表到下拉框
+        self._load_model_selector()
+
+        slot_funcs = [
+            self._on_conversation_load,
+            self._on_conversation_delete,
+            self._on_conversation_edit,
+        ]
+        self.dockwidget.displayConversationCard(self.dataloader, slot_funcs)
+
+        from .processor import Processor as _ProcessorClass
+        self._Processor = _ProcessorClass
+        self._generate_unique_id = generate_unique_id
+        self._get_current_timestamp = get_current_timestamp
+        self._pack = pack
+        self._extract_code = extract_code
+        self._set_font_color = set_font_color
+        self._Conversation = Conversation
+        self._NewEditDialog = NewConversationDialog
+
+    def _setup_dock_ui(self):
+        """构建面板控件并连接信号 —— **整个进程只做一次**。
+
+        ⚠️ 为什么必须单独拆出来并加闸门：
+
+        用户点面板右上角的 × 只是把 dock **从停靠区摘下来**
+        （``onClosePlugin`` 里的 ``removeDockWidget``），dockwidget 对象本身
+        还活着、也没被销毁。再点工具栏图标时 ``run()`` 看到
+        ``plugin_is_active == False``，于是把 ``_init_plugin()`` 整个再跑一遍
+        —— 而它当时是「复用已有 dockwidget」的，于是这里每跑一次就：
+
+        * 往设置页 ``settingsLayout`` **再插一个**「🌐 语言 / Language」分组、
+          再插一个「🔌 测试连接与诊断」按钮、再插一套 TLS 复选框与说明；
+        * 往 MCP 页 ``mcpLayout`` **再插一个**「MCP 服务」分组；
+        * 把所有 ``connect(...)`` 再来一遍（同一个槽被连两次）。
+
+        实测（QGIS 3.44.14 / Qt5，模拟 3 次「关闭 → 重开」）：
+
+        ================  ========  ========  ========
+        项目                第1次     第2次     第3次
+        ================  ========  ========  ========
+        语言分组              1         2         3
+        测试连接按钮           1         2         3
+        TLS 复选框           1         2         3
+        MCP 分组             1         2         3
+        ================  ========  ========  ========
+
+        这正是「栏目会随启动次数增加」的原因。
+
+        闸门放在 ``_dock_ui_ready`` 上，而**不是**改 ``onClosePlugin`` 去
+        销毁 dockwidget —— 后者会让重开后聊天记录凭空清空，而且异步回调
+        （MCP 状态、RAG 进度、定时器）可能拿到已销毁的对象。
+        """
         # 连接"跳过确认"开关（底部栏和配置页两个 checkbox 保持同步）
         # 该开关仅本次会话有效，不做持久化，在 tooltip 中向用户说明
         _skip_confirm_tip = (
@@ -656,29 +733,6 @@ class QGISAgent:
         self.dockwidget.cbSkipConfirmSettings.stateChanged.connect(
             lambda state: self.dockwidget.cbSkipConfirm.setChecked(state == Qt.CheckState.Checked)
         )
-
-        # ── 恢复保存的设置 ──
-        self._load_saved_settings()
-
-        self.dockwidget.closingPlugin.connect(self.onClosePlugin)
-        self.iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dockwidget)
-        self.dockwidget.show()
-
-        # 一次性纠正历史遗留的 dock 尺寸（详见 _clamp_dock_to_screen 说明）。
-        # 延后到事件循环里跑：dock 的实际尺寸要等布局跑完才定下来。
-        QTimer.singleShot(600, self._clamp_dock_to_screen)
-
-        # ── D4 首次启动引导（仅首次弹出，之后持久化 firstRunDone） ──
-        self._maybe_show_first_run_guide()
-
-        # ── P1-7 RAG 建索引：移到后台线程，首启不再阻塞界面（约 10-30s） ──
-        self._init_rag_index_async()
-
-        self.dataloader = DataLoader(DB_NAME)
-        self.dataloader.connect()
-
-        # 加载模型列表到下拉框
-        self._load_model_selector()
 
         self.dockwidget.pbSend.clicked.connect(self._on_new_message_send)
         self.dockwidget.enterPressed.connect(self._on_new_message_send)
@@ -705,25 +759,14 @@ class QGISAgent:
         # 标签页切换时刷新模型配置页
         self.dockwidget.twTabs.currentChanged.connect(self._on_tab_changed)
 
-        # 初始化模型配置标签页
+        # 初始化模型配置标签页（语言分组、测试连接、TLS、MCP 分组都在这里建）
         self._init_settings_tab()
 
-        slot_funcs = [
-            self._on_conversation_load,
-            self._on_conversation_delete,
-            self._on_conversation_edit,
-        ]
-        self.dockwidget.displayConversationCard(self.dataloader, slot_funcs)
-
-        from .processor import Processor as _ProcessorClass
-        self._Processor = _ProcessorClass
-        self._generate_unique_id = generate_unique_id
-        self._get_current_timestamp = get_current_timestamp
-        self._pack = pack
-        self._extract_code = extract_code
-        self._set_font_color = set_font_color
-        self._Conversation = Conversation
-        self._NewEditDialog = NewConversationDialog
+        # ── 下面两件是「整个进程一次」的启动动作，不属于「打开面板」 ──
+        # D4 首次启动引导（仅首次弹出，之后持久化 firstRunDone）
+        self._maybe_show_first_run_guide()
+        # P1-7 RAG 建索引：移到后台线程，首启不再阻塞界面（约 10-30s）
+        self._init_rag_index_async()
 
     def _load_model_selector(self):
         """加载可用模型到下拉框"""
@@ -1888,7 +1931,10 @@ class QGISAgent:
         except Exception:  # noqa: BLE001
             self._browser_tls_ready = False
 
-        self.cbBrowserTls = QCheckBox(
+        # ⚠️ 这句说明文案很长，必须用会折行的复选框：QCheckBox 不折行，它的
+        #    最小宽度 = 整行文字宽度（实测英文下 888px），会顺着布局一路把
+        #    dock 的最小宽度从 690px 顶到 931px —— 英文界面下再也拉不小。
+        self.cbBrowserTls = WrappingCheckBox(
             _translate("QGISAgent", "使用浏览器兼容 TLS（仅当接口连接被网关重置时需要，需 pip install curl_cffi）")
         )
         self.cbBrowserTls.setToolTip(
@@ -1996,7 +2042,9 @@ class QGISAgent:
         self.lblMcpHint.setStyleSheet("color: #666; font-size: 11px;")
         outer.addWidget(self.lblMcpHint)
 
-        self.cbMcpAutostart = QCheckBox(_translate("QGISAgent", "随插件启动时自动运行 MCP 服务"))
+        # 同 cbBrowserTls：长说明文字必须折行，否则最小宽度会被顶高
+        self.cbMcpAutostart = WrappingCheckBox(
+            _translate("QGISAgent", "随插件启动时自动运行 MCP 服务"))
         self.cbMcpAutostart.setChecked(bool(settings.value("mcp/autostart", False)))
         self.cbMcpAutostart.setToolTip(
             _translate("QGISAgent",
@@ -2054,7 +2102,14 @@ class QGISAgent:
         self.leMcpToken.setCursorPosition(0)
         # editingFinished：只在"编辑完并离开焦点/回车"时触发，避免每敲一个字符就改令牌。
         self.leMcpToken.editingFinished.connect(self._on_mcp_token_edited)
-        row_token.addWidget(self.leMcpToken)
+        row_token.addWidget(self.leMcpToken, 1)
+        outer.addLayout(row_token)
+
+        # ⚠️ 三个操作按钮**另起一行**：原先「标签 + 输入框 + 显示 + 重新生成 + 复制令牌」
+        #    五件套挤一行，英文按钮文字更长（Show / Regenerate / Copy token），
+        #    实测该行最小宽度 **447px**（中文约 330px），把整页顶到 455px —— 又一次
+        #    「切到英文后面板变宽」。拆开后两行分别约 140 / 290px。
+        row_token_btns = QHBoxLayout()
         self.btnMcpTokenReveal = QPushButton(_translate("QGISAgent", "显示"))
         self.btnMcpTokenReveal.setCheckable(True)
         self.btnMcpTokenReveal.setToolTip(
@@ -2063,18 +2118,20 @@ class QGISAgent:
                        "不会修改或复制令牌本身。")
         )
         self.btnMcpTokenReveal.toggled.connect(self._on_mcp_token_reveal_toggled)
-        row_token.addWidget(self.btnMcpTokenReveal)
+        row_token_btns.addWidget(self.btnMcpTokenReveal)
         self.btnMcpRegen = QPushButton(_translate("QGISAgent", "重新生成"))
         self.btnMcpRegen.setToolTip(
             _translate("QGISAgent", "生成一份新的 32 字节随机令牌（旧令牌立即失效）"))
         self.btnMcpRegen.clicked.connect(self._on_mcp_regenerate_token)
-        row_token.addWidget(self.btnMcpRegen)
+        row_token_btns.addWidget(self.btnMcpRegen)
         self.btnMcpCopyToken = QPushButton(_translate("QGISAgent", "复制令牌"))
         self.btnMcpCopyToken.clicked.connect(self._on_mcp_copy_token)
-        row_token.addWidget(self.btnMcpCopyToken)
-        outer.addLayout(row_token)
+        row_token_btns.addWidget(self.btnMcpCopyToken)
+        row_token_btns.addStretch(1)
+        outer.addLayout(row_token_btns)
 
-        self.cbMcpDangerous = QCheckBox(
+        # 同上：这是全页最长的一句（英文实测 883px），不折行 dock 就拉不小
+        self.cbMcpDangerous = WrappingCheckBox(
             _translate("QGISAgent", "允许外部 Agent 调用特权工具（执行 PyQGIS 代码 / 处理算法 / 删图层 / 运行技能）")
         )
         self.cbMcpDangerous.setChecked(bool(settings.value("mcp/allow_dangerous", False)))

@@ -4,7 +4,7 @@
 
 [![QGIS](https://img.shields.io/badge/QGIS-3.22+-589632?logo=qgis&style=flat-square)](https://qgis.org/)
 [![Python](https://img.shields.io/badge/Python-3.7+-3776AB?logo=python&style=flat-square)](https://www.python.org/)
-[![Version](https://img.shields.io/badge/version-2.3.2-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.4.15-blue?style=flat-square)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
 ---
@@ -42,6 +42,7 @@ QGIS Agent 是 QGIS 的 AI 原生插件——用自然语言直接操控 QGIS，
 | 🔌 **Skills 系统** ✅ | 内置/用户技能通过 `run_skill` 工具调用（`skills/`） |
 | 🔄 **Workflow** ✅ | 工作流录制与回放（`workflow_store.py` / `workflow_recorder.py` / `workflow_executor.py`） |
 | 🌐 **多语言界面** ✅ | 核心界面共 **192 条**文案双语（简体中文 / English）。**默认跟随 QGIS 的界面语言**，也可在设置页手动固定；改动立即生效、无需重启。助手回复语言与界面语言同源。翻译走 Qt 标准 `.ts`/`.qm`，`.qm` 为主、同源生成的 `messages_*.json` 为零依赖退路（退路刻意不解析 XML —— 那会被插件仓库的安全扫描挡下整版） |
+| 📐 **面板宽度不随语言跳变** ✅ | 长文案控件（复选框 / 示例按钮）**自动折行**（`qt_widgets.py`），底部栏与 MCP 令牌行拆成两行，每页再给一个**与语言无关**的最小宽度下限 —— 面板最小宽度中英文恒为 **360px**（修复前中文 690 / 英文 931） |
 | ❓ **Clarification** ✅ | 意图不明确时主动向用户澄清（`clarification_manager.py`） |
 
 > ✅ = 已接入主对话链路。工具数量以 `TOOL_MAP` 为准，当前为 **23** 个。
@@ -292,6 +293,7 @@ qgis_agent/
 ├── workflow_store.py            # 工作流录制/回放
 ├── task_graph.py                # 任务图拆解
 ├── utils.py / config.py         # 工具函数 / 全局配置
+├── qt_widgets.py                # 文案自动折行的小控件（复选框 / 按钮）
 ├── package_manager.py           # 依赖管理
 ├── rag/                         # 📚 RAG 模块
 │   ├── doc_store.py             #   SQLite FTS5 文档存储
